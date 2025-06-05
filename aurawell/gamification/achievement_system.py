@@ -12,37 +12,12 @@ AuraWell 成就系统
 
 from datetime import datetime, date
 from typing import Dict, List, Optional, Any
-from enum import Enum
 from dataclasses import dataclass
 import json
 
 from ..utils.date_utils import get_current_utc
 from ..config.logging_config import gamification_logger
-
-
-class AchievementType(Enum):
-    """成就类型"""
-    DAILY_STEPS = "daily_steps"  # 每日步数
-    WEEKLY_STEPS = "weekly_steps"  # 周步数
-    MONTHLY_STEPS = "monthly_steps"  # 月步数
-    CONSECUTIVE_DAYS = "consecutive_days"  # 连续天数
-    SLEEP_QUALITY = "sleep_quality"  # 睡眠质量
-    WORKOUT_FREQUENCY = "workout_frequency"  # 锻炼频率
-    WEIGHT_LOSS = "weight_loss"  # 减重成就
-    HEALTH_STREAK = "health_streak"  # 健康连击
-    CALORIE_BURN = "calorie_burn"  # 卡路里消耗
-    DISTANCE_COVERED = "distance_covered"  # 距离覆盖
-    HEART_RATE_TARGET = "heart_rate_target"  # 心率目标
-    SOCIAL_CHALLENGE = "social_challenge"  # 社交挑战
-
-
-class AchievementDifficulty(Enum):
-    """成就难度"""
-    BRONZE = "bronze"
-    SILVER = "silver" 
-    GOLD = "gold"
-    PLATINUM = "platinum"
-    DIAMOND = "diamond"
+from ..models.enums import AchievementType, AchievementDifficulty
 
 
 @dataclass
@@ -103,13 +78,14 @@ class Achievement:
 class AchievementManager:
     """成就管理器"""
     
-    def __init__(self):
+    def __init__(self) -> None:
+        """初始化成就管理器"""
         self.achievements: Dict[str, Achievement] = {}
         self.user_achievements: Dict[str, Dict[str, Achievement]] = {}  # user_id -> achievements
         self._initialize_default_achievements()
         gamification_logger.info("AchievementManager初始化完成")
     
-    def _initialize_default_achievements(self):
+    def _initialize_default_achievements(self) -> None:
         """初始化默认成就"""
         default_achievements = [
             # 每日步数成就
@@ -301,10 +277,17 @@ class AchievementManager:
         """检查连击成就"""
         return self.update_progress(user_id, AchievementType.CONSECUTIVE_DAYS, current_streak)
     
-    def add_custom_achievement(self, achievement: Achievement):
+    def add_custom_achievement(self, achievement: Achievement) -> None:
         """添加自定义成就"""
-        self.achievements[achievement.achievement_id] = achievement
-        gamification_logger.info(f"添加自定义成就: {achievement.name} ({achievement.achievement_id})")
+        try:
+            if achievement.achievement_id in self.achievements:
+                gamification_logger.warning(f"成就ID已存在，将覆盖: {achievement.achievement_id}")
+            
+            self.achievements[achievement.achievement_id] = achievement
+            gamification_logger.info(f"添加自定义成就: {achievement.name} ({achievement.achievement_id})")
+        except Exception as e:
+            gamification_logger.error(f"添加自定义成就失败: {e}")
+            raise
     
     def export_user_achievements(self, user_id: str) -> str:
         """导出用户成就数据为JSON"""

@@ -10,8 +10,8 @@ __version__ = "0.1.0"
 __author__ = "AuraWell Team"
 __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
 
-# Core modules
-from .core import *
-from .models import *
-from .integrations import *
-from .utils import * 
+# Core modules - explicit imports to avoid circular dependencies
+# from .core import DeepSeekClient, AuraWellOrchestrator
+# from .models import UserProfile, UnifiedActivitySummary
+# from .integrations import GenericHealthAPIClient
+# from .utils import calculate_bmi, calculate_bmr

@@ -8,46 +8,15 @@ BMI, calorie requirements, heart rate zones, and other health metrics.
 import math
 from datetime import datetime, date, timedelta
 from typing import Optional, Dict, List, Tuple, Union
-from enum import Enum
 
-# Define local enums to avoid circular imports
-class Gender(Enum):
-    MALE = "male"
-    FEMALE = "female"
-
-class ActivityLevel(Enum):
-    SEDENTARY = "sedentary"
-    LIGHTLY_ACTIVE = "lightly_active"
-    MODERATELY_ACTIVE = "moderately_active"
-    VERY_ACTIVE = "very_active"
-    EXTREMELY_ACTIVE = "extremely_active"
-
-class HealthGoal(Enum):
-    WEIGHT_LOSS = "weight_loss"
-    WEIGHT_GAIN = "weight_gain"
-    MUSCLE_GAIN = "muscle_gain"
-    IMPROVE_FITNESS = "improve_fitness"
-    IMPROVE_SLEEP = "improve_sleep"
-    REDUCE_STRESS = "reduce_stress"
-
-
-class BMICategory(Enum):
-    """BMI categories according to WHO standards"""
-    UNDERWEIGHT = "underweight"
-    NORMAL = "normal"
-    OVERWEIGHT = "overweight"
-    OBESE_CLASS_1 = "obese_class_1"
-    OBESE_CLASS_2 = "obese_class_2"
-    OBESE_CLASS_3 = "obese_class_3"
-
-
-class HeartRateZone(Enum):
-    """Heart rate training zones"""
-    RECOVERY = "recovery"          # 50-60% of max HR
-    AEROBIC_BASE = "aerobic_base"  # 60-70% of max HR
-    AEROBIC = "aerobic"            # 70-80% of max HR
-    ANAEROBIC = "anaerobic"        # 80-90% of max HR
-    MAXIMUM = "maximum"            # 90-100% of max HR
+# Import from shared enums module to avoid duplication
+from ..models.enums import (
+    Gender,
+    ActivityLevel,
+    HealthGoal,
+    BMICategory,
+    HeartRateZone
+)
 
 
 def calculate_bmi(weight_kg: float, height_cm: float) -> float:

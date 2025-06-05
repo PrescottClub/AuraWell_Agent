@@ -43,12 +43,15 @@ class DeepSeekClient:
     Prioritizes deepseek-r1 model for reasoning and planning tasks.
     """
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None) -> None:
         """
         Initialize DeepSeek client
         
         Args:
             api_key: DeepSeek API key. If None, will read from DEEPSEEK_API_KEY env var
+            
+        Raises:
+            ValueError: If API key is not provided or found in environment
         """
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         if not self.api_key:

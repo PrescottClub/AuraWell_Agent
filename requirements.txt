@@ -3,10 +3,8 @@ openai>=1.50.0
 pydantic>=2.8.0
 python-dotenv>=1.0.0
 
-# HTTP requests and API handling
-requests>=2.31.0
+# HTTP requests and API handling (choose one primary client)
 httpx>=0.27.0
-aiohttp>=3.9.0
 
 # Data processing and validation
 pandas>=2.2.0

@@ -36,7 +36,7 @@ from aurawell.utils.date_utils import get_current_utc, format_duration
 from aurawell.config.settings import settings
 
 
-def display_banner():
+def display_banner() -> None:
     """显示欢迎横幅"""
     print("🌟" + "="*78 + "🌟")
     print("   欢迎使用 AuraWell - 超个性化健康生活方式编排AI Agent")
@@ -44,7 +44,7 @@ def display_banner():
     print("🌟" + "="*78 + "🌟")
 
 
-def test_deepseek_integration():
+def test_deepseek_integration() -> None:
     """测试DeepSeek AI集成"""
     print("\n🤖 测试 DeepSeek AI 集成...")
     
@@ -77,7 +77,7 @@ def test_deepseek_integration():
         print(f"❌ DeepSeek集成测试失败: {e}")
 
 
-def test_health_data_models():
+def test_health_data_models() -> None:
     """测试健康数据模型"""
     print("\n📊 测试健康数据模型...")
     
@@ -154,16 +154,16 @@ def test_user_profile():
         print(f"   姓名: {profile.display_name}")
         print(f"   年龄: {profile.age}岁")
         print(f"   身高/体重: {profile.height_cm}cm / {profile.weight_kg}kg")
-        print(f"   主要目标: {profile.primary_goal.value}")
-        print(f"   活动水平: {profile.activity_level.value}")
+        print(f"   主要目标: {profile.primary_goal}")
+        print(f"   活动水平: {profile.activity_level}")
         
         # 创建用户偏好
         preferences = UserPreferences(
             user_id="demo_001",
             preferred_workout_times=["morning", "evening"],
             available_days=["monday", "tuesday", "wednesday", "thursday", "friday"],
-            focus_areas=["activity", "sleep"],
-            communication_style="encouraging",
+            focus_areas=["exercise", "sleep"],
+            communication_style="supportive",
             reminder_frequency="medium"
         )
         

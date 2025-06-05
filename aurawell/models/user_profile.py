@@ -7,36 +7,8 @@ This module defines user profile and preference models for personalized health r
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
-from enum import Enum
 
-from .health_data_model import HealthPlatform
-
-
-class Gender(str, Enum):
-    """User gender classification"""
-    MALE = "male"
-    FEMALE = "female"
-    OTHER = "other"
-
-
-class ActivityLevel(str, Enum):
-    """User activity level classification"""
-    SEDENTARY = "sedentary"
-    LIGHTLY_ACTIVE = "lightly_active"
-    MODERATELY_ACTIVE = "moderately_active"
-    VERY_ACTIVE = "very_active"
-    EXTREMELY_ACTIVE = "extremely_active"
-
-
-class HealthGoal(str, Enum):
-    """Primary health goals"""
-    WEIGHT_LOSS = "weight_loss"
-    WEIGHT_GAIN = "weight_gain"
-    MUSCLE_GAIN = "muscle_gain"
-    IMPROVE_FITNESS = "improve_fitness"
-    IMPROVE_SLEEP = "improve_sleep"
-    STRESS_REDUCTION = "stress_reduction"
-    GENERAL_WELLNESS = "general_wellness"
+from .enums import Gender, ActivityLevel, HealthGoal, HealthPlatform
 
 
 class UserProfile(BaseModel):

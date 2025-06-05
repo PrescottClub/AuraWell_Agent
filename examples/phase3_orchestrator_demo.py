@@ -26,7 +26,7 @@ import json
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from aurawell.core.orchestrator import AuraWellOrchestrator, HealthInsight, HealthPlan
+from aurawell.core.orchestrator_v2 import AuraWellOrchestrator, HealthInsight, HealthPlan
 from aurawell.core.deepseek_client import DeepSeekClient
 from aurawell.models.health_data_model import (
     UnifiedActivitySummary, UnifiedSleepSession, UnifiedHeartRateSample, 
@@ -51,7 +51,7 @@ def create_sample_user_profile() -> UserProfile:
         height_cm=175,
         weight_kg=75,
         primary_goal=HealthGoal.IMPROVE_FITNESS,
-        secondary_goals=[HealthGoal.IMPROVE_SLEEP, HealthGoal.REDUCE_STRESS],
+        secondary_goals=[HealthGoal.IMPROVE_SLEEP, HealthGoal.STRESS_REDUCTION],
         activity_level=ActivityLevel.LIGHTLY_ACTIVE,
         daily_steps_goal=10000,
         daily_calories_goal=2200,

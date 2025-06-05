@@ -1,0 +1,26 @@
+# Minimal requirements for AuraWell
+# Core dependencies only
+
+# Data validation and models
+pydantic>=2.8.0
+
+# Environment configuration
+python-dotenv>=1.0.0
+
+# Date and time handling
+python-dateutil>=2.8.0
+
+# System monitoring
+psutil>=5.9.0
+
+# HTTP client (for AI API calls)
+httpx>=0.27.0
+
+# Development and testing (optional)
+pytest>=8.1.0
+
+# Database support (optional)
+# Uncomment if using PostgreSQL:
+# psycopg2-binary>=2.9.0
+
+# Note: sqlite3 is built into Python, no additional package needed

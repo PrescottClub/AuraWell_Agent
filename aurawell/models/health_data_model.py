@@ -7,24 +7,10 @@ All timestamps are normalized to UTC and units are standardized.
 """
 
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any, Literal
-from pydantic import BaseModel, Field, validator
-from enum import Enum
+from typing import Optional, Literal
+from pydantic import BaseModel, Field, field_validator
 
-
-class HealthPlatform(str, Enum):
-    """Supported health data platforms"""
-    XIAOMI_HEALTH = "XiaomiHealth"
-    APPLE_HEALTH = "AppleHealth"
-    BOHE_HEALTH = "BoheHealth"
-
-
-class DataQuality(str, Enum):
-    """Data quality indicators"""
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    UNKNOWN = "unknown"
+from .enums import HealthPlatform, DataQuality, HeartRateType, SleepStage, WorkoutType
 
 
 class UnifiedActivitySummary(BaseModel):
@@ -46,7 +32,8 @@ class UnifiedActivitySummary(BaseModel):
     data_quality: DataQuality = Field(DataQuality.UNKNOWN, description="Data quality indicator")
     recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
-    @validator('date')
+    @field_validator('date')
+    @classmethod
     def validate_date_format(cls, v):
         """Validate date format"""
         try:
@@ -54,15 +41,6 @@ class UnifiedActivitySummary(BaseModel):
             return v
         except ValueError:
             raise ValueError('Date must be in YYYY-MM-DD format')
-
-
-class SleepStage(str, Enum):
-    """Sleep stage types"""
-    DEEP = "deep"
-    LIGHT = "light"
-    REM = "rem"
-    AWAKE = "awake"
-    UNKNOWN = "unknown"
 
 
 class UnifiedSleepSession(BaseModel):
@@ -83,21 +61,13 @@ class UnifiedSleepSession(BaseModel):
     data_quality: DataQuality = Field(DataQuality.UNKNOWN, description="Data quality indicator")
     recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
-    @validator('end_time_utc')
-    def validate_sleep_duration(cls, v, values):
+    @field_validator('end_time_utc')
+    @classmethod
+    def validate_sleep_duration(cls, v, info):
         """Validate that end time is after start time"""
-        if 'start_time_utc' in values and v <= values['start_time_utc']:
+        if 'start_time_utc' in info.data and v <= info.data['start_time_utc']:
             raise ValueError('End time must be after start time')
         return v
-
-
-class HeartRateType(str, Enum):
-    """Heart rate measurement types"""
-    RESTING = "resting"
-    ACTIVE = "active"
-    PEAK = "peak"
-    RECOVERY = "recovery"
-    UNKNOWN = "unknown"
 
 
 class UnifiedHeartRateSample(BaseModel):
@@ -111,18 +81,6 @@ class UnifiedHeartRateSample(BaseModel):
     source_platform: HealthPlatform = Field(..., description="Source health platform")
     data_quality: DataQuality = Field(DataQuality.UNKNOWN, description="Data quality indicator")
     recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class WorkoutType(str, Enum):
-    """Workout/exercise types"""
-    RUNNING = "running"
-    WALKING = "walking"
-    CYCLING = "cycling"
-    SWIMMING = "swimming"
-    STRENGTH_TRAINING = "strength_training"
-    YOGA = "yoga"
-    CARDIO = "cardio"
-    OTHER = "other"
 
 
 class UnifiedWorkoutSession(BaseModel):

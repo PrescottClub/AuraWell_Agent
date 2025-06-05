@@ -2,14 +2,15 @@
 
 <div align="center">
 
-![AuraWell Logo](https://img.shields.io/badge/AuraWell-v0.1.0-blue?style=for-the-badge)
+![AuraWell Logo](https://img.shields.io/badge/AuraWell-v0.2.0-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Beta-green?style=for-the-badge)
+![Updated](https://img.shields.io/badge/Updated-2025.06.05-purple?style=for-the-badge)
 
 *整合健身目标、日常作息、饮食偏好、工作日程及社交活动的智能健康生活方式编排平台*
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [文档](#-文档) • [演示](#-演示) • [贡献](#-贡献)
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [架构文档](#-架构文档) • [演示](#-演示) • [贡献](#-贡献)
 
 </div>
 
@@ -27,31 +28,36 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 
 ## ✨ 功能特性
 
-### 🤖 Phase 1: 核心AI集成
-- **DeepSeek AI集成**: 智能健康分析和建议生成
-- **统一数据模型**: 标准化的健康数据结构
-- **用户档案管理**: 完整的用户偏好和目标跟踪
-- **配置管理**: 灵活的环境配置和日志系统
+### 🤖 Phase 1: 核心AI集成 ✅
+- **DeepSeek AI集成**: 智能健康分析和建议生成 (支持deepseek-r1推理模型)
+- **统一数据模型**: 标准化的健康数据结构，支持多平台数据融合
+- **用户档案管理**: 完整的用户偏好和目标跟踪系统
+- **配置管理**: 灵活的环境配置和结构化日志系统
 
-### 🔗 Phase 2: 健康平台集成
-- **小米健康**: 步数、心率、睡眠数据同步
-- **薄荷健康**: 营养摄入和体重管理
-- **苹果健康**: HealthKit数据集成
-- **OAuth 2.0认证**: 安全的第三方平台授权
-- **速率限制**: 智能API调用管理
+### 🔗 Phase 2: 健康平台集成 ✅
+- **小米健康**: 步数、心率、睡眠数据同步，支持实时API调用
+- **薄荷健康**: 营养摄入和体重管理，食物数据库集成
+- **苹果健康**: HealthKit数据集成，iOS设备数据获取
+- **OAuth 2.0认证**: 安全的第三方平台授权流程
+- **速率限制**: 智能API调用管理，防止频率超限
 
-### 🧠 Phase 3: 高级AI编排
-- **健康洞察生成**: AI驱动的健康数据分析
-- **动态计划调整**: 基于表现数据的自适应建议
-- **上下文感知**: 考虑时间、天气、日程的智能建议
-- **模式识别**: 识别健康行为趋势和异常
+### 🧠 Phase 3: 高级AI编排 ✅
+- **健康洞察生成**: AI驱动的健康数据分析和模式识别
+- **动态计划调整**: 基于表现数据的自适应健康建议
+- **上下文感知**: 考虑时间、环境、日程的智能推荐
+- **多维度分析**: 活动、睡眠、营养、心率综合分析
 
-### 🎮 Phase 4: 游戏化与激励
-- **成就系统**: 12种健康成就，5个难度等级
-- **挑战系统**: 个人和团队挑战
-- **进度追踪**: 可视化进度条和统计
-- **智能通知**: 多优先级通知系统
-- **社交功能**: 排行榜、好友互动
+### 🎮 Phase 4: 游戏化与激励 ✅
+- **成就系统**: 18种健康成就，5个难度等级(青铜/白银/黄金/铂金/钻石)
+- **智能通知**: 多优先级通知系统，支持多渠道推送
+- **进度追踪**: 实时进度更新和可视化统计
+- **数据洞察**: 个人健康趋势分析和建议生成
+
+### 🔄 Phase 5: 微服务架构 🚧
+- **服务化架构**: 用户服务、健康服务、AI服务、通知服务
+- **数据库抽象**: 支持SQLite、PostgreSQL、MySQL多种数据库
+- **监控系统**: 健康检查、错误处理、性能监控
+- **API网关**: 统一的服务入口和路由管理
 
 ## 🛠️ 技术栈
 
@@ -76,8 +82,8 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/your-username/aurawell.git
-   cd aurawell
+   git clone https://github.com/PrescottClub/AuraWell_Agent.git
+   cd AuraWell_Agent
    ```
 
 2. **安装依赖**
@@ -128,45 +134,70 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 ## 📊 项目结构
 
 ```
-aurawell/
+aurawell/                          # 主应用包
 ├── core/                          # 核心AI和编排逻辑
-│   ├── deepseek_client.py         # DeepSeek AI集成
-│   └── orchestrator.py            # 健康编排器
-├── models/                        # 数据模型
-│   ├── health_data_model.py       # 统一健康数据模型
+│   ├── deepseek_client.py         # DeepSeek AI客户端
+│   ├── orchestrator_v2.py         # 主健康编排器
+│   ├── orchestrator_minimal.py    # 轻量级编排器
+│   └── __init__.py                # 核心模块导出
+├── models/                        # 数据模型层
+│   ├── enums.py                   # 枚举定义(统一管理)
+│   ├── health_data_model.py       # 健康数据模型
 │   ├── user_profile.py            # 用户档案模型
 │   └── health_data_parser.py      # 数据解析器
-├── integrations/                  # 健康平台集成
+├── services/                      # 微服务层
+│   ├── base_service.py            # 服务基类
+│   ├── user_service.py            # 用户服务
+│   ├── health_service.py          # 健康数据服务
+│   ├── ai_service.py              # AI分析服务
+│   └── notification_service.py    # 通知服务
+├── database/                      # 数据持久层
+│   ├── connection.py              # 数据库连接管理
+│   ├── models.py                  # 数据库模型
+│   └── repositories.py           # 数据访问层
+├── integrations/                  # 第三方集成
 │   ├── generic_health_api_client.py  # 通用API客户端
-│   ├── xiaomi_health_client.py    # 小米健康集成
-│   ├── bohe_health_client.py      # 薄荷健康集成
-│   └── apple_health_client.py     # 苹果健康集成
+│   ├── xiaomi_health_client.py    # 小米健康
+│   ├── bohe_health_client.py      # 薄荷健康
+│   └── apple_health_client.py     # 苹果健康
 ├── gamification/                  # 游戏化系统
-│   ├── achievement_system.py      # 成就系统
-│   ├── scoring_system.py          # 积分系统
-│   ├── badge_system.py            # 徽章系统
-│   ├── challenge_system.py        # 挑战系统
-│   ├── progress_tracker.py        # 进度追踪
-│   └── notification_system.py     # 通知系统
+│   └── achievement_system.py      # 成就管理
+├── monitoring/                    # 监控和错误处理
+│   ├── health_monitor.py          # 系统健康监控
+│   └── error_handler.py           # 错误处理
 ├── utils/                         # 工具函数
-│   ├── health_calculations.py     # 健康计算(BMI/BMR/TDEE)
-│   ├── date_utils.py              # 日期时间工具
+│   ├── health_calculations.py     # 健康计算
+│   ├── date_utils.py              # 日期工具
 │   ├── data_validation.py         # 数据验证
 │   └── encryption_utils.py        # 加密工具
 ├── config/                        # 配置管理
 │   ├── settings.py                # 应用设置
 │   └── logging_config.py          # 日志配置
-└── __init__.py
+└── __init__.py                    # 包初始化
 
 examples/                          # 示例和演示
 ├── basic_test.py                  # 基础功能测试
-├── simplified_demo.py             # 简化演示
-├── phase3_orchestrator_demo.py    # Phase 3演示
-└── phase4_gamification_demo.py    # Phase 4演示
+├── simplified_demo.py             # 功能演示
+├── phase3_orchestrator_demo.py    # 编排器演示
+└── phase4_gamification_demo.py    # 游戏化演示
 
-tests/                             # 单元测试 (开发中)
-requirements.txt                   # Python依赖
+tests/                             # 测试套件
+├── test_complete_system.py        # 完整系统测试
+├── test_services.py               # 服务层测试
+├── test_database.py               # 数据库测试
+├── test_orchestrator.py           # 编排器测试
+└── test_orchestrator_v2.py        # V2编排器测试
+
+docs/                              # 项目文档
+├── ARCHITECTURE_SUMMARY.md        # 架构概览
+└── FIXES_SUMMARY.md               # 修复记录
+
+# 配置文件
+requirements.txt                   # 生产依赖
+requirements_minimal.txt           # 最小依赖
 env.example                        # 环境变量模板
+.gitignore                         # Git忽略规则
+.cursorignore                      # Cursor AI忽略规则
 ```
 
 ## 🎯 核心功能详解
@@ -195,8 +226,8 @@ response = client.analyze_health_data(user_data)
 ```python
 from aurawell.models.health_data_model import UnifiedActivitySummary
 
-activity = UnifiedActivitySummary(
-    date="2025-01-15",
+        activity = UnifiedActivitySummary(
+            date="2025-06-05",
     steps=10000,
     distance_meters=8000,
     active_calories=400,
@@ -299,23 +330,53 @@ plan = await orchestrator.create_health_plan(user_id="user_001")
 
 ## 🧪 演示程序
 
-### 1. 基础功能测试
+项目核心功能已稳定运行：
+
+### 1. 基础功能测试 ✅
 验证所有模块正常导入和基础功能：
 ```bash
 python examples/basic_test.py
 ```
 
-### 2. 核心功能演示
+### 2. 核心功能演示 ✅
 展示健康数据模型、用户档案、AI集成：
 ```bash
 python examples/simplified_demo.py
 ```
 
-### 3. 游戏化系统演示
+### 3. 游戏化系统演示 ✅
 体验完整的游戏化激励功能：
 ```bash
 python examples/phase4_gamification_demo.py
 ```
+
+### 4. 系统完整测试 🆕
+全面测试各个模块和服务：
+```bash
+python test_complete_system.py
+```
+
+## 📚 架构文档
+
+- [📋 架构概览](docs/ARCHITECTURE_SUMMARY.md) - 系统架构和设计决策
+- [🔧 修复记录](docs/FIXES_SUMMARY.md) - 代码质量改进历史
+- [🧪 测试指南](tests/) - 完整的测试套件
+- [📖 API文档](examples/) - 使用示例和最佳实践
+
+## 📈 版本历史
+
+### v0.2.0 (2025-06-05) 🆕
+- ✅ 完成微服务架构重构
+- ✅ 修复循环导入和枚举重复定义问题
+- ✅ 添加完整的监控和错误处理系统
+- ✅ 实现数据库抽象层，支持多种数据库
+- ✅ 完善游戏化成就系统
+- ✅ 增强代码质量：类型注解、错误处理、文档
+
+### v0.1.0 (2025-01-15)
+- 🚀 项目初始版本
+- ✅ 基础AI集成和健康平台连接
+- ✅ 核心数据模型和用户档案系统
 
 ## 📊 性能与指标
 
@@ -333,23 +394,34 @@ python examples/phase4_gamification_demo.py
 
 ## 🔮 发展路线图
 
-### Phase 5: Web界面开发 (计划中)
+### Phase 5: 微服务架构完善 🚧 (进行中)
+- [x] 服务化架构设计
+- [x] 数据库抽象层
+- [x] 监控和错误处理
+- [ ] API网关实现
+- [ ] 服务间通信优化
+- [ ] 自动扩展机制
+
+### Phase 6: Web界面开发 (Q3 2025)
+- [ ] FastAPI后端REST API
 - [ ] React前端界面
-- [ ] 实时数据可视化
-- [ ] 移动端适配
-- [ ] PWA支持
+- [ ] 实时数据可视化Dashboard
+- [ ] 移动端PWA适配
+- [ ] 用户认证系统
 
-### Phase 6: 高级功能 (计划中)
+### Phase 7: 高级AI功能 (Q4 2025)
 - [ ] 机器学习个性化推荐
-- [ ] 语音交互
-- [ ] 智能设备集成
-- [ ] 企业健康管理
+- [ ] 计算机视觉健康分析
+- [ ] 语音交互界面
+- [ ] 智能设备IoT集成
+- [ ] 企业健康管理平台
 
-### Phase 7: 生态系统 (远期)
+### Phase 8: 生态系统建设 (2026+)
 - [ ] 第三方插件系统
 - [ ] 开放API平台
 - [ ] 健康数据市场
-- [ ] 研究合作平台
+- [ ] 医疗机构合作
+- [ ] 研究数据平台
 
 ## 🤝 贡献指南
 
@@ -387,10 +459,10 @@ python examples/phase4_gamification_demo.py
 
 ## 📞 联系我们
 
-- **项目主页**: [AuraWell GitHub](https://github.com/your-username/aurawell)
-- **问题反馈**: [GitHub Issues](https://github.com/your-username/aurawell/issues)
-- **功能建议**: [GitHub Discussions](https://github.com/your-username/aurawell/discussions)
-- **邮箱**: aurawell@example.com
+- **项目主页**: [AuraWell GitHub](https://github.com/PrescottClub/AuraWell_Agent)
+- **问题反馈**: [GitHub Issues](https://github.com/PrescottClub/AuraWell_Agent/issues)
+- **功能建议**: [GitHub Discussions](https://github.com/PrescottClub/AuraWell_Agent/discussions)
+- **邮箱**: prescottchun@163.com
 
 ---
 
@@ -398,8 +470,8 @@ python examples/phase4_gamification_demo.py
 
 **AuraWell - 让健康生活更智能、更有趣！** 🌟
 
-[![Star](https://img.shields.io/badge/Star-⭐-yellow?style=for-the-badge)](https://github.com/your-username/aurawell)
-[![Fork](https://img.shields.io/badge/Fork-🍴-blue?style=for-the-badge)](https://github.com/your-username/aurawell/fork)
-[![Follow](https://img.shields.io/badge/Follow-👥-green?style=for-the-badge)](https://github.com/your-username)
+[![Star](https://img.shields.io/badge/Star-⭐-yellow?style=for-the-badge)](https://github.com/PrescottClub/AuraWell_Agent)
+[![Fork](https://img.shields.io/badge/Fork-🍴-blue?style=for-the-badge)](https://github.com/PrescottClub/AuraWell_Agent/fork)
+[![Follow](https://img.shields.io/badge/Follow-👥-green?style=for-the-badge)](https://github.com/PrescottClub)
 
 </div>
