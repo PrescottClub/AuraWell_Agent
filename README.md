@@ -175,7 +175,6 @@ docs/                              # 项目文档
 requirements.txt                   # 依赖管理
 env.example                        # 环境变量模板
 .gitignore                         # Git忽略规则
-.cursorignore                      # Cursor AI忽略规则
 ```
 
 ## 🎯 核心功能详解
