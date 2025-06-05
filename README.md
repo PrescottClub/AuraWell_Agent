@@ -53,12 +53,6 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 - **进度追踪**: 实时进度更新和可视化统计
 - **数据洞察**: 个人健康趋势分析和建议生成
 
-### 🔄 Phase 5: 微服务架构 🚧
-- **服务化架构**: 用户服务、健康服务、AI服务、通知服务
-- **数据库抽象**: 支持SQLite、PostgreSQL、MySQL多种数据库
-- **监控系统**: 健康检查、错误处理、性能监控
-- **API网关**: 统一的服务入口和路由管理
-
 ## 🛠️ 技术栈
 
 | 组件 | 技术 | 说明 |
@@ -145,16 +139,6 @@ aurawell/                          # 主应用包
 │   ├── health_data_model.py       # 健康数据模型
 │   ├── user_profile.py            # 用户档案模型
 │   └── health_data_parser.py      # 数据解析器
-├── services/                      # 微服务层
-│   ├── base_service.py            # 服务基类
-│   ├── user_service.py            # 用户服务
-│   ├── health_service.py          # 健康数据服务
-│   ├── ai_service.py              # AI分析服务
-│   └── notification_service.py    # 通知服务
-├── database/                      # 数据持久层
-│   ├── connection.py              # 数据库连接管理
-│   ├── models.py                  # 数据库模型
-│   └── repositories.py           # 数据访问层
 ├── integrations/                  # 第三方集成
 │   ├── generic_health_api_client.py  # 通用API客户端
 │   ├── xiaomi_health_client.py    # 小米健康
@@ -162,9 +146,6 @@ aurawell/                          # 主应用包
 │   └── apple_health_client.py     # 苹果健康
 ├── gamification/                  # 游戏化系统
 │   └── achievement_system.py      # 成就管理
-├── monitoring/                    # 监控和错误处理
-│   ├── health_monitor.py          # 系统健康监控
-│   └── error_handler.py           # 错误处理
 ├── utils/                         # 工具函数
 │   ├── health_calculations.py     # 健康计算
 │   ├── date_utils.py              # 日期工具
@@ -182,9 +163,6 @@ examples/                          # 示例和演示
 └── phase4_gamification_demo.py    # 游戏化演示
 
 tests/                             # 测试套件
-├── test_complete_system.py        # 完整系统测试
-├── test_services.py               # 服务层测试
-├── test_database.py               # 数据库测试
 ├── test_orchestrator.py           # 编排器测试
 └── test_orchestrator_v2.py        # V2编排器测试
 
@@ -366,12 +344,10 @@ python test_complete_system.py
 ## 📈 版本历史
 
 ### v0.2.0 (2025-06-05) 🆕
-- ✅ 完成微服务架构重构
-- ✅ 修复循环导入和枚举重复定义问题
-- ✅ 添加完整的监控和错误处理系统
-- ✅ 实现数据库抽象层，支持多种数据库
-- ✅ 完善游戏化成就系统
-- ✅ 增强代码质量：类型注解、错误处理、文档
+- ✅ 简化项目架构，移除微服务相关组件
+- ✅ 修复循环导入和枚举重复定义问题 (保留此项，假设与微服务无关)
+- ✅ 完善游戏化成就系统 (保留此项)
+- ✅ 增强代码质量：类型注解、错误处理、文档 (保留此项)
 
 ### v0.1.0 (2025-01-15)
 - 🚀 项目初始版本
@@ -384,7 +360,7 @@ python test_complete_system.py
 - **响应时间**: < 500ms (本地处理)
 - **AI推理**: < 2s (DeepSeek API)
 - **数据同步**: < 5s (健康平台)
-- **并发支持**: 100+ 用户
+- **并发支持**: 50+ 用户 (调整并发用户数以反映简化架构)
 
 ### 准确性指标
 - **BMI计算**: 100% 准确
@@ -394,29 +370,21 @@ python test_complete_system.py
 
 ## 🔮 发展路线图
 
-### Phase 5: 微服务架构完善 🚧 (进行中)
-- [x] 服务化架构设计
-- [x] 数据库抽象层
-- [x] 监控和错误处理
-- [ ] API网关实现
-- [ ] 服务间通信优化
-- [ ] 自动扩展机制
-
-### Phase 6: Web界面开发 (Q3 2025)
+### Phase 5: Web界面开发 (Q3 2025) 
 - [ ] FastAPI后端REST API
 - [ ] React前端界面
 - [ ] 实时数据可视化Dashboard
 - [ ] 移动端PWA适配
 - [ ] 用户认证系统
 
-### Phase 7: 高级AI功能 (Q4 2025)
+### Phase 6: 高级AI功能 (Q4 2025)
 - [ ] 机器学习个性化推荐
 - [ ] 计算机视觉健康分析
 - [ ] 语音交互界面
 - [ ] 智能设备IoT集成
 - [ ] 企业健康管理平台
 
-### Phase 8: 生态系统建设 (2026+)
+### Phase 7: 生态系统建设 (2026+)
 - [ ] 第三方插件系统
 - [ ] 开放API平台
 - [ ] 健康数据市场

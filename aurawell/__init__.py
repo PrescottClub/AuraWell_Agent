@@ -6,12 +6,15 @@ fitness goals, daily routines, dietary preferences, work schedules,
 and social activities to provide contextual recommendations and habit formation support.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "AuraWell Team"
 __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
 
 # Core modules - explicit imports to avoid circular dependencies
-# from .core import DeepSeekClient, AuraWellOrchestrator
-# from .models import UserProfile, UnifiedActivitySummary
-# from .integrations import GenericHealthAPIClient
-# from .utils import calculate_bmi, calculate_bmr
+# Ensure only existing and relevant modules are imported
+# from .core import DeepSeekClient, AuraWellOrchestrator # Example, adjust as needed
+# from .models import UserProfile, UnifiedActivitySummary # Example, adjust as needed
+# from .integrations import GenericHealthAPIClient # Example, adjust as needed
+# from .utils import calculate_bmi, calculate_bmr # Example, adjust as needed
+
+# Removed references to services, database, monitoring as per simplification
