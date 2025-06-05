@@ -1,0 +1,39 @@
+# Core AI and API dependencies
+openai>=1.50.0
+pydantic>=2.8.0
+python-dotenv>=1.0.0
+
+# HTTP requests and API handling
+requests>=2.31.0
+httpx>=0.27.0
+aiohttp>=3.9.0
+
+# Data processing and validation
+pandas>=2.2.0
+numpy>=1.26.0
+python-dateutil>=2.8.0
+
+# Logging and monitoring
+structlog>=24.1.0
+loguru>=0.7.0
+
+# Health data and time handling
+pytz>=2024.1
+iso8601>=2.1.0
+
+# Optional: FastAPI for web interface (if needed)
+fastapi>=0.110.0
+uvicorn>=0.28.0
+
+# Development and testing
+pytest>=8.1.0
+pytest-asyncio>=0.23.0
+black>=24.3.0
+flake8>=7.0.0
+mypy>=1.9.0
+
+# Environment and configuration
+configparser>=6.0.0
+
+# Security
+cryptography>=42.0.0 
