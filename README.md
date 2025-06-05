@@ -110,20 +110,23 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 
 ### 运行演示
 
-1. **基础功能测试**
-   ```bash
-   python examples/basic_test.py
-   ```
+1. **基础功能测试** ✅
+验证所有模块正常导入和基础功能：
+```bash
+python examples/basic_test.py
+```
 
-2. **简化功能演示**
-   ```bash
-   python examples/simplified_demo.py
-   ```
+2. **简化功能演示** ✅
+展示健康数据模型、用户档案、AI集成：
+```bash
+python examples/simplified_demo.py
+```
 
-3. **游戏化系统演示**
-   ```bash
-   python examples/phase4_gamification_demo.py
-   ```
+3. **游戏化系统演示** ✅
+体验完整的游戏化激励功能：
+```bash
+python examples/phase4_gamification_demo.py
+```
 
 ## 📊 项目结构
 
@@ -132,7 +135,6 @@ aurawell/                          # 主应用包
 ├── core/                          # 核心AI和编排逻辑
 │   ├── deepseek_client.py         # DeepSeek AI客户端
 │   ├── orchestrator_v2.py         # 主健康编排器
-│   ├── orchestrator_minimal.py    # 轻量级编排器
 │   └── __init__.py                # 核心模块导出
 ├── models/                        # 数据模型层
 │   ├── enums.py                   # 枚举定义(统一管理)
@@ -159,7 +161,6 @@ aurawell/                          # 主应用包
 examples/                          # 示例和演示
 ├── basic_test.py                  # 基础功能测试
 ├── simplified_demo.py             # 功能演示
-├── phase3_orchestrator_demo.py    # 编排器演示
 └── phase4_gamification_demo.py    # 游戏化演示
 
 tests/                             # 测试套件
@@ -171,8 +172,7 @@ docs/                              # 项目文档
 └── FIXES_SUMMARY.md               # 修复记录
 
 # 配置文件
-requirements.txt                   # 生产依赖
-requirements_minimal.txt           # 最小依赖
+requirements.txt                   # 依赖管理
 env.example                        # 环境变量模板
 .gitignore                         # Git忽略规则
 .cursorignore                      # Cursor AI忽略规则
