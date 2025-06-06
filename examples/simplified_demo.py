@@ -84,15 +84,13 @@ def test_health_data_models() -> None:
     try:
         # 创建活动数据示例
         activity = UnifiedActivitySummary(
-            date=date.today(),
+            date=date.today().strftime('%Y-%m-%d'),
             steps=8500,
             distance_meters=6800,
             active_calories=320,
             total_calories=2100,
-            exercise_minutes=45,
-            standing_hours=8,
-            data_source=HealthPlatform.XIAOMI_HEALTH,
-            timestamp_utc=get_current_utc(),
+            active_minutes=45,
+            source_platform=HealthPlatform.XIAOMI_HEALTH,
             data_quality=DataQuality.HIGH
         )
         
@@ -101,28 +99,26 @@ def test_health_data_models() -> None:
         print(f"   步数: {activity.steps:,}")
         print(f"   距离: {activity.distance_meters/1000:.1f} 公里")
         print(f"   消耗卡路里: {activity.active_calories}")
-        print(f"   数据源: {activity.data_source.value}")
-        
+        print(f"   数据源: {activity.source_platform.value}")
+
         # 创建睡眠数据示例
         sleep_session = UnifiedSleepSession(
-            date=date.today(),
-            bedtime_utc=datetime(2024, 1, 15, 23, 30, tzinfo=timezone.utc),
-            wake_time_utc=datetime(2024, 1, 16, 7, 15, tzinfo=timezone.utc),
+            start_time_utc=datetime(2024, 1, 15, 23, 30, tzinfo=timezone.utc),
+            end_time_utc=datetime(2024, 1, 16, 7, 15, tzinfo=timezone.utc),
             total_duration_seconds=27900,  # 7小时45分钟
-            sleep_duration_seconds=25200,  # 7小时
+            deep_sleep_seconds=6300,  # 105分钟
+            light_sleep_seconds=13500,  # 225分钟
+            rem_sleep_seconds=5400,  # 90分钟
+            awake_seconds=2700,  # 45分钟
             sleep_efficiency=85.5,
-            deep_sleep_minutes=105,
-            rem_sleep_minutes=90,
-            light_sleep_minutes=225,
-            awake_minutes=45,
-            data_source=HealthPlatform.XIAOMI_HEALTH,
+            source_platform=HealthPlatform.XIAOMI_HEALTH,
             data_quality=DataQuality.HIGH
         )
         
         print(f"\n✅ 睡眠数据模型创建成功:")
         print(f"   睡眠时长: {format_duration(sleep_session.total_duration_seconds)}")
         print(f"   睡眠效率: {sleep_session.sleep_efficiency:.1f}%")
-        print(f"   深度睡眠: {sleep_session.deep_sleep_minutes} 分钟")
+        print(f"   深度睡眠: {sleep_session.deep_sleep_seconds // 60} 分钟")
         
     except Exception as e:
         print(f"❌ 健康数据模型测试失败: {e}")

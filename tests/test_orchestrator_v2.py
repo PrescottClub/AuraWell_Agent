@@ -73,18 +73,18 @@ def test_orchestrator_v2():
         for rec in recommendations:
             print(f"  - {rec['title']} ({rec['time']})")
         
-        return True
-        
+        assert True  # Use assertion instead of return
+
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"Test failed: {e}"
 
 if __name__ == "__main__":
-    success = test_orchestrator_v2()
-    if success:
+    try:
+        test_orchestrator_v2()
         print("\n🎉 All orchestrator v2 tests passed!")
-    else:
-        print("\n💥 Orchestrator v2 tests failed!")
+    except AssertionError as e:
+        print(f"\n💥 Orchestrator v2 tests failed: {e}")
         sys.exit(1)
