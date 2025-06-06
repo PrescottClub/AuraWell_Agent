@@ -68,10 +68,11 @@ def test_orchestrator_v2():
         
         # Test daily recommendations
         recommendations = orchestrator.get_daily_recommendations('test_user_001')
+
         print(f"✅ Generated {len(recommendations)} daily recommendations")
         
         for rec in recommendations:
-            print(f"  - {rec['title']} ({rec['time']})")
+            print(f"  - {rec["title"]} ({rec['time']})")
         
         assert True  # Use assertion instead of return
 
