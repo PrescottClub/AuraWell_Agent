@@ -2,12 +2,11 @@
 
 <div align="center">
 
-![AuraWell Logo](https://img.shields.io/badge/AuraWell-v0.3.0-blue?style=for-the-badge)
+![AuraWell Logo](https://img.shields.io/badge/AuraWell-Health_Assistant-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python)
 ![Vue](https://img.shields.io/badge/Vue-3.5+-4FC08D?style=for-the-badge&logo=vue.js)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Stable-brightgreen?style=for-the-badge)
-![Updated](https://img.shields.io/badge/Updated-2025.06.06-purple?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
 
 *整合健身目标、日常作息、饮食偏好、工作日程及社交活动的智能健康生活方式编排平台*
 
@@ -28,6 +27,13 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 - **隐私优先**: 遵循R.A.I.L.G.U.A.R.D安全原则，保护用户隐私
 
 ## ✨ 功能特性
+
+### 🤖 M1: 智能工具注册与调用系统 ✅ **NEW!**
+- **智能工具注册中心**: HealthToolsRegistry 完整实现，支持动态工具注册
+- **健康工具函数集**: 5个核心健康操作工具，完全异步支持
+- **对话智能体核心**: ConversationAgent 支持自然语言交互和工具调用
+- **命令行界面**: 功能完整的CLI，支持演示模式和真实AI模式
+- **OpenAI Function Calling**: 完全兼容的工具调用schema和执行流程
 
 ### 🤖 Phase 1: 核心AI集成 ✅
 - **DeepSeek AI集成**: 智能健康分析和建议生成 (支持deepseek-r1推理模型)
@@ -125,25 +131,31 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 
 ### 运行演示
 
-1. **基础功能测试** ✅
+1. **M1: 智能对话助手CLI** ✅ **NEW!**
+体验完整的对话式健康助手：
+```bash
+python -m aurawell.interfaces.cli_interface
+```
+
+2. **基础功能测试** ✅
 验证所有模块正常导入和基础功能：
 ```bash
 python examples/basic_test.py
 ```
 
-2. **简化功能演示** ✅
+3. **简化功能演示** ✅
 展示健康数据模型、用户档案、AI集成：
 ```bash
 python examples/simplified_demo.py
 ```
 
-3. **游戏化系统演示** ✅
+4. **游戏化系统演示** ✅
 体验完整的游戏化激励功能：
 ```bash
 python examples/phase4_gamification_demo.py
 ```
 
-4. **前端界面运行** ✅
+5. **前端界面运行** ✅
 启动Vue前端开发服务器：
 ```bash
 cd frontend
@@ -155,6 +167,16 @@ npm run dev
 
 ```
 aurawell/                          # 主应用包
+├── agent/                         # 🆕 M1: 智能体模块
+│   ├── __init__.py                # 智能体模块导出
+│   ├── tools_registry.py          # 工具注册中心
+│   ├── health_tools.py            # 健康工具函数集
+│   └── conversation_agent.py      # 对话智能体核心
+├── interfaces/                    # 🆕 M1: 用户接口层
+│   ├── __init__.py                # 接口模块导出
+│   └── cli_interface.py           # 命令行界面
+├── conversation/                  # 🆕 M1: 对话管理 (占位符)
+│   └── __init__.py                # 对话模块导出
 ├── core/                          # 核心AI和编排逻辑
 │   ├── deepseek_client.py         # DeepSeek AI客户端
 │   ├── orchestrator_v2.py         # 主健康编排器
@@ -299,6 +321,38 @@ encrypted_data = encrypt_health_data(
 
 ## 📈 使用示例
 
+### M1: 智能对话助手使用 🆕
+
+```python
+from aurawell.agent.conversation_agent import ConversationAgent
+
+# 创建对话智能体
+agent = ConversationAgent(user_id="user_001", demo_mode=True)
+
+# 异步对话交互
+response = await agent.a_run("我今天的活动数据怎么样？")
+print(response)
+# 输出: 根据您的活动数据分析: Activity summary will be implemented.
+#       在演示模式下，我模拟调用了活动摘要工具。建议您每天保持适量运动...
+```
+
+### M1: 工具注册与调用 🆕
+
+```python
+from aurawell.agent.tools_registry import HealthToolsRegistry
+
+# 创建工具注册中心
+registry = HealthToolsRegistry()
+
+# 获取可用工具
+tools = registry.get_tools_schema()
+print(f"可用工具数量: {len(tools)}")
+
+# 调用特定工具
+tool = registry.get_tool("get_user_activity_summary")
+result = await tool("user_001", days=7)
+```
+
 ### 基础用户档案创建
 
 ```python
@@ -412,11 +466,23 @@ python test_complete_system.py
 
 ## 🔮 发展路线图
 
+### 🎯 当前阶段: M1 智能工具注册与调用系统 ✅ (已完成)
+- [x] 智能工具注册中心 HealthToolsRegistry
+- [x] 健康工具函数集 (5个核心工具)
+- [x] 对话智能体核心 ConversationAgent
+- [x] 命令行界面 CLI
+- [x] OpenAI Function Calling 兼容
+
+### 🚀 下一阶段: M2 对话智能体增强 (进行中)
+- [ ] 完善AI交互和意图识别
+- [ ] 扩展更多健康工具
+- [ ] 添加对话记忆管理
+- [ ] 实现FastAPI REST API
+
 ### Phase 5: Web界面开发 ✅ (已完成)
 - [x] Vue 3前端框架集成
 - [x] Vite构建工具配置
 - [x] 现代化前端开发环境
-- [ ] FastAPI后端REST API (进行中)
 - [ ] 实时数据可视化Dashboard
 - [ ] 移动端PWA适配
 - [ ] 用户认证系统

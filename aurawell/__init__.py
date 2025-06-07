@@ -6,9 +6,13 @@ fitness goals, daily routines, dietary preferences, work schedules,
 and social activities to provide contextual recommendations and habit formation support.
 """
 
-__version__ = "0.2.0"
+__version__ = "1.0.0-M1"
 __author__ = "AuraWell Team"
 __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
+
+# M1阶段新增模块
+from .agent import HealthToolsRegistry, ConversationAgent
+from .interfaces import cli_interface
 
 # Core modules - explicit imports to avoid circular dependencies
 # Ensure only existing and relevant modules are imported
