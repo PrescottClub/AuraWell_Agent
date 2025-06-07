@@ -12,7 +12,7 @@
             </a-col>
             <a-col felx="100px">
                 <div class="user-login-status">
-                <a-button type="primary" href="/user/login">LoginIn</a-button>
+                <a-button type="primary" href="/login">LoginIn</a-button>
             </div>
             </a-col>
         </a-row>
