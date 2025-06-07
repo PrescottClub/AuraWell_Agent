@@ -1,0 +1,2 @@
+# 这是仅针对agentExtension下的IntensivePhrase模组的测试，其中包含多个模糊的用户提示
+import pytest
