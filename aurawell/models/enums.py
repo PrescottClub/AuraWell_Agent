@@ -10,6 +10,7 @@ from enum import Enum
 
 class Gender(str, Enum):
     """User gender classification"""
+
     MALE = "male"
     FEMALE = "female"
     OTHER = "other"
@@ -17,6 +18,7 @@ class Gender(str, Enum):
 
 class ActivityLevel(str, Enum):
     """User activity level classification"""
+
     SEDENTARY = "sedentary"
     LIGHTLY_ACTIVE = "lightly_active"
     MODERATELY_ACTIVE = "moderately_active"
@@ -26,6 +28,7 @@ class ActivityLevel(str, Enum):
 
 class HealthGoal(str, Enum):
     """Primary health goals"""
+
     WEIGHT_LOSS = "weight_loss"
     WEIGHT_GAIN = "weight_gain"
     MUSCLE_GAIN = "muscle_gain"
@@ -37,6 +40,7 @@ class HealthGoal(str, Enum):
 
 class HealthPlatform(str, Enum):
     """Supported health data platforms"""
+
     XIAOMI_HEALTH = "XiaomiHealth"
     APPLE_HEALTH = "AppleHealth"
     BOHE_HEALTH = "BoheHealth"
@@ -44,6 +48,7 @@ class HealthPlatform(str, Enum):
 
 class DataQuality(str, Enum):
     """Data quality indicators"""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -52,6 +57,7 @@ class DataQuality(str, Enum):
 
 class HeartRateType(str, Enum):
     """Types of heart rate measurements"""
+
     RESTING = "resting"
     ACTIVE = "active"
     RECOVERY = "recovery"
@@ -61,6 +67,7 @@ class HeartRateType(str, Enum):
 
 class BMICategory(str, Enum):
     """BMI categories according to WHO standards"""
+
     UNDERWEIGHT = "underweight"
     NORMAL = "normal"
     OVERWEIGHT = "overweight"
@@ -71,15 +78,17 @@ class BMICategory(str, Enum):
 
 class HeartRateZone(str, Enum):
     """Heart rate training zones"""
-    RECOVERY = "recovery"          # 50-60% of max HR
+
+    RECOVERY = "recovery"  # 50-60% of max HR
     AEROBIC_BASE = "aerobic_base"  # 60-70% of max HR
-    AEROBIC = "aerobic"            # 70-80% of max HR
-    ANAEROBIC = "anaerobic"        # 80-90% of max HR
-    MAXIMUM = "maximum"            # 90-100% of max HR
+    AEROBIC = "aerobic"  # 70-80% of max HR
+    ANAEROBIC = "anaerobic"  # 80-90% of max HR
+    MAXIMUM = "maximum"  # 90-100% of max HR
 
 
 class SleepStage(str, Enum):
     """Sleep stages"""
+
     AWAKE = "awake"
     LIGHT = "light"
     DEEP = "deep"
@@ -89,6 +98,7 @@ class SleepStage(str, Enum):
 
 class WorkoutType(str, Enum):
     """Types of workouts"""
+
     RUNNING = "running"
     WALKING = "walking"
     CYCLING = "cycling"
@@ -102,6 +112,7 @@ class WorkoutType(str, Enum):
 
 class NotificationType(str, Enum):
     """Types of notifications"""
+
     HEALTH_INSIGHT = "health_insight"
     GOAL_REMINDER = "goal_reminder"
     PLAN_UPDATE = "plan_update"
@@ -112,6 +123,7 @@ class NotificationType(str, Enum):
 
 class NotificationChannel(str, Enum):
     """Notification delivery channels"""
+
     IN_APP = "in_app"
     EMAIL = "email"
     SMS = "sms"
@@ -121,6 +133,7 @@ class NotificationChannel(str, Enum):
 
 class NotificationPriority(str, Enum):
     """Notification priority levels"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -129,6 +142,7 @@ class NotificationPriority(str, Enum):
 
 class AchievementType(str, Enum):
     """Types of achievements in gamification system"""
+
     DAILY_STEPS = "daily_steps"
     WEEKLY_STEPS = "weekly_steps"
     MONTHLY_STEPS = "monthly_steps"
@@ -151,6 +165,7 @@ class AchievementType(str, Enum):
 
 class AchievementDifficulty(str, Enum):
     """Achievement difficulty levels"""
+
     BRONZE = "bronze"
     SILVER = "silver"
     GOLD = "gold"
@@ -160,6 +175,7 @@ class AchievementDifficulty(str, Enum):
 
 class InsightType(str, Enum):
     """Types of health insights"""
+
     ACTIVITY_PATTERN = "activity_pattern"
     SLEEP_QUALITY = "sleep_quality"
     NUTRITION_BALANCE = "nutrition_balance"
@@ -171,6 +187,7 @@ class InsightType(str, Enum):
 
 class InsightPriority(str, Enum):
     """Priority levels for insights"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -179,6 +196,7 @@ class InsightPriority(str, Enum):
 
 class RecommendationCategory(str, Enum):
     """Categories of health recommendations"""
+
     ACTIVITY = "activity"
     NUTRITION = "nutrition"
     SLEEP = "sleep"
@@ -190,6 +208,7 @@ class RecommendationCategory(str, Enum):
 
 class UserPreferenceType(str, Enum):
     """Types of user preferences"""
+
     COMMUNICATION_STYLE = "communication_style"
     REMINDER_FREQUENCY = "reminder_frequency"
     CHALLENGE_DIFFICULTY = "challenge_difficulty"

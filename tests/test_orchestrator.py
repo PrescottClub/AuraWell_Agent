@@ -28,18 +28,18 @@ def test_orchestrator_import():
         status = orchestrator.get_system_status()
         print(f"✅ System status: {status}")
         
-        return True
+        assert True  # Use assertion instead of return
         
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"Test failed: {e}"
 
 if __name__ == "__main__":
-    success = test_orchestrator_import()
-    if success:
+    try:
+        test_orchestrator_import()
         print("\n🎉 All orchestrator tests passed!")
-    else:
-        print("\n💥 Orchestrator tests failed!")
+    except AssertionError as e:
+        print(f"\n💥 Orchestrator tests failed: {e}")
         sys.exit(1)
