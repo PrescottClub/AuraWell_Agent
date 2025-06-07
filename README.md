@@ -43,7 +43,7 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 - **事务支持**: 完整的ACID事务保证和错误恢复
 
 ### 🤖 Phase 1: 核心AI集成 ✅
-- **DeepSeek AI集成**: 智能健康分析和建议生成 (支持deepseek-r1推理模型)
+- **DeepSeek AI集成**: 智能健康分析和建议生成 (支持deepseek-reasoner推理模型)
 - **统一数据模型**: 标准化的健康数据结构，支持多平台数据融合
 - **用户档案管理**: 完整的用户偏好和目标跟踪系统
 - **配置管理**: 灵活的环境配置和结构化日志系统
@@ -79,7 +79,7 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 |------|------|------|
 | **后端框架** | Python 3.8+ | 主要开发语言 |
 | **前端框架** | Vue 3 + Vite | 现代化前端开发 |
-| **AI引擎** | DeepSeek API | 深度推理模型(deepseek-r1) |
+| **AI引擎** | DeepSeek API | 深度推理模型(deepseek-reasoner) |
 | **数据库** | SQLAlchemy 2.0+ | 异步ORM，支持SQLite/PostgreSQL |
 | **数据验证** | Pydantic | 数据模型和验证 |
 | **加密** | Cryptography | 敏感数据加密 |
@@ -492,7 +492,15 @@ python test_complete_system.py
 
 ## 📈 版本历史
 
-### v0.4.0 (2025-06-07) 🆕
+### v0.4.1 (2025-06-07) 🆕
+- ✅ **关键修复**: 修复DeepSeek模型名称错误 (`deepseek-r1` → `deepseek-reasoner`)
+- ✅ **验证通过**: ConversationAgent演示模式bug已修复
+- ✅ **验证通过**: 数据库集成测试全部通过 (7/7)
+- ✅ **验证通过**: 游戏化系统运行正常
+- ✅ **验证通过**: 所有核心模块导入和功能测试通过
+- ✅ 更新文档和配置，确保API调用正常工作
+
+### v0.4.0 (2025-06-07)
 - ✅ 集成SQLAlchemy 2.0+ 异步ORM数据库层
 - ✅ 实现Repository模式数据访问层
 - ✅ 添加数据库迁移和初始化工具

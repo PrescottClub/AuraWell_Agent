@@ -42,7 +42,7 @@ class DeepSeekClient:
     Client for interacting with DeepSeek API
 
     Uses OpenAI library with DeepSeek's base URL for API calls.
-    Prioritizes deepseek-r1 model for reasoning and planning tasks.
+    Prioritizes deepseek-reasoner model for reasoning and planning tasks.
     """
 
     def __init__(self, api_key: Optional[str] = None) -> None:
@@ -66,7 +66,7 @@ class DeepSeekClient:
     def get_deepseek_response(
         self,
         messages: List[Dict[str, str]],
-        model_name: str = "deepseek-r1",
+        model_name: str = "deepseek-reasoner",
         tools: Optional[List[Dict[str, Any]]] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
@@ -76,7 +76,7 @@ class DeepSeekClient:
 
         Args:
             messages: List of message dicts with 'role' and 'content'
-            model_name: DeepSeek model name (default: deepseek-r1 for reasoning)
+            model_name: DeepSeek model name (default: deepseek-reasoner for reasoning)
             tools: Optional list of function tool definitions for function calling
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens in response
@@ -228,7 +228,7 @@ def demo_function_calling():
     ]
 
     try:
-        response = client.get_deepseek_response(messages=messages, tools=tools, model_name="deepseek-r1")
+        response = client.get_deepseek_response(messages=messages, tools=tools, model_name="deepseek-reasoner")
 
         print(f"Response: {response.content}")
 
