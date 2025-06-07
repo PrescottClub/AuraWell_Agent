@@ -35,6 +35,13 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 - **命令行界面**: 功能完整的CLI，支持演示模式和真实AI模式
 - **OpenAI Function Calling**: 完全兼容的工具调用schema和执行流程
 
+### 🗄️ 数据库层: SQLAlchemy集成 ✅ **NEW!**
+- **关系数据库支持**: SQLAlchemy 2.0+ 异步ORM，支持SQLite/PostgreSQL
+- **Repository模式**: 完整的数据访问层，支持CRUD和复杂查询
+- **数据库迁移**: 自动化schema管理和数据库初始化
+- **数据持久化**: 用户档案、健康数据、成就进度的可靠存储
+- **事务支持**: 完整的ACID事务保证和错误恢复
+
 ### 🤖 Phase 1: 核心AI集成 ✅
 - **DeepSeek AI集成**: 智能健康分析和建议生成 (支持deepseek-r1推理模型)
 - **统一数据模型**: 标准化的健康数据结构，支持多平台数据融合
@@ -73,6 +80,7 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 | **后端框架** | Python 3.8+ | 主要开发语言 |
 | **前端框架** | Vue 3 + Vite | 现代化前端开发 |
 | **AI引擎** | DeepSeek API | 深度推理模型(deepseek-r1) |
+| **数据库** | SQLAlchemy 2.0+ | 异步ORM，支持SQLite/PostgreSQL |
 | **数据验证** | Pydantic | 数据模型和验证 |
 | **加密** | Cryptography | 敏感数据加密 |
 | **日志** | 结构化日志 | 安全审计和监控 |
@@ -163,6 +171,12 @@ npm run dev
 # 访问 http://localhost:5173
 ```
 
+6. **数据库集成测试** ✅ **NEW!**
+验证SQLAlchemy数据库集成功能：
+```bash
+python test_database_integration.py
+```
+
 ## 📊 项目结构
 
 ```
@@ -186,6 +200,21 @@ aurawell/                          # 主应用包
 │   ├── health_data_model.py       # 健康数据模型
 │   ├── user_profile.py            # 用户档案模型
 │   └── health_data_parser.py      # 数据解析器
+├── database/                      # 🆕 数据库层
+│   ├── __init__.py                # 数据库模块导出
+│   ├── connection.py              # 数据库连接管理
+│   ├── base.py                    # SQLAlchemy基础类
+│   ├── models.py                  # 数据库ORM模型
+│   └── migrations.py              # 数据库迁移工具
+├── repositories/                  # 🆕 数据访问层
+│   ├── __init__.py                # Repository模块导出
+│   ├── base.py                    # Repository基础类
+│   ├── user_repository.py         # 用户数据Repository
+│   ├── health_data_repository.py  # 健康数据Repository
+│   └── achievement_repository.py  # 成就数据Repository
+├── services/                      # 🆕 业务服务层
+│   ├── __init__.py                # 服务模块导出
+│   └── database_service.py        # 数据库服务
 ├── integrations/                  # 第三方集成
 │   ├── generic_health_api_client.py  # 通用API客户端
 │   ├── xiaomi_health_client.py    # 小米健康
@@ -393,6 +422,39 @@ insights = await orchestrator.analyze_health_data(user_id="user_001")
 plan = await orchestrator.create_health_plan(user_id="user_001")
 ```
 
+### 数据库操作 🆕
+
+```python
+from aurawell.services.database_service import DatabaseService
+from aurawell.models.user_profile import UserProfile, Gender
+
+# 创建数据库服务
+db_service = DatabaseService()
+
+# 创建用户档案
+user_profile = UserProfile(
+    user_id="user_001",
+    display_name="张小明",
+    age=28,
+    gender=Gender.MALE
+)
+await db_service.create_user_profile(user_profile)
+
+# 保存健康数据
+from aurawell.models.health_data_model import UnifiedActivitySummary
+activity = UnifiedActivitySummary(
+    date="2025-01-15",
+    steps=12000,
+    distance_meters=8500.0,
+    active_calories=450.0
+)
+await db_service.save_activity_data("user_001", activity)
+
+# 查询数据
+activity_summary = await db_service.get_activity_summary("user_001", days=7)
+user_achievements = await db_service.get_user_achievements("user_001")
+```
+
 ## 🧪 演示程序
 
 项目核心功能已稳定运行：
@@ -430,7 +492,16 @@ python test_complete_system.py
 
 ## 📈 版本历史
 
-### v0.3.0 (2025-06-06) 🆕
+### v0.4.0 (2025-01-15) 🆕
+- ✅ 集成SQLAlchemy 2.0+ 异步ORM数据库层
+- ✅ 实现Repository模式数据访问层
+- ✅ 添加数据库迁移和初始化工具
+- ✅ 支持SQLite和PostgreSQL数据库
+- ✅ 完整的数据持久化：用户档案、健康数据、成就系统
+- ✅ 数据库服务层和事务管理
+- ✅ 全面的数据库集成测试套件
+
+### v0.3.0 (2025-01-14)
 - ✅ 添加Vue 3 + Vite前端框架
 - ✅ 修复重大bug和代码质量问题
 - ✅ 重构数据模型验证逻辑

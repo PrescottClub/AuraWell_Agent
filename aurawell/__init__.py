@@ -6,19 +6,42 @@ fitness goals, daily routines, dietary preferences, work schedules,
 and social activities to provide contextual recommendations and habit formation support.
 """
 
-__version__ = "1.0.0-M1"
+__version__ = "0.4.0"
 __author__ = "AuraWell Team"
 __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
 
-# M1阶段新增模块
+# Core modules
 from .agent import HealthToolsRegistry, ConversationAgent
 from .interfaces import cli_interface
 
-# Core modules - explicit imports to avoid circular dependencies
-# Ensure only existing and relevant modules are imported
-# from .core import DeepSeekClient, AuraWellOrchestrator # Example, adjust as needed
-# from .models import UserProfile, UnifiedActivitySummary # Example, adjust as needed
-# from .integrations import GenericHealthAPIClient # Example, adjust as needed
-# from .utils import calculate_bmi, calculate_bmr # Example, adjust as needed
+# v0.4.0 新增：数据库层
+from .database import DatabaseManager, get_database_manager
+from .services import DatabaseService
+from .repositories import UserRepository, HealthDataRepository, AchievementRepository
 
-# Removed references to services, database, monitoring as per simplification
+# 核心数据模型
+from .models.user_profile import UserProfile
+from .models.health_data_model import UnifiedActivitySummary, UnifiedSleepSession
+from .models.enums import HealthPlatform, DataQuality
+
+# 工具函数
+from .utils import calculate_bmi, calculate_bmr
+
+__all__ = [
+    # 版本信息
+    "__version__", "__author__", "__description__",
+
+    # 智能代理
+    "HealthToolsRegistry", "ConversationAgent", "cli_interface",
+
+    # 数据库层
+    "DatabaseManager", "get_database_manager", "DatabaseService",
+    "UserRepository", "HealthDataRepository", "AchievementRepository",
+
+    # 数据模型
+    "UserProfile", "UnifiedActivitySummary", "UnifiedSleepSession",
+    "HealthPlatform", "DataQuality",
+
+    # 工具函数
+    "calculate_bmi", "calculate_bmr",
+]
