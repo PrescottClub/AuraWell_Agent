@@ -65,9 +65,9 @@ class ConversationAgent:
             # 简化处理，直接返回回复
             ai_response = response
             self.history.append({"role": "assistant", "content": ai_response})
-            
-            # 在演示模式下检查是否需要调用工具
-            return await self._demo_response(user_message)
+
+            # 返回实际的API响应
+            return ai_response
             
         except Exception as e:
             print(f"API调用失败: {e}")
