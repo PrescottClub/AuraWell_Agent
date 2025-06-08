@@ -1,2 +1,2 @@
-# 这是仅针对agentExtension下的ContextManagement模组的单元测试
+# 这是仅针对agentExtension下的ContextManagement模组的单元测试。等ContextManagement模组开发完毕之后再编写该项测试
 import pytest
