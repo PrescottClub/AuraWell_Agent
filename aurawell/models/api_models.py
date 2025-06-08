@@ -49,7 +49,6 @@ class TokenResponse(BaseResponse):
 class ChatRequest(BaseModel):
     """Chat conversation request"""
     message: str = Field(..., min_length=1, max_length=1000)
-    user_id: str = Field(..., min_length=1)
     context: Optional[Dict[str, Any]] = None
 
 
@@ -70,7 +69,10 @@ class UserProfileRequest(BaseModel):
     gender: Optional[str] = Field(None, pattern="^(male|female|other)$")
     height_cm: Optional[float] = Field(None, ge=50, le=300)
     weight_kg: Optional[float] = Field(None, ge=20, le=500)
-    activity_level: Optional[str] = Field(None, pattern="^(sedentary|light|moderate|active|very_active)$")
+    activity_level: Optional[str] = Field(
+        None,
+        pattern="^(sedentary|lightly_active|moderately_active|very_active|extremely_active)$"
+    )
 
 
 class UserProfileResponse(BaseResponse):
