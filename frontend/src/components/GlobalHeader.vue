@@ -4,7 +4,7 @@
             <a-col felx="100px">
                 <div class="title-bar">
                 <img src="../../public/vite.svg" class="logo">
-                <div class="title">title</div>
+                <div class="title">Auraweell Agent</div>
             </div>
             </a-col>
             <a-col flex="auto">
@@ -76,6 +76,12 @@ const items = ref([
 </script>
 
 <style scoped>
+#globalHeader {
+    padding: 0 50px;
+    background-color: #fff;
+    box-shadow: 0 2px rgba(0, 0, 0, 0.15);
+}
+
 .title-bar {
     display: flex;
     align-items: center;
@@ -90,6 +96,7 @@ const items = ref([
 .logo {
     height: 18px;
 }
+
 
 
 </style>
