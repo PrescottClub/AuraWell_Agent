@@ -28,15 +28,7 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
 
 ## ✨ 功能特性
 
-### 🚀 M2-7: 集成所有模块并优化对话流程 ✅ **NEW!**
-- **智能意图识别**: IntentParser模块，支持10种意图类型，置信度达0.95
-- **对话历史管理**: MemoryManager模块，支持多用户独立历史，限制10轮对话
-- **会话管理**: SessionManager模块，支持会话创建、上下文维护、超时处理
-- **完全重构ConversationAgent**: 集成所有新模块，优化对话流程
-- **数据库优化**: 新增conversation_history和user_sessions表，修复异步查询
-- **端到端测试**: 测试通过率100%，功能完整且流畅
-
-### 🚀 M2-6: FastAPI REST API接口 ✅
+### 🚀 M2: FastAPI REST API接口 ✅ **NEW!**
 - **完整REST API**: 10个核心API端点，超过要求的8个
 - **JWT认证系统**: Bearer Token认证，安全的用户会话管理
 - **自动文档生成**: Swagger UI + ReDoc，完整的OpenAPI规范
