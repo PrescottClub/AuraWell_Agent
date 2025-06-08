@@ -4,7 +4,6 @@ import App from '../App.vue';
 import BasicLayout from '../layout/BasicLayout.vue';
 import Login from '../views/Login.vue';
 import AdminLayout from '../layout/AdminLayout.vue';
-import Welcome from '../views/admin/Welcome.vue';
 
 const routes = [
   {
@@ -29,11 +28,6 @@ const routes = [
     component: AdminLayout,
     meta: { requiresAuth: true },
     children: [
-      {
-        path: '',
-        name: 'Welcome',
-        component: Welcome
-      },
       {
         path: 'dashboard',
         name: 'Dashboard',

@@ -51,38 +51,31 @@ import { reactive, ref } from 'vue';
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
-import request from '../utils/request';
-import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const loading = ref(false);
 const formState = reactive({
-    username: 'demo_user',
-    password: 'demo_password',
+    username: '',
+    password: '',
     remember: true,
 });
 
 const onFinish = async (values) => {
     try {
         loading.value = true;
-        const response = await request.post('/auth/login', {
-            username: values.username,
-            password: values.password
-        });
-
-        // 使用store保存token
-        authStore.setToken(
-            response.access_token,
-            response.token_type,
-            response.expires_in
-        );
-        localStorage.setItem('isLoggedIn', 'true');
+        // 这里添加实际的登录API调用
+        // const response = await loginApi(values);
+        
+        // 模拟登录成功
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         message.success('登录成功！');
+        // 存储登录状态
+        localStorage.setItem('isLoggedIn', 'true');
+        // 跳转到管理页面
         router.push('/admin');
     } catch (error) {
-        console.error('登录失败：', error);
+        message.error('登录失败：' + (error.message || '未知错误'));
     } finally {
         loading.value = false;
     }
