@@ -49,7 +49,6 @@ class TokenResponse(BaseResponse):
 class ChatRequest(BaseModel):
     """Chat conversation request"""
     message: str = Field(..., min_length=1, max_length=1000)
-    user_id: str = Field(..., min_length=1)
     context: Optional[Dict[str, Any]] = None
 
 

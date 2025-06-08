@@ -135,19 +135,19 @@ async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depend
     return authenticator.get_current_user_id(credentials.credentials)
 
 
-async def get_optional_user_id(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[str]:
+async def get_optional_user_id(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> Optional[str]:
     """
     FastAPI dependency to optionally get user ID from JWT token
-    
+
     Args:
         credentials: Optional HTTP Bearer credentials
-        
+
     Returns:
         User ID if authenticated, None otherwise
     """
     if credentials is None:
         return None
-    
+
     try:
         return authenticator.get_current_user_id(credentials.credentials)
     except HTTPException:
