@@ -4,7 +4,10 @@
             <h2 class="login-title">登录</h2>
             <a-form :model="formState" name="login" @finish="onFinish" @finishFailed="onFinishFailed"
                 autocomplete="off">
-                <a-form-item name="username" :rules="[{ required: true, message: '请输入用户名!' }]">
+                <a-form-item name="username" :rules="[
+                    { required: true, message: '请输入用户名!' },
+                    { min: 3, message: '用户名至少3个字符!' }
+                ]">
                     <a-input v-model:value="formState.username" placeholder="用户名">
                         <template #prefix>
                             <UserOutlined />
@@ -12,7 +15,10 @@
                     </a-input>
                 </a-form-item>
 
-                <a-form-item name="password" :rules="[{ required: true, message: '请输入密码!' }]">
+                <a-form-item name="password" :rules="[
+                    { required: true, message: '请输入密码!' },
+                    { min: 6, message: '密码至少6个字符!' }
+                ]">
                     <a-input-password v-model:value="formState.password" placeholder="密码">
                         <template #prefix>
                             <LockOutlined />
@@ -26,7 +32,7 @@
                 </a-form-item>
 
                 <a-form-item>
-                    <a-button type="primary" html-type="submit" class="login-button">
+                    <a-button type="primary" html-type="submit" class="login-button" :loading="loading">
                         登录
                     </a-button>
                 </a-form-item>
@@ -40,38 +46,45 @@
     </div>
 </template>
 
-<script>
-import { defineComponent, reactive } from 'vue';
+<script setup>
+import { reactive, ref } from 'vue';
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
+import { useRouter } from 'vue-router';
 
-export default defineComponent({
-    name: 'Login',
-    components: {
-        UserOutlined,
-        LockOutlined,
-    },
-    setup() {
-        const formState = reactive({
-            username: '',
-            password: '',
-            remember: true,
-        });
-
-        const onFinish = (values) => {
-            console.log('Success:', values);
-        };
-
-        const onFinishFailed = (errorInfo) => {
-            console.log('Failed:', errorInfo);
-        };
-
-        return {
-            formState,
-            onFinish,
-            onFinishFailed,
-        };
-    },
+const router = useRouter();
+const loading = ref(false);
+const formState = reactive({
+    username: '',
+    password: '',
+    remember: true,
 });
+
+const onFinish = async (values) => {
+    try {
+        loading.value = true;
+        // 这里添加实际的登录API调用
+        // const response = await loginApi(values);
+        
+        // 模拟登录成功
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        message.success('登录成功！');
+        // 存储登录状态
+        localStorage.setItem('isLoggedIn', 'true');
+        // 跳转到管理页面
+        router.push('/admin');
+    } catch (error) {
+        message.error('登录失败：' + (error.message || '未知错误'));
+    } finally {
+        loading.value = false;
+    }
+};
+
+const onFinishFailed = (errorInfo) => {
+    console.log('Failed:', errorInfo);
+    message.error('请检查输入信息！');
+};
 </script>
 
 <style scoped>
