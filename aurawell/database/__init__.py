@@ -16,16 +16,21 @@ from .models import (
     AchievementProgressDB,
     PlatformConnectionDB,
 )
+# Import conversation models to ensure they're registered with Base
+from ..conversation.memory_manager import ConversationHistory
+from ..conversation.session_manager import UserSession
 
 __all__ = [
     "DatabaseManager",
     "get_database_manager",
     "Base",
     "UserProfileDB",
-    "ActivitySummaryDB", 
+    "ActivitySummaryDB",
     "SleepSessionDB",
     "HeartRateSampleDB",
     "NutritionEntryDB",
     "AchievementProgressDB",
     "PlatformConnectionDB",
+    "ConversationHistory",
+    "UserSession",
 ]
