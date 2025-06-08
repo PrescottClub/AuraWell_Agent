@@ -312,16 +312,23 @@ async def get_user_profile(
                 # Return a temporary profile without saving to database
                 user_profile = default_profile
 
+        # Handle response formatting for both database and Pydantic models
+        if hasattr(user_profile, 'created_at'):
+            # Database model - convert to Pydantic first
+            if hasattr(user_profile, 'user_id') and not hasattr(user_profile, 'gender'):
+                # This is a database model, convert it
+                user_profile = user_repo.to_pydantic(user_profile)
+
         return UserProfileResponse(
             message="User profile retrieved successfully",
             user_id=user_profile.user_id,
             display_name=user_profile.display_name,
             email=user_profile.email,
             age=user_profile.age,
-            gender=user_profile.gender,
+            gender=user_profile.gender.value if hasattr(user_profile.gender, 'value') else user_profile.gender,
             height_cm=user_profile.height_cm,
             weight_kg=user_profile.weight_kg,
-            activity_level=user_profile.activity_level,
+            activity_level=user_profile.activity_level.value if hasattr(user_profile.activity_level, 'value') else user_profile.activity_level,
             created_at=user_profile.created_at,
             updated_at=user_profile.updated_at
         )
@@ -363,37 +370,63 @@ async def update_user_profile(
         if not existing_profile:
             # Create new profile if doesn't exist
             from ..models.user_profile import UserProfile
+            from ..models.enums import Gender, ActivityLevel
+
+            # Convert string values to enums if provided
+            gender_enum = None
+            if profile_update.gender:
+                gender_enum = Gender(profile_update.gender)
+
+            activity_level_enum = None
+            if profile_update.activity_level:
+                activity_level_enum = ActivityLevel(profile_update.activity_level)
 
             new_profile = UserProfile(
                 user_id=current_user_id,
                 display_name=profile_update.display_name,
                 email=profile_update.email,
                 age=profile_update.age,
-                gender=profile_update.gender,
+                gender=gender_enum,
                 height_cm=profile_update.height_cm,
                 weight_kg=profile_update.weight_kg,
-                activity_level=profile_update.activity_level
+                activity_level=activity_level_enum
             )
 
             updated_profile = await user_repo.create_user(new_profile)
         else:
             # Update existing profile
             update_data = profile_update.model_dump(exclude_unset=True)
-            updated_profile = await user_repo.update_user(current_user_id, update_data)
 
-        return UserProfileResponse(
-            message="User profile updated successfully",
-            user_id=updated_profile.user_id,
-            display_name=updated_profile.display_name,
-            email=updated_profile.email,
-            age=updated_profile.age,
-            gender=updated_profile.gender,
-            height_cm=updated_profile.height_cm,
-            weight_kg=updated_profile.weight_kg,
-            activity_level=updated_profile.activity_level,
-            created_at=updated_profile.created_at,
-            updated_at=updated_profile.updated_at
-        )
+            # Convert string enum values to proper enum values for database
+            if 'gender' in update_data and update_data['gender']:
+                update_data['gender'] = update_data['gender']  # Keep as string for DB
+            if 'activity_level' in update_data and update_data['activity_level']:
+                update_data['activity_level'] = update_data['activity_level']  # Keep as string for DB
+
+            updated_profile = await user_repo.update_user_profile(current_user_id, **update_data)
+
+        # Convert database model to Pydantic model for response
+        if updated_profile:
+            profile_pydantic = user_repo.to_pydantic(updated_profile)
+
+            return UserProfileResponse(
+                message="User profile updated successfully",
+                user_id=profile_pydantic.user_id,
+                display_name=profile_pydantic.display_name,
+                email=profile_pydantic.email,
+                age=profile_pydantic.age,
+                gender=profile_pydantic.gender.value if profile_pydantic.gender else None,
+                height_cm=profile_pydantic.height_cm,
+                weight_kg=profile_pydantic.weight_kg,
+                activity_level=profile_pydantic.activity_level.value if profile_pydantic.activity_level else None,
+                created_at=updated_profile.created_at,
+                updated_at=updated_profile.updated_at
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create or update user profile"
+            )
 
     except Exception as e:
         logger.error(f"Failed to update user profile: {e}")
