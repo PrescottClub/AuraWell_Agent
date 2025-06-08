@@ -46,6 +46,8 @@ class HealthToolsRegistry:
             result = await tool_func(**parameters)
             return result
         except Exception as e:
+            import logging
+            logging.exception(f"An error occurred while executing tool '{tool_name}': {e}")
             return {
                 "status": "error",
                 "error": str(e),

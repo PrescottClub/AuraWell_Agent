@@ -259,7 +259,10 @@ def validate_goals(goals: Dict[str, Any]) -> bool:
             return False
 
     if 'target_date' in goals:
-        if goals['target_date'] is not None and not validate_date_string(str(goals['target_date'])):
-            return False
+        if goals['target_date'] is not None:
+            if not isinstance(goals['target_date'], str):
+                return False
+            if not validate_date_string(goals['target_date']):
+                return False
 
     return True
