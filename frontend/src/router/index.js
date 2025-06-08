@@ -8,8 +8,14 @@ import AdminLayout from '../layout/AdminLayout.vue';
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: BasicLayout
+    component: BasicLayout,
+    children: [
+      {
+        path: '',
+        name: 'Home',
+        component: () => import('../views/user/Home.vue')
+      }
+    ]
   },
   {
     path: '/login',

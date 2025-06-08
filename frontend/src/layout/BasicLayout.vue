@@ -5,7 +5,7 @@
                 <GlobalHeader />
             </a-layout-header>
             <a-layout-content class="content">
-                
+                <router-view />
             </a-layout-content>
             <a-layout-footer class="footer">
                 Ant Design ©2018 Created by Ant UED
@@ -31,8 +31,9 @@ import GlobalHeader from '../components/GlobalHeader.vue';
 }
 
 #basicLayout .content {
-    padding: 20px;
+    padding: 0 180px;
     margin-bottom: 20px;
+    border-color: #fff;
     background-color: linear-gradient(to right,#fefefe,#fff);
 }
 
@@ -41,5 +42,8 @@ import GlobalHeader from '../components/GlobalHeader.vue';
     margin-bottom: 16px;
     color: unset;
     padding-inline: 20px;
+    padding: 0 180px;
 }
+
+
 </style>
