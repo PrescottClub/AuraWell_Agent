@@ -450,3 +450,37 @@ def get_recommended_sleep_window(target_wake_time: time, target_sleep_duration_h
     bedtime_minute = bedtime_minutes % 60
 
     return time(bedtime_hour, bedtime_minute)
+
+
+def parse_date_range(date_range: str) -> Tuple[date, date]:
+    """
+    Parse a date range string.
+
+    Args:
+        date_range: A date range string in the format "YYYY-MM-DD_to_YYYY-MM-DD".
+                    The "_to_" separator is case-sensitive and required for proper parsing.
+
+    Returns:
+        Tuple of (start_date, end_date)
+
+    Raises:
+        ValueError: If the date format is incorrect or the "_to_" separator is missing.
+    """
+    try:
+        if "_to_" not in date_range:
+            raise ValueError("Date range must contain '_to_' separator")
+
+        start_str, end_str = date_range.split("_to_")
+        start_date = datetime.strptime(start_str.strip(), "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_str.strip(), "%Y-%m-%d").date()
+
+        if start_date > end_date:
+            raise ValueError("Start date must be before or equal to end date")
+
+        return start_date, end_date
+
+    except ValueError as e:
+        if "time data" in str(e):
+            raise ValueError(f"Invalid date format in range: {date_range}. Expected format: YYYY-MM-DD_to_YYYY-MM-DD")
+        else:
+            raise

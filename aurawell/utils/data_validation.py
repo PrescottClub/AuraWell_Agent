@@ -164,3 +164,105 @@ def validate_data_quality_score(score: float) -> bool:
         True if valid score (0.0-1.0), False otherwise
     """
     return isinstance(score, (float, int)) and 0.0 <= score <= 1.0
+
+
+def validate_user_id(user_id: str) -> bool:
+    """
+    验证用户ID格式
+
+    Args:
+        user_id: 用户ID
+
+    Returns:
+        True if valid user ID, False otherwise
+    """
+    if not isinstance(user_id, str):
+        return False
+
+    # 用户ID应该是非空字符串，长度在3-50之间，只包含字母数字和下划线
+    if not user_id or len(user_id) < 3 or len(user_id) > 50:
+        return False
+
+    pattern = r"^[a-zA-Z0-9_]+$"
+    return bool(re.match(pattern, user_id))
+
+
+def validate_date_range(date_range: str) -> bool:
+    """
+    验证日期范围格式
+
+    Args:
+        date_range: 日期范围字符串，格式如 "2024-01-01_to_2024-01-07"
+
+    Returns:
+        True if valid date range format, False otherwise
+    """
+    if not isinstance(date_range, str):
+        return False
+
+    try:
+        if "_to_" not in date_range:
+            return False
+
+        start_str, end_str = date_range.split("_to_")
+
+        # 验证日期格式
+        if not validate_date_string(start_str.strip()) or not validate_date_string(end_str.strip()):
+            return False
+
+        # 验证日期逻辑
+        start_date = datetime.strptime(start_str.strip(), "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_str.strip(), "%Y-%m-%d").date()
+
+        return start_date <= end_date
+
+    except (ValueError, AttributeError):
+        return False
+
+
+def validate_goals(goals: Dict[str, Any]) -> bool:
+    """
+    验证健康目标数据
+
+    Args:
+        goals: 健康目标字典
+
+    Returns:
+        True if valid goals data, False otherwise
+    """
+    if not isinstance(goals, dict) or not goals:
+        return False
+
+    valid_goal_keys = {
+        'daily_steps', 'sleep_hours', 'daily_calories', 'weight_target', 'target_date'
+    }
+
+    # 检查是否包含有效的目标键
+    if not any(key in goals for key in valid_goal_keys):
+        return False
+
+    # 验证各个目标值
+    if 'daily_steps' in goals:
+        if not isinstance(goals['daily_steps'], (int, float)) or not 1000 <= goals['daily_steps'] <= 50000:
+            return False
+
+    if 'sleep_hours' in goals:
+        if not isinstance(goals['sleep_hours'], (int, float)) or not 4.0 <= goals['sleep_hours'] <= 12.0:
+            return False
+
+    if 'daily_calories' in goals:
+        if not isinstance(goals['daily_calories'], (int, float)) or not 200 <= goals['daily_calories'] <= 5000:
+            return False
+
+    if 'weight_target' in goals:
+        if not isinstance(goals['weight_target'], (int, float)) or not 30 <= goals['weight_target'] <= 300:
+            return False
+
+    if 'target_date' in goals:
+        if goals['target_date'] is not None:
+            if not isinstance(goals['target_date'], str):
+                return False
+            if not validate_date_string(goals['target_date']):
+                return False
+
+    return True
