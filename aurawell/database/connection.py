@@ -57,7 +57,19 @@ class DatabaseManager:
         # Default to SQLite in project directory
         db_path = os.path.join(os.getcwd(), "aurawell.db")
         return f"sqlite+aiosqlite:///{db_path}"
-    
+    # 在June082025的修复中添加如下方法，启用实例级别的监听器，方便未来的测试
+    def has_sqlite_listener(self) -> bool:
+        """检查是否已注册SQLite监听器"""
+        if not self.engine:
+            return False
+
+        # 检查实例级别的事件监听器
+        listeners = event.get(self.engine.sync_engine, "connect")
+        return any(
+            "set_sqlite_pragma" in str(listener).lower()
+            for listener in listeners
+        )
+
     async def initialize(self) -> None:
         """
         Initialize database engine and create tables
@@ -117,25 +129,37 @@ class DatabaseManager:
             })
         
         return kwargs
-    
+
+    # 在June082025的修复中，修改 _configure_sqlite 方法，使得其可以适配内存数据库级别的测试，理论上不会影响实际数据库的使用
     def _configure_sqlite(self) -> None:
-        """Configure SQLite for better performance and concurrency"""
+        """配置 SQLite 数据库，区分内存和文件数据库"""
         if not self.engine:
             return
-        
-        @event.listens_for(self.engine.sync_engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            """Set SQLite pragmas for better performance"""
-            cursor = dbapi_connection.cursor()
-            # Enable WAL mode for better concurrency
-            cursor.execute("PRAGMA journal_mode=WAL")
-            # Enable foreign key constraints
-            cursor.execute("PRAGMA foreign_keys=ON")
-            # Optimize for speed
-            cursor.execute("PRAGMA synchronous=NORMAL")
-            cursor.execute("PRAGMA cache_size=10000")
-            cursor.execute("PRAGMA temp_store=MEMORY")
-            cursor.close()
+
+        # 对于内存数据库，只设置必要的 PRAGMA，使得内存数据库的测试可以进行下去
+        if ":memory:" in self.database_url:
+            logger.debug("Configuring in-memory SQLite")
+
+            @event.listens_for(self.engine.sync_engine, "connect")
+            def set_memory_pragma(dbapi_connection, connection_record):
+                """设置内存数据库的 PRAGMA"""
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.close()
+        else:
+            logger.debug("Configuring persistent SQLite")
+
+            @event.listens_for(self.engine.sync_engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                """设置 SQLite PRAGMA 以获得更好性能"""
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.execute("PRAGMA cache_size=10000")
+                cursor.execute("PRAGMA temp_store=MEMORY")
+                cursor.close()
     
     async def _create_tables(self) -> None:
         """Create all database tables"""
@@ -185,11 +209,15 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Database health check failed: {e}")
             return False
-    
+
     async def close(self) -> None:
         """Close database connections"""
+        # 进行了适当修改，在释放引擎时重置其相关属性
         if self.engine:
             await self.engine.dispose()
+            self.engine = None
+            self.session_factory = None
+            self._initialized = False
             logger.info("Database connections closed")
 
 
