@@ -6,6 +6,8 @@
 
 import json
 import logging
+import hashlib
+import time
 from typing import Dict, Any
 from enum import Enum
 
@@ -35,14 +37,25 @@ class IntentParser:
     通过DeepSeek API分析用户请求并输出结构化意图信息。
     """
 
-    def __init__(self):
-        """初始化意图解析器"""
-        self.deepseek_client = DeepSeekClient()
+    def __init__(self, fast_mode: bool = False):
+        """
+        初始化意图解析器
+
+        Args:
+            fast_mode: 快速模式，使用本地规则而不是API调用
+        """
+        self.fast_mode = fast_mode
+        self.deepseek_client = DeepSeekClient() if not fast_mode else None
         self.intent_examples = self._load_intent_examples()
+
+        # 缓存机制
+        self.intent_cache = {}  # 意图识别结果缓存
+        self.cache_ttl = 300  # 缓存5分钟
+        self.max_cache_size = 1000  # 最大缓存条目数
 
     async def parse_intent(self, user_request: str) -> Dict[str, Any]:
         """
-        解析用户意图
+        解析用户意图（带缓存优化）
 
         Args:
             user_request: 用户请求字符串
@@ -55,6 +68,13 @@ class IntentParser:
             }
         """
         try:
+            # 检查缓存
+            cache_key = self._get_cache_key(user_request)
+            cached_result = self._get_from_cache(cache_key)
+            if cached_result:
+                logger.info("Intent retrieved from cache: %s", cached_result['RequestType'])
+                return cached_result
+
             # 构建意图识别prompt
             prompt = self._build_intent_prompt(user_request)
 
@@ -72,6 +92,9 @@ class IntentParser:
 
             # 验证和标准化结果
             validated_result = self._validate_intent_result(intent_result)
+
+            # 存储到缓存
+            self._store_to_cache(cache_key, validated_result)
 
             logger.info("Intent parsed: %s (confidence: %.2f)",
                        validated_result['RequestType'], validated_result['confidence'])
@@ -176,6 +199,42 @@ class IntentParser:
             "RequestType": request_type,
             "RequestContent": request_content,
             "confidence": confidence
+        }
+
+    def _get_cache_key(self, user_request: str) -> str:
+        """生成缓存键"""
+        # 标准化用户请求（去除空格、转小写）
+        normalized_request = user_request.strip().lower()
+        # 使用MD5哈希生成缓存键
+        return hashlib.md5(normalized_request.encode('utf-8')).hexdigest()
+
+    def _get_from_cache(self, cache_key: str) -> Dict[str, Any]:
+        """从缓存获取结果"""
+        if cache_key not in self.intent_cache:
+            return None
+
+        cache_entry = self.intent_cache[cache_key]
+        current_time = time.time()
+
+        # 检查是否过期
+        if current_time - cache_entry['timestamp'] > self.cache_ttl:
+            del self.intent_cache[cache_key]
+            return None
+
+        return cache_entry['result']
+
+    def _store_to_cache(self, cache_key: str, result: Dict[str, Any]) -> None:
+        """存储结果到缓存"""
+        # 如果缓存已满，删除最旧的条目
+        if len(self.intent_cache) >= self.max_cache_size:
+            oldest_key = min(self.intent_cache.keys(),
+                           key=lambda k: self.intent_cache[k]['timestamp'])
+            del self.intent_cache[oldest_key]
+
+        # 存储新结果
+        self.intent_cache[cache_key] = {
+            'result': result,
+            'timestamp': time.time()
         }
 
     def _load_intent_examples(self) -> Dict[str, list]:
