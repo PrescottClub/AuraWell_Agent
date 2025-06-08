@@ -43,6 +43,7 @@ class DatabaseManager:
         self.engine: Optional[AsyncEngine] = None
         self.session_factory: Optional[async_sessionmaker[AsyncSession]] = None
         self._initialized = False
+        self.sqlite_listener_registered = False
     
     def _get_database_url(self) -> str:
         """
@@ -60,15 +61,8 @@ class DatabaseManager:
     # 在June082025的修复中添加如下方法，启用实例级别的监听器，方便未来的测试
     def has_sqlite_listener(self) -> bool:
         """检查是否已注册SQLite监听器"""
-        if not self.engine:
-            return False
-
-        # 检查实例级别的事件监听器
-        listeners = event.get(self.engine.sync_engine, "connect")
-        return any(
-            "set_sqlite_pragma" in str(listener).lower()
-            for listener in listeners
-        )
+        # 使用状态标志替代直接检查事件注册
+        return self.sqlite_listener_registered
 
     async def initialize(self) -> None:
         """
@@ -135,7 +129,8 @@ class DatabaseManager:
         """配置 SQLite 数据库，区分内存和文件数据库"""
         if not self.engine:
             return
-
+        # 设置一个状态标志，用于跟踪监听器的状态
+        self.sqlite_listener_registered = True
         # 对于内存数据库，只设置必要的 PRAGMA，使得内存数据库的测试可以进行下去
         if ":memory:" in self.database_url:
             logger.debug("Configuring in-memory SQLite")
