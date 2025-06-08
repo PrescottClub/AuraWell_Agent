@@ -99,15 +99,69 @@ class TestProtectedEndpoints:
             assert "reply" in data
     
     def test_user_profile_get(self, auth_headers):
-        """Test get user profile endpoint"""
+        """Test get user profile endpoint - should create default profile if none exists"""
         with patch('aurawell.interfaces.api_interface.get_user_repository') as mock_repo:
             # Mock user repository
             mock_repo_instance = AsyncMock()
-            mock_repo_instance.get_user_profile.return_value = None
+            mock_repo_instance.get_user_by_id.return_value = None  # No existing profile
+            mock_repo_instance.create_user.return_value = None  # Mock creation failure
             mock_repo.return_value = mock_repo_instance
-            
+
             response = client.get("/api/v1/user/profile", headers=auth_headers)
-            assert response.status_code == 404  # User not found
+            assert response.status_code == 200  # Should return default profile
+            data = response.json()
+            assert data["status"] == "success"
+            assert "user_id" in data
+
+    def test_user_profile_put(self, auth_headers):
+        """Test update user profile endpoint"""
+        with patch('aurawell.interfaces.api_interface.get_user_repository') as mock_repo:
+            # Mock user repository
+            mock_repo_instance = AsyncMock()
+            mock_repo_instance.get_user_by_id.return_value = None  # No existing profile
+
+            # Mock successful profile creation
+            from aurawell.database.models import UserProfileDB
+            mock_created_profile = UserProfileDB(
+                user_id="user_001",
+                display_name="Test User",
+                email="test@example.com",
+                age=25,
+                gender="male",
+                height_cm=175.0,
+                weight_kg=70.0,
+                activity_level="moderately_active"
+            )
+            mock_repo_instance.create_user.return_value = mock_created_profile
+            mock_repo_instance.to_pydantic.return_value = AsyncMock()
+            mock_repo_instance.to_pydantic.return_value.user_id = "user_001"
+            mock_repo_instance.to_pydantic.return_value.display_name = "Test User"
+            mock_repo_instance.to_pydantic.return_value.email = "test@example.com"
+            mock_repo_instance.to_pydantic.return_value.age = 25
+            mock_repo_instance.to_pydantic.return_value.gender = AsyncMock()
+            mock_repo_instance.to_pydantic.return_value.gender.value = "male"
+            mock_repo_instance.to_pydantic.return_value.height_cm = 175.0
+            mock_repo_instance.to_pydantic.return_value.weight_kg = 70.0
+            mock_repo_instance.to_pydantic.return_value.activity_level = AsyncMock()
+            mock_repo_instance.to_pydantic.return_value.activity_level.value = "moderately_active"
+
+            mock_repo.return_value = mock_repo_instance
+
+            profile_data = {
+                "display_name": "Test User",
+                "email": "test@example.com",
+                "age": 25,
+                "gender": "male",
+                "height_cm": 175.0,
+                "weight_kg": 70.0,
+                "activity_level": "moderately_active"
+            }
+
+            response = client.put("/api/v1/user/profile", json=profile_data, headers=auth_headers)
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            assert data["display_name"] == "Test User"
     
     def test_health_summary(self, auth_headers):
         """Test health summary endpoint"""
