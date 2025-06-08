@@ -43,7 +43,7 @@ class DatabaseManager:
         self.engine: Optional[AsyncEngine] = None
         self.session_factory: Optional[async_sessionmaker[AsyncSession]] = None
         self._initialized = False
-        self.sqlite_listener_registered = False
+        self.sqlite_listener_registered = False # 使用这个变量标记监听器事件是否被注册，可以用于测试连接是否成功，也可以用于测试参数是否配置正确
     
     def _get_database_url(self) -> str:
         """
@@ -58,10 +58,10 @@ class DatabaseManager:
         # Default to SQLite in project directory
         db_path = os.path.join(os.getcwd(), "aurawell.db")
         return f"sqlite+aiosqlite:///{db_path}"
-    # 在June082025的修复中添加如下方法，启用实例级别的监听器，方便未来的测试
+
     def has_sqlite_listener(self) -> bool:
         """检查是否已注册SQLite监听器"""
-        # 使用状态标志替代直接检查事件注册
+        # 该变量仅仅用于检查监听器时间是否被注册
         return self.sqlite_listener_registered
 
     async def initialize(self) -> None:
