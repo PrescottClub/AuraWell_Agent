@@ -454,16 +454,17 @@ def get_recommended_sleep_window(target_wake_time: time, target_sleep_duration_h
 
 def parse_date_range(date_range: str) -> Tuple[date, date]:
     """
-    解析日期范围字符串
+    Parse a date range string.
 
     Args:
-        date_range: 日期范围字符串，格式如 "2024-01-01_to_2024-01-07"
+        date_range: A date range string in the format "YYYY-MM-DD_to_YYYY-MM-DD".
+                    The "_to_" separator is case-sensitive and required for proper parsing.
 
     Returns:
         Tuple of (start_date, end_date)
 
     Raises:
-        ValueError: 如果日期格式不正确
+        ValueError: If the date format is incorrect or the "_to_" separator is missing.
     """
     try:
         if "_to_" not in date_range:
