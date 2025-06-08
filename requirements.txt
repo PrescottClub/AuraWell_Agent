@@ -26,9 +26,12 @@ loguru>=0.7.0
 pytz>=2024.1
 iso8601>=2.1.0
 
-# Optional: FastAPI for web interface (if needed)
+# FastAPI web interface and authentication
 fastapi>=0.110.0
 uvicorn>=0.28.0
+python-jose[cryptography]>=3.3.0  # JWT handling
+passlib[bcrypt]>=1.7.4  # Password hashing
+python-multipart>=0.0.6  # Form data handling
 
 # Development and testing
 pytest>=8.1.0
