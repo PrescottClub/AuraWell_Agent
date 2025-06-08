@@ -5,10 +5,11 @@
 """
 
 import uuid
+import json
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional, Any
-from sqlalchemy import Column, String, DateTime, Integer, Text, select
+from sqlalchemy import Column, String, DateTime, Integer, Text, Boolean, select
 
 from ..database import get_database_manager, Base
 
@@ -26,7 +27,7 @@ class UserSession(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     last_activity = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = Column(DateTime, nullable=True)
-    is_active = Column(String(10), default="true", nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式"""
@@ -38,7 +39,7 @@ class UserSession(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_activity": self.last_activity.isoformat() if self.last_activity else None,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "is_active": self.is_active == "true"
+            "is_active": self.is_active
         }
 
 
@@ -82,11 +83,11 @@ class SessionManager:
                 user_session = UserSession(
                     session_id=session_id,
                     user_id=user_id,
-                    context_data=str(context_data) if context_data else None,
+                    context_data=json.dumps(context_data) if context_data else None,
                     created_at=datetime.now(timezone.utc),
                     last_activity=datetime.now(timezone.utc),
                     expires_at=expires_at,
-                    is_active="true"
+                    is_active=True
                 )
 
                 session.add(user_session)
@@ -115,7 +116,7 @@ class SessionManager:
                 # 查询会话
                 query = select(UserSession).filter(
                     UserSession.session_id == session_id,
-                    UserSession.is_active == "true"
+                    UserSession.is_active == True
                 )
                 result = await session.execute(query)
                 user_session = result.scalar_one_or_none()
@@ -132,7 +133,7 @@ class SessionManager:
                 current_time = datetime.now(timezone.utc)
                 if user_session.expires_at and current_time > user_session.expires_at.replace(tzinfo=timezone.utc):
                     # 标记会话为过期
-                    user_session.is_active = "false"
+                    user_session.is_active = False
                     await session.commit()
 
                     logger.info("Session expired: %s", session_id)
@@ -184,7 +185,7 @@ class SessionManager:
             async with self.db_manager.get_session() as session:
                 query = select(UserSession).filter(
                     UserSession.session_id == session_id,
-                    UserSession.is_active == "true"
+                    UserSession.is_active == True
                 )
                 result = await session.execute(query)
                 user_session = result.scalar_one_or_none()
@@ -194,7 +195,7 @@ class SessionManager:
                     return False
 
                 # 更新上下文数据和最后活动时间
-                user_session.context_data = str(context_data)
+                user_session.context_data = json.dumps(context_data)
                 user_session.last_activity = datetime.now(timezone.utc)
 
                 await session.commit()
@@ -220,7 +221,7 @@ class SessionManager:
                 # 查找过期的会话
                 query = select(UserSession).filter(
                     UserSession.expires_at < current_time,
-                    UserSession.is_active == "true"
+                    UserSession.is_active == True
                 )
                 result = await session.execute(query)
                 expired_sessions = result.scalars().all()
@@ -228,7 +229,7 @@ class SessionManager:
                 # 标记为非活跃
                 count = 0
                 for user_session in expired_sessions:
-                    user_session.is_active = "false"
+                    user_session.is_active = False
                     count += 1
 
                 await session.commit()
