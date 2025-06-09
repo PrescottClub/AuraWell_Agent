@@ -5,7 +5,7 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
-## [v0.5.0] - 2025-01-16
+## [v0.5.0] - 2025-06-09
 
 ### 新增功能
 - **API响应格式标准化**: 实现统一的响应格式（BaseResponse, SuccessResponse, ErrorResponse）
