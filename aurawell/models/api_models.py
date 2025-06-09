@@ -4,10 +4,12 @@ FastAPI Request/Response Models
 Pydantic models for API request validation and response serialization.
 """
 
-from typing import Optional, List, Dict, Any
+import uuid
 from datetime import datetime, date
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import Optional, List, Dict, Any, Generic, TypeVar
+
+from pydantic import BaseModel, Field
 
 
 class ResponseStatus(str, Enum):
@@ -17,18 +19,68 @@ class ResponseStatus(str, Enum):
     WARNING = "warning"
 
 
-class BaseResponse(BaseModel):
+# Generic type for data payload
+T = TypeVar('T')
+
+
+class BaseResponse(BaseModel, Generic[T]):
     """Base response model for all API endpoints"""
+    success: bool = True
     status: ResponseStatus = ResponseStatus.SUCCESS
     message: str = "Operation completed successfully"
+    data: Optional[T] = None
     timestamp: datetime = Field(default_factory=datetime.now)
+    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+
+    class Config:
+        """Pydantic configuration"""
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
-class ErrorResponse(BaseResponse):
+class ErrorResponse(BaseResponse[None]):
     """Error response model"""
+    success: bool = False
     status: ResponseStatus = ResponseStatus.ERROR
     error_code: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
+
+    def __init__(
+        self,
+        message: str,
+        error_code: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ):
+        super().__init__(
+            success=False,
+            status=ResponseStatus.ERROR,
+            message=message,
+            error_code=error_code,
+            details=details,
+            **kwargs
+        )
+
+
+class SuccessResponse(BaseResponse[T]):
+    """Success response model with data"""
+    success: bool = True
+    status: ResponseStatus = ResponseStatus.SUCCESS
+
+    def __init__(
+        self,
+        data: T,
+        message: str = "Operation completed successfully",
+        **kwargs
+    ):
+        super().__init__(
+            success=True,
+            status=ResponseStatus.SUCCESS,
+            message=message,
+            data=data,
+            **kwargs
+        )
 
 
 # Authentication Models
@@ -38,11 +90,16 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=6)
 
 
-class TokenResponse(BaseResponse):
-    """JWT token response"""
+class TokenData(BaseModel):
+    """JWT token data"""
     access_token: str
     token_type: str = "bearer"
     expires_in: int = 3600  # seconds
+
+
+class TokenResponse(SuccessResponse[TokenData]):
+    """JWT token response"""
+    pass
 
 
 # Chat Models
@@ -52,12 +109,17 @@ class ChatRequest(BaseModel):
     context: Optional[Dict[str, Any]] = None
 
 
-class ChatResponse(BaseResponse):
-    """Chat conversation response"""
+class ChatData(BaseModel):
+    """Chat response data"""
     reply: str
     user_id: str
     conversation_id: Optional[str] = None
     tools_used: Optional[List[str]] = None
+
+
+class ChatResponse(SuccessResponse[ChatData]):
+    """Chat conversation response"""
+    pass
 
 
 # User Profile Models
