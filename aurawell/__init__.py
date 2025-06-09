@@ -6,7 +6,7 @@ fitness goals, daily routines, dietary preferences, work schedules,
 and social activities to provide contextual recommendations and habit formation support.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __author__ = "AuraWell Team"
 __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
 
