@@ -6,10 +6,12 @@ Provides Redis-based caching for improved performance and response times.
 
 import json
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from typing import Any, Optional, Dict, Union
 from functools import wraps
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     import redis
@@ -22,11 +24,12 @@ logger = logging.getLogger(__name__)
 
 class CacheManager:
     """Redis-based cache manager for AuraWell API"""
-    
+
     def __init__(self, redis_url: str = "redis://localhost:6379/0", enabled: bool = True):
         self.enabled = enabled and REDIS_AVAILABLE
         self.redis_client = None
-        
+        self.executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="redis_cache")
+
         if self.enabled:
             try:
                 self.redis_client = redis.from_url(redis_url, decode_responses=True)
@@ -54,24 +57,29 @@ class CacheManager:
         """Get value from cache"""
         if not self.enabled:
             return None
-        
+
         try:
-            value = self.redis_client.get(key)
+            loop = asyncio.get_event_loop()
+            value = await loop.run_in_executor(self.executor, self.redis_client.get, key)
             if value:
                 return json.loads(value)
         except Exception as e:
             logger.warning(f"Cache get error for key {key}: {e}")
-        
+
         return None
     
     async def set(self, key: str, value: Any, ttl: int = 300) -> bool:
         """Set value in cache with TTL (seconds)"""
         if not self.enabled:
             return False
-        
+
         try:
             serialized_value = json.dumps(value, default=str)
-            return self.redis_client.setex(key, ttl, serialized_value)
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                self.executor, self.redis_client.setex, key, ttl, serialized_value
+            )
+            return bool(result)
         except Exception as e:
             logger.warning(f"Cache set error for key {key}: {e}")
             return False
@@ -80,9 +88,11 @@ class CacheManager:
         """Delete key from cache"""
         if not self.enabled:
             return False
-        
+
         try:
-            return bool(self.redis_client.delete(key))
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(self.executor, self.redis_client.delete, key)
+            return bool(result)
         except Exception as e:
             logger.warning(f"Cache delete error for key {key}: {e}")
             return False
@@ -91,16 +101,23 @@ class CacheManager:
         """Clear all keys matching pattern"""
         if not self.enabled:
             return 0
-        
+
         try:
-            keys = self.redis_client.keys(pattern)
+            loop = asyncio.get_event_loop()
+            keys = await loop.run_in_executor(self.executor, self.redis_client.keys, pattern)
             if keys:
-                return self.redis_client.delete(*keys)
+                result = await loop.run_in_executor(self.executor, self.redis_client.delete, *keys)
+                return result
             return 0
         except Exception as e:
             logger.warning(f"Cache clear pattern error for {pattern}: {e}")
             return 0
-    
+
+    def cleanup(self):
+        """Cleanup resources"""
+        if self.executor:
+            self.executor.shutdown(wait=True)
+
     def cache_key(self, prefix: str, ttl: int = 300):
         """Decorator for caching function results"""
         def decorator(func):

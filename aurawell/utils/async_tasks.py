@@ -6,7 +6,7 @@ Provides background task processing for time-consuming operations.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, Optional, List
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
