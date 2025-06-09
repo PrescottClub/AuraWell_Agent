@@ -1,13 +1,13 @@
 """
 代理路由器
-根据功能开关选择使用传统Agent还是LangChain Agent
+统一的LangChain Agent访问接口
 确保API接口完全向后兼容
+
+注意：系统已完全迁移到LangChain架构，Agent Router作为统一接口层
 """
 import logging
 from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
-
-from .feature_flags import feature_flags
 
 logger = logging.getLogger(__name__)
 
@@ -33,41 +33,35 @@ class BaseAgent(ABC):
 
 class AgentRouter:
     """
-    代理路由器
-    
+    代理路由器 - LangChain统一接口
+
     核心职责：
-    1. 根据功能开关选择使用哪个Agent
+    1. 提供统一的LangChain Agent访问接口
     2. 确保API接口完全向后兼容
-    3. 支持渐进式升级
+    3. 管理Agent实例缓存
+    4. 作为前端API和LangChain Agent之间的适配层
+
+    注意：系统已100%迁移到LangChain，此路由器确保API稳定性
     """
-    
+
     def __init__(self):
-        self.feature_flags = feature_flags
         self._agent_cache = {}  # 缓存Agent实例
     
     async def get_agent(self, user_id: str, feature_context: str = "chat") -> BaseAgent:
         """
-        获取合适的Agent实例
-        
+        获取LangChain Agent实例
+
         Args:
             user_id: 用户ID
             feature_context: 功能上下文（chat, health_query, tool_call等）
-            
+
         Returns:
-            BaseAgent: Agent实例
+            BaseAgent: LangChain Agent实例
         """
-        # 检查是否启用LangChain Agent
-        use_langchain = self.feature_flags.is_enabled(
-            "langchain_agent", 
-            user_id=user_id, 
-            context=feature_context
-        )
-        
-        agent_key = f"{user_id}_{feature_context}_{'langchain' if use_langchain else 'traditional'}"
-        
+        agent_key = f"{user_id}_{feature_context}"
+
         # 从缓存获取或创建新实例
         if agent_key not in self._agent_cache:
-            # 只使用LangChain Agent - 传统Agent已废弃
             try:
                 # 动态导入LangChain Agent（避免循环导入）
                 from ..langchain_agent.agent import LangChainAgent
@@ -79,7 +73,7 @@ class AgentRouter:
                 agent = self._create_fallback_agent(user_id)
 
             self._agent_cache[agent_key] = agent
-        
+
         return self._agent_cache[agent_key]
 
     def _create_fallback_agent(self, user_id: str) -> BaseAgent:
@@ -183,25 +177,12 @@ class AgentRouter:
             logger.error(f"清除对话历史失败: {e}")
             return False
     
-    def get_feature_status(self) -> Dict[str, Any]:
-        """获取功能开关状态"""
-        return self.feature_flags.get_all_features()
-    
-    def enable_langchain_for_user(self, user_id: str) -> None:
-        """为特定用户启用LangChain Agent"""
-        self.feature_flags.add_user_to_whitelist("langchain_agent", user_id)
-        # 清除缓存，强制重新创建Agent
+    def clear_user_cache(self, user_id: str) -> None:
+        """清除特定用户的Agent缓存"""
         keys_to_remove = [key for key in self._agent_cache.keys() if key.startswith(user_id)]
         for key in keys_to_remove:
             del self._agent_cache[key]
-    
-    def disable_langchain_for_user(self, user_id: str) -> None:
-        """为特定用户禁用LangChain Agent"""
-        self.feature_flags.remove_user_from_whitelist("langchain_agent", user_id)
-        # 清除缓存，强制重新创建Agent
-        keys_to_remove = [key for key in self._agent_cache.keys() if key.startswith(user_id)]
-        for key in keys_to_remove:
-            del self._agent_cache[key]
+        logger.info(f"已清除用户 {user_id} 的Agent缓存")
 
 
 # 全局代理路由器实例
