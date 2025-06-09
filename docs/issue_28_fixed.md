@@ -44,16 +44,11 @@ graph TD
         E[Feature Flag Manager]
     end
 
-    subgraph "Legacy Agent (保留)"
-        F[ConversationAgent]
-        G[HealthToolsRegistry]
-        H[IntentParser]
-    end
-
-    subgraph "LangChain Agent (新增)"
+    subgraph "LangChain Agent (当前架构)"
         I[LangChainAgent]
         J[LangChain Tools]
         K[LangChain Memory]
+        G[HealthToolsRegistry - 复用]
     end
 
     subgraph "RAG Layer (可选模块)"
@@ -133,10 +128,9 @@ asyncio-mqtt>=0.13.0
 
 ```
 aurawell/
-├── agent/                     # ✅ 保留现有agent模块
-│   ├── conversation_agent.py  # 现有实现
-│   ├── health_tools.py        # 现有工具
-│   └── tools_registry.py      # 现有注册表
+├── agent/                     # ✅ 保留健康工具模块
+│   ├── health_tools.py        # 现有工具（保留供LangChain使用）
+│   └── tools_registry.py      # 现有注册表（保留供LangChain使用）
 ├── langchain_agent/           # 🆕 新的LangChain核心
 │   ├── __init__.py
 │   ├── agent.py               # LangChain Agent实现
@@ -176,12 +170,9 @@ class AgentRouter:
     def __init__(self):
         self.feature_flags = FeatureFlagManager()
         
-    async def get_agent(self, user_id: str, feature: str = "chat") -> Union[ConversationAgent, LangChainAgent]:
-        """根据功能开关返回相应的Agent"""
-        if self.feature_flags.is_enabled("langchain_agent", user_id, feature):
-            return LangChainAgent(user_id)
-        else:
-            return ConversationAgent(user_id)
+    async def get_agent(self, user_id: str, feature: str = "chat") -> LangChainAgent:
+        """返回LangChain Agent（已100%迁移）"""
+        return LangChainAgent(user_id)
 ```
 
 ### **Phase 2: RAG 知识库集成（独立模块）**

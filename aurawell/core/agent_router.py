@@ -1,9 +1,9 @@
 """
 代理路由器
-统一的LangChain Agent访问接口
+LangChain Agent统一访问接口
 确保API接口完全向后兼容
 
-注意：系统已完全迁移到LangChain架构，Agent Router作为统一接口层
+注意：系统已100%迁移到LangChain架构，此路由器作为统一接口层
 """
 import logging
 from typing import Optional, Dict, Any
@@ -84,6 +84,7 @@ class AgentRouter:
                 self.user_id = user_id
 
             async def process_message(self, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                _ = context  # 避免未使用参数警告
                 return {
                     "success": True,
                     "message": f"收到您的消息：{message}。系统正在维护中，请稍后重试。",
@@ -92,6 +93,7 @@ class AgentRouter:
                 }
 
             async def get_conversation_history(self, limit: int = 10) -> list:
+                _ = limit  # 避免未使用参数警告
                 return []
 
             async def clear_conversation_history(self) -> bool:
