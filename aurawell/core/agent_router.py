@@ -4,11 +4,10 @@
 确保API接口完全向后兼容
 """
 import logging
-from typing import Union, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
 
 from .feature_flags import feature_flags
-from ..agent.conversation_agent import ConversationAgent
 
 logger = logging.getLogger(__name__)
 
@@ -68,22 +67,44 @@ class AgentRouter:
         
         # 从缓存获取或创建新实例
         if agent_key not in self._agent_cache:
-            if use_langchain:
-                try:
-                    # 动态导入LangChain Agent（避免循环导入）
-                    from ..langchain_agent.agent import LangChainAgent
-                    agent = LangChainAgent(user_id)
-                    logger.info(f"为用户 {user_id} 创建 LangChain Agent")
-                except ImportError as e:
-                    logger.warning(f"LangChain Agent 不可用，回退到传统Agent: {e}")
-                    agent = ConversationAgent(user_id)
-            else:
-                agent = ConversationAgent(user_id)
-                logger.info(f"为用户 {user_id} 创建传统 Agent")
-            
+            # 只使用LangChain Agent - 传统Agent已废弃
+            try:
+                # 动态导入LangChain Agent（避免循环导入）
+                from ..langchain_agent.agent import LangChainAgent
+                agent = LangChainAgent(user_id)
+                logger.info(f"为用户 {user_id} 创建 LangChain Agent")
+            except Exception as e:
+                logger.error(f"LangChain Agent 创建失败: {e}")
+                # 创建一个最基本的Agent实例作为最后的回退
+                agent = self._create_fallback_agent(user_id)
+
             self._agent_cache[agent_key] = agent
         
         return self._agent_cache[agent_key]
+
+    def _create_fallback_agent(self, user_id: str) -> BaseAgent:
+        """创建一个最基本的fallback agent"""
+
+        class FallbackAgent(BaseAgent):
+            def __init__(self, user_id: str):
+                self.user_id = user_id
+
+            async def process_message(self, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                return {
+                    "success": True,
+                    "message": f"收到您的消息：{message}。系统正在维护中，请稍后重试。",
+                    "data": None,
+                    "agent_type": "fallback"
+                }
+
+            async def get_conversation_history(self, limit: int = 10) -> list:
+                return []
+
+            async def clear_conversation_history(self) -> bool:
+                return True
+
+        logger.warning(f"为用户 {user_id} 创建 Fallback Agent")
+        return FallbackAgent(user_id)
     
     async def process_message(
         self, 

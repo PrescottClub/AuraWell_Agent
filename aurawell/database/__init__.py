@@ -16,9 +16,7 @@ from .models import (
     AchievementProgressDB,
     PlatformConnectionDB,
 )
-# Import conversation models to ensure they're registered with Base
-from ..conversation.memory_manager import ConversationHistory
-from ..conversation.session_manager import UserSession
+# 移除循环导入 - 对话模型将在需要时单独导入
 
 __all__ = [
     "DatabaseManager",
@@ -31,6 +29,4 @@ __all__ = [
     "NutritionEntryDB",
     "AchievementProgressDB",
     "PlatformConnectionDB",
-    "ConversationHistory",
-    "UserSession",
 ]

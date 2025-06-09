@@ -1,18 +1,13 @@
 """
-AuraWell Agent 模块
+AuraWell Agent 模块 - 健康工具
 
-M1阶段：智能工具注册与调用系统
+保留健康工具函数和兼容性接口供LangChain Agent使用
 """
 
-from .tools_registry import HealthToolsRegistry
-from .conversation_agent import ConversationAgent
-from .intent_parser import IntentParser, IntentType
 from . import health_tools
+from .tools_registry import HealthToolsRegistry
 
 __all__ = [
-    'HealthToolsRegistry',
-    'ConversationAgent',
-    'IntentParser',
-    'IntentType',
-    'health_tools'
+    'health_tools',
+    'HealthToolsRegistry'
 ]

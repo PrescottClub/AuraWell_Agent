@@ -10,9 +10,10 @@ __version__ = "0.5.0"
 __author__ = "AuraWell Team"
 __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
 
-# Core modules
-from .agent import HealthToolsRegistry, ConversationAgent
+# Core modules - 现在使用LangChain Agent，保留兼容性接口
 from .interfaces import cli_interface
+from .langchain_agent.agent import LangChainAgent
+from .agent import HealthToolsRegistry  # 保持API兼容性
 
 # v0.4.0 新增：数据库层
 from .database import DatabaseManager, get_database_manager
@@ -31,8 +32,8 @@ __all__ = [
     # 版本信息
     "__version__", "__author__", "__description__",
 
-    # 智能代理
-    "HealthToolsRegistry", "ConversationAgent", "cli_interface",
+    # 智能代理 - 现在使用LangChain Agent，保留兼容性
+    "LangChainAgent", "HealthToolsRegistry", "cli_interface",
 
     # 数据库层
     "DatabaseManager", "get_database_manager", "DatabaseService",
