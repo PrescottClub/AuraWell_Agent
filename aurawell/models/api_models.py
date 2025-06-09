@@ -495,18 +495,279 @@ class SleepDataResponse(BaseResponse):
     total_records: int
 
 
-# Pagination Models
+# Pagination and Filtering Models
 class PaginationParams(BaseModel):
     """Pagination parameters"""
-    page: int = Field(1, ge=1)
-    page_size: int = Field(20, ge=1, le=100)
+    page: int = Field(
+        1,
+        ge=1,
+        le=1000,
+        description="Page number (1-1000)"
+    )
+    page_size: int = Field(
+        20,
+        ge=1,
+        le=100,
+        description="Number of items per page (1-100)"
+    )
+
+    @property
+    def offset(self) -> int:
+        """Calculate offset for database queries"""
+        return (self.page - 1) * self.page_size
 
 
-class PaginatedResponse(BaseResponse):
-    """Paginated response base"""
+class SortParams(BaseModel):
+    """Sorting parameters"""
+    sort_by: Optional[str] = Field(
+        None,
+        description="Field to sort by"
+    )
+    sort_order: Optional[str] = Field(
+        "desc",
+        pattern="^(asc|desc)$",
+        description="Sort order (asc or desc)"
+    )
+
+    @field_validator('sort_by')
+    @classmethod
+    def validate_sort_by(cls, v):
+        """Validate sort field"""
+        if v is not None:
+            # Common sortable fields
+            allowed_fields = [
+                'created_at', 'updated_at', 'date', 'timestamp',
+                'name', 'title', 'value', 'progress', 'status'
+            ]
+            if v not in allowed_fields:
+                # Allow other fields but validate format
+                if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', v):
+                    raise ValueError('Sort field must be a valid field name')
+        return v
+
+
+class FilterParams(BaseModel):
+    """Base filtering parameters"""
+    search: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Search term for text fields"
+    )
+    status: Optional[str] = Field(
+        None,
+        description="Filter by status"
+    )
+    date_from: Optional[date] = Field(
+        None,
+        description="Filter from date (inclusive)"
+    )
+    date_to: Optional[date] = Field(
+        None,
+        description="Filter to date (inclusive)"
+    )
+
+    @field_validator('search')
+    @classmethod
+    def validate_search(cls, v):
+        """Validate search term"""
+        if v is not None:
+            v = v.strip()
+            if not v:
+                return None
+            # Remove potentially dangerous characters
+            if re.search(r'[<>"\';\\]', v):
+                raise ValueError('Search term contains invalid characters')
+        return v
+
+    @model_validator(mode='after')
+    def validate_date_range(self):
+        """Validate date range"""
+        if self.date_from and self.date_to:
+            if self.date_from > self.date_to:
+                raise ValueError('date_from cannot be after date_to')
+
+            # Check for reasonable date range
+            date_diff = self.date_to - self.date_from
+            if date_diff.days > 365:  # 1 year max
+                raise ValueError('Date range cannot exceed 1 year')
+
+        return self
+
+
+# Specific Filter Classes
+class HealthGoalFilterParams(FilterParams):
+    """Health goal specific filtering parameters"""
+    goal_type: Optional[str] = Field(
+        None,
+        pattern="^(weight_loss|weight_gain|fitness|nutrition|sleep|steps)$",
+        description="Filter by goal type"
+    )
+    is_completed: Optional[bool] = Field(
+        None,
+        description="Filter by completion status"
+    )
+    target_date_from: Optional[date] = Field(
+        None,
+        description="Filter goals with target date from this date"
+    )
+    target_date_to: Optional[date] = Field(
+        None,
+        description="Filter goals with target date to this date"
+    )
+
+
+class HealthDataFilterParams(FilterParams):
+    """Health data specific filtering parameters"""
+    data_types: Optional[List[str]] = Field(
+        None,
+        description="Filter by data types (activity, sleep, nutrition, vitals)"
+    )
+    source_platform: Optional[str] = Field(
+        None,
+        description="Filter by source platform"
+    )
+    quality_threshold: Optional[str] = Field(
+        None,
+        pattern="^(low|medium|high)$",
+        description="Minimum data quality threshold"
+    )
+
+    @field_validator('data_types')
+    @classmethod
+    def validate_data_types(cls, v):
+        """Validate data types"""
+        if v is not None:
+            valid_types = ['activity', 'sleep', 'nutrition', 'vitals']
+            for data_type in v:
+                if data_type not in valid_types:
+                    valid_types_str = ", ".join(valid_types)
+                    raise ValueError(
+                        f'Invalid data type "{data_type}". Must be one of: {valid_types_str}'
+                    )
+        return v
+
+
+class AchievementFilterParams(FilterParams):
+    """Achievement specific filtering parameters"""
+    category: Optional[str] = Field(
+        None,
+        description="Filter by achievement category"
+    )
+    is_unlocked: Optional[bool] = Field(
+        None,
+        description="Filter by unlock status"
+    )
+    difficulty: Optional[str] = Field(
+        None,
+        pattern="^(easy|medium|hard|expert)$",
+        description="Filter by difficulty level"
+    )
+
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata"""
     page: int
     page_size: int
     total_pages: int
     total_items: int
     has_next: bool
     has_previous: bool
+
+    @classmethod
+    def create(cls, page: int, page_size: int, total_items: int) -> 'PaginationMeta':
+        """Create pagination metadata"""
+        total_pages = (total_items + page_size - 1) // page_size if total_items > 0 else 1
+
+        return cls(
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            total_items=total_items,
+            has_next=page < total_pages,
+            has_previous=page > 1
+        )
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Paginated response with data and metadata"""
+    success: bool = True
+    status: ResponseStatus = ResponseStatus.SUCCESS
+    message: str = "Data retrieved successfully"
+    data: List[T]
+    pagination: PaginationMeta
+    timestamp: datetime = Field(default_factory=datetime.now)
+    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+
+    class Config:
+        """Pydantic configuration"""
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+# New Paginated Response Models
+class PaginatedHealthGoalsResponse(PaginatedResponse[HealthGoalResponse]):
+    """Paginated health goals response"""
+    pass
+
+
+class PaginatedActivityDataResponse(PaginatedResponse[ActivitySummary]):
+    """Paginated activity data response"""
+    pass
+
+
+class PaginatedSleepDataResponse(PaginatedResponse[SleepSummary]):
+    """Paginated sleep data response"""
+    pass
+
+
+class PaginatedAchievementsResponse(PaginatedResponse[Achievement]):
+    """Paginated achievements response"""
+    pass
+
+
+# Batch Operation Models
+class BatchHealthGoalRequest(BaseModel):
+    """Batch health goal operations request"""
+    operation: str = Field(
+        ...,
+        pattern="^(create|update|delete)$",
+        description="Batch operation type"
+    )
+    goals: List[HealthGoalRequest] = Field(
+        ...,
+        min_items=1,
+        max_items=50,
+        description="List of health goals (1-50 items)"
+    )
+
+    @field_validator('goals')
+    @classmethod
+    def validate_goals_count(cls, v):
+        """Validate goals count"""
+        if len(v) > 50:
+            raise ValueError('Cannot process more than 50 goals in a single batch')
+        return v
+
+
+class BatchOperationResult(BaseModel):
+    """Result of a batch operation"""
+    success_count: int = Field(..., description="Number of successful operations")
+    error_count: int = Field(..., description="Number of failed operations")
+    total_count: int = Field(..., description="Total number of operations")
+    errors: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of errors for failed operations"
+    )
+
+    @property
+    def success_rate(self) -> float:
+        """Calculate success rate percentage"""
+        if self.total_count == 0:
+            return 0.0
+        return (self.success_count / self.total_count) * 100
+
+
+class BatchHealthGoalResponse(SuccessResponse[BatchOperationResult]):
+    """Batch health goal operations response"""
+    pass

@@ -25,7 +25,11 @@ from ..models.api_models import (
     HealthSummaryResponse, ActivitySummary, SleepSummary,
     AchievementsResponse, Achievement,
     HealthDataRequest, ActivityDataResponse, SleepDataResponse,
-    PaginationParams
+    PaginationParams, SortParams, FilterParams,
+    HealthGoalFilterParams, HealthDataFilterParams, AchievementFilterParams,
+    PaginatedHealthGoalsResponse, PaginatedActivityDataResponse,
+    PaginatedSleepDataResponse, PaginatedAchievementsResponse,
+    BatchHealthGoalRequest, BatchHealthGoalResponse, PaginationMeta
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -668,6 +672,121 @@ async def get_health_goals(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve health goals"
+        )
+
+
+@app.get("/api/v1/health/goals/paginated", response_model=PaginatedHealthGoalsResponse, tags=["Health Goals"])
+async def get_health_goals_paginated(
+    pagination: PaginationParams = Depends(),
+    sort: SortParams = Depends(),
+    filters: HealthGoalFilterParams = Depends(),
+    current_user_id: str = Depends(get_current_user_id),
+    tools_registry: HealthToolsRegistry = Depends(get_tools_registry)
+):
+    """
+    Get user's health goals with pagination, sorting, and filtering
+
+    Args:
+        pagination: Pagination parameters (page, page_size)
+        sort: Sorting parameters (sort_by, sort_order)
+        filters: Filtering parameters (goal_type, status, dates, etc.)
+        current_user_id: Authenticated user ID
+        tools_registry: Health tools registry
+
+    Returns:
+        Paginated list of health goals with metadata
+
+    Raises:
+        AuraWellException: If data retrieval fails
+    """
+    try:
+        # For demo purposes, create sample paginated data
+        # In real implementation, this would query the database with filters
+
+        # Sample goals data
+        all_goals = [
+            HealthGoalResponse(
+                goal_id=f"goal_{current_user_id}_weight_loss_001",
+                goal_type="weight_loss",
+                target_value=5.0,
+                target_unit="kg",
+                current_value=2.0,
+                progress_percentage=40.0,
+                target_date=date.today() + timedelta(days=90),
+                description="Lose 5kg for better health",
+                created_at=datetime.now() - timedelta(days=10),
+                updated_at=datetime.now()
+            ),
+            HealthGoalResponse(
+                goal_id=f"goal_{current_user_id}_steps_002",
+                goal_type="steps",
+                target_value=10000.0,
+                target_unit="steps",
+                current_value=7500.0,
+                progress_percentage=75.0,
+                target_date=date.today() + timedelta(days=30),
+                description="Walk 10,000 steps daily",
+                created_at=datetime.now() - timedelta(days=5),
+                updated_at=datetime.now()
+            ),
+            HealthGoalResponse(
+                goal_id=f"goal_{current_user_id}_sleep_003",
+                goal_type="sleep",
+                target_value=8.0,
+                target_unit="hours",
+                current_value=7.2,
+                progress_percentage=90.0,
+                target_date=date.today() + timedelta(days=60),
+                description="Get 8 hours of sleep nightly",
+                created_at=datetime.now() - timedelta(days=15),
+                updated_at=datetime.now()
+            )
+        ]
+
+        # Apply filters
+        filtered_goals = all_goals
+        if filters.goal_type:
+            filtered_goals = [g for g in filtered_goals if g.goal_type == filters.goal_type]
+        if filters.search:
+            search_term = filters.search.lower()
+            filtered_goals = [g for g in filtered_goals
+                            if search_term in g.description.lower() or search_term in g.goal_type]
+
+        # Apply sorting
+        if sort.sort_by:
+            reverse = sort.sort_order == "desc"
+            if sort.sort_by == "created_at":
+                filtered_goals.sort(key=lambda x: x.created_at, reverse=reverse)
+            elif sort.sort_by == "progress":
+                filtered_goals.sort(key=lambda x: x.progress_percentage or 0, reverse=reverse)
+            elif sort.sort_by == "target_date":
+                filtered_goals.sort(key=lambda x: x.target_date or date.max, reverse=reverse)
+
+        # Apply pagination
+        total_items = len(filtered_goals)
+        start_idx = pagination.offset
+        end_idx = start_idx + pagination.page_size
+        paginated_goals = filtered_goals[start_idx:end_idx]
+
+        # Create pagination metadata
+        pagination_meta = PaginationMeta.create(
+            page=pagination.page,
+            page_size=pagination.page_size,
+            total_items=total_items
+        )
+
+        return PaginatedHealthGoalsResponse(
+            data=paginated_goals,
+            pagination=pagination_meta,
+            message=f"Retrieved {len(paginated_goals)} health goals (page {pagination.page} of {pagination_meta.total_pages})"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get paginated health goals: {e}")
+        raise AuraWellException(
+            message="Failed to retrieve health goals",
+            error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
