@@ -28,9 +28,13 @@ class TestAuthenticationEndpoints:
         )
         assert response.status_code == 200
         data = response.json()
+        assert data["success"] == True
         assert data["status"] == "success"
-        assert "access_token" in data
-        assert data["token_type"] == "bearer"
+        assert "data" in data
+        assert "access_token" in data["data"]
+        assert data["data"]["token_type"] == "bearer"
+        assert "request_id" in data
+        assert "timestamp" in data
     
     def test_login_invalid_credentials(self):
         """Test login with invalid credentials"""
@@ -39,8 +43,13 @@ class TestAuthenticationEndpoints:
             json={"username": "invalid", "password": "invalid"}
         )
         assert response.status_code == 401
-        response_data = response.json()
-        assert "Invalid username or password" in response_data.get("message", response_data.get("detail", ""))
+        data = response.json()
+        assert data["success"] == False
+        assert data["status"] == "error"
+        assert "Invalid username or password" in data["message"]
+        assert data["error_code"] == "AUTH_1001"
+        assert "request_id" in data
+        assert "timestamp" in data
 
 
 class TestSystemEndpoints:
@@ -74,7 +83,7 @@ class TestProtectedEndpoints:
             "/api/v1/auth/login",
             json={"username": "demo_user", "password": "demo_password"}
         )
-        token = response.json()["access_token"]
+        token = response.json()["data"]["access_token"]
         return {"Authorization": f"Bearer {token}"}
     
     def test_chat_endpoint(self, auth_headers):
