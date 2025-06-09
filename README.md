@@ -5,103 +5,107 @@
 ![AuraWell Logo](https://img.shields.io/badge/AuraWell-Health_Assistant-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python)
 ![Vue](https://img.shields.io/badge/Vue-3.5+-4FC08D?style=for-the-badge&logo=vue.js)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge)
+![LangChain](https://img.shields.io/badge/LangChain-0.1+-1F4B99?style=for-the-badge)
 
-*整合健身目标、日常作息、饮食偏好、工作日程及社交活动的智能健康生活方式编排平台*
+*基于LangChain和DeepSeek的超个性化健康生活方式编排平台*
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [架构文档](#-架构文档) • [演示](#-演示) • [贡献](#-贡献)
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [架构文档](#-架构文档) • [API文档](#-api文档) • [贡献](#-贡献)
 
 </div>
 
 ## 📖 项目简介
 
-AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent，旨在通过整合用户的健身目标、日常作息、饮食偏好、工作日程及社交活动，提供情境化的健康建议与习惯养成支持。
+AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent，采用现代化的LangChain框架和DeepSeek推理模型，通过整合用户的健身目标、日常作息、饮食偏好、工作日程及社交活动，提供情境化的健康建议与习惯养成支持。
 
 ### 🎯 核心理念
 
-- **个性化**: 基于用户独特的生活方式和健康数据提供定制化建议
-- **智能化**: 运用DeepSeek AI进行深度数据分析和模式识别
-- **游戏化**: 通过成就系统、挑战和社交功能提升用户参与度
-- **整合性**: 连接多个健康平台，提供统一的数据视图
+- **AI驱动**: 基于DeepSeek推理模型提供智能健康分析
+- **个性化**: 根据用户独特的生活方式和健康数据提供定制化建议
+- **现代化架构**: 采用LangChain框架构建可扩展的AI系统
+- **标准化API**: RESTful API设计，支持多种客户端集成
 - **隐私优先**: 遵循R.A.I.L.G.U.A.R.D安全原则，保护用户隐私
 
 ## ✨ 功能特性
 
-### 🚀 M2: FastAPI REST API接口 ✅ **NEW!**
-- **完整REST API**: 10个核心API端点，超过要求的8个
+### 🤖 LangChain智能体架构 ✅ **最新！**
+- **双引擎架构**: 支持传统Agent和LangChain Agent并行运行
+- **Agent Router**: 智能路由系统，基于功能开关选择最适合的AI引擎  
+- **工具适配器**: 无缝集成现有健康工具到LangChain框架
+- **对话记忆**: 基于数据库的持久化对话历史管理
+- **DeepSeek集成**: 支持deepseek-reasoner推理模型，提供深度思考能力
+
+### 🚀 完整REST API接口 ✅
+- **17个核心API端点**: 覆盖认证、用户管理、健康数据、成就系统
 - **JWT认证系统**: Bearer Token认证，安全的用户会话管理
-- **自动文档生成**: Swagger UI + ReDoc，完整的OpenAPI规范
+- **自动文档生成**: Swagger UI + ReDoc，完整的OpenAPI 3.0规范
 - **CORS支持**: 前端集成就绪，支持跨域请求
 - **性能监控**: 响应时间 < 500ms，慢请求日志记录
-- **完整测试覆盖**: 15个单元测试全部通过
+- **异常处理**: 结构化错误响应和自定义异常类型
 
-### 🤖 M1: 智能工具注册与调用系统 ✅
-- **智能工具注册中心**: HealthToolsRegistry 完整实现，支持动态工具注册
-- **健康工具函数集**: 5个核心健康操作工具，完全异步支持
-- **对话智能体核心**: ConversationAgent 支持自然语言交互和工具调用
-- **命令行界面**: 功能完整的CLI，支持演示模式和真实AI模式
-- **OpenAI Function Calling**: 完全兼容的工具调用schema和执行流程
-
-### 🗄️ 数据库层: SQLAlchemy集成 ✅
-- **关系数据库支持**: SQLAlchemy 2.0+ 异步ORM，支持SQLite/PostgreSQL
+### 🗄️ 现代化数据层 ✅
+- **SQLAlchemy 2.0+**: 异步ORM架构，支持SQLite/PostgreSQL
 - **Repository模式**: 完整的数据访问层，支持CRUD和复杂查询
-- **数据库迁移**: 自动化schema管理和数据库初始化
-- **数据持久化**: 用户档案、健康数据、成就进度的可靠存储
-- **事务支持**: 完整的ACID事务保证和错误恢复
+- **数据库连接池**: 异步连接管理和自动重连机制
+- **数据迁移**: 自动化schema管理和数据库初始化
+- **缓存系统**: 智能缓存管理，支持用户数据和AI响应缓存
 
-### 🤖 Phase 1: 核心AI集成 ✅
-- **DeepSeek AI集成**: 智能健康分析和建议生成 (支持deepseek-reasoner推理模型)
-- **统一数据模型**: 标准化的健康数据结构，支持多平台数据融合
-- **用户档案管理**: 完整的用户偏好和目标跟踪系统
-- **配置管理**: 灵活的环境配置和结构化日志系统
+### 🔐 安全认证系统 ✅
+- **JWT Token认证**: 基于Bearer Token的无状态认证
+- **密码安全**: bcrypt加密存储，防止明文泄露
+- **中间件保护**: 统一的认证中间件和权限验证
+- **API密钥管理**: 环境变量管理敏感配置信息
+- **CORS配置**: 精确的跨域资源共享控制
 
-### 🔗 Phase 2: 健康平台集成 ✅
-- **小米健康**: 步数、心率、睡眠数据同步，支持实时API调用
+### 🔗 健康平台集成 ✅
+- **小米健康**: 步数、心率、睡眠数据同步，支持OAuth 2.0认证
 - **薄荷健康**: 营养摄入和体重管理，食物数据库集成
 - **苹果健康**: HealthKit数据集成，iOS设备数据获取
-- **OAuth 2.0认证**: 安全的第三方平台授权流程
+- **通用API客户端**: 可扩展的第三方平台集成框架
 - **速率限制**: 智能API调用管理，防止频率超限
 
-### 🧠 Phase 3: 高级AI编排 ✅
-- **健康洞察生成**: AI驱动的健康数据分析和模式识别
-- **动态计划调整**: 基于表现数据的自适应健康建议
-- **上下文感知**: 考虑时间、环境、日程的智能推荐
-- **多维度分析**: 活动、睡眠、营养、心率综合分析
-
-### 🎮 Phase 4: 游戏化与激励 ✅
+### 🎮 游戏化激励系统 ✅
 - **成就系统**: 18种健康成就，5个难度等级(青铜/白银/黄金/铂金/钻石)
-- **智能通知**: 多优先级通知系统，支持多渠道推送
 - **进度追踪**: 实时进度更新和可视化统计
+- **智能通知**: 多优先级通知系统，支持多渠道推送
 - **数据洞察**: 个人健康趋势分析和建议生成
 
-### 🌐 Phase 5: Web前端界面 ✅
+### 🌐 现代化前端界面 ✅
 - **Vue 3 + Vite**: 现代化前端框架，快速开发体验
-- **响应式设计**: 支持桌面端和移动端自适应
+- **Tailwind CSS**: 原子化CSS框架，响应式设计
 - **组件化架构**: 可复用的UI组件库
 - **开发环境**: 热重载、快速构建、现代化工具链
 
+### �� AI能力扩展 (准备中)
+- **RAG知识增强**: 向量数据库和健康知识库检索 (Phase 2)
+- **MCP协议集成**: 模型上下文协议，支持外部工具发现 (Phase 3)
+- **多模态支持**: 文本、图像、语音的综合处理能力 (规划中)
+
 ## 🛠️ 技术栈
 
-| 组件 | 技术 | 说明 |
-|------|------|------|
-| **后端框架** | Python 3.8+ | 主要开发语言 |
-| **API框架** | FastAPI | 现代化REST API框架 |
-| **前端框架** | Vue 3 + Vite | 现代化前端开发 |
-| **AI引擎** | DeepSeek API | 深度推理模型(deepseek-reasoner) |
-| **数据库** | SQLAlchemy 2.0+ | 异步ORM，支持SQLite/PostgreSQL |
-| **数据验证** | Pydantic | 数据模型和验证 |
-| **认证** | JWT | Bearer Token认证 |
-| **加密** | Cryptography | 敏感数据加密 |
-| **日志** | 结构化日志 | 安全审计和监控 |
-| **健康平台** | 多平台API | 小米/薄荷/苹果健康 |
+| 组件 | 技术 | 版本 | 说明 |
+|------|------|------|------|
+| **后端框架** | Python | 3.8+ | 主要开发语言 |
+| **API框架** | FastAPI | 0.110+ | 现代化REST API框架 |
+| **AI框架** | LangChain | 0.1+ | 智能体和工具链管理 |
+| **AI模型** | DeepSeek | deepseek-reasoner | 深度推理和对话模型 |
+| **前端框架** | Vue 3 + Vite | 3.5+ | 现代化前端开发 |
+| **样式框架** | Tailwind CSS | 3.4+ | 原子化CSS设计 |
+| **数据库** | SQLAlchemy | 2.0+ | 异步ORM，支持SQLite/PostgreSQL |
+| **数据验证** | Pydantic | 2.8+ | 数据模型和验证 |
+| **认证** | JWT + bcrypt | - | Bearer Token认证和密码加密 |
+| **缓存** | 内存缓存 | - | 智能数据缓存系统 |
+| **日志** | 结构化日志 | - | 安全审计和性能监控 |
+| **健康平台** | 多平台API | - | 小米/薄荷/苹果健康集成 |
 
 ## 🚀 快速开始
 
 ### 环境要求
 
 - Python 3.8+
+- Node.js 16+ (用于前端开发)
 - pip (Python包管理器)
+- npm/yarn (JavaScript包管理器)
 - Git
 
 ### 安装步骤
@@ -112,18 +116,17 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
    cd AuraWell_Agent
    ```
 
-2. **安装依赖**
+2. **后端环境配置**
    ```bash
+   # 安装Python依赖
    pip install -r requirements.txt
-   ```
-
-3. **配置环境变量**
-   ```bash
+   
+   # 配置环境变量
    cp env.example .env
    # 编辑.env文件，添加你的API密钥
    ```
 
-4. **安装前端依赖** (可选)
+3. **前端环境配置**
    ```bash
    cd frontend
    npm install
@@ -131,9 +134,18 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
    ```
 
 4. **环境变量配置**
+   编辑`.env`文件：
    ```bash
-   # 必需配置
+   # DeepSeek AI配置 (必需)
    DEEPSEEK_API_KEY=your_deepseek_api_key
+   
+   # 数据库配置
+   DATABASE_URL=sqlite:///./aurawell.db
+   
+   # JWT配置
+   SECRET_KEY=your_jwt_secret_key
+   ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=1440
    
    # 健康平台配置 (可选)
    XIAOMI_HEALTH_API_KEY=your_xiaomi_api_key
@@ -145,94 +157,143 @@ AuraWell是一个基于人工智能的超个性化健康生活方式编排Agent�
    
    APPLE_HEALTH_CLIENT_ID=your_apple_health_client_id
    APPLE_HEALTH_CLIENT_SECRET=your_apple_health_client_secret
+   
+   # CORS配置
+   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
    ```
 
-### 运行演示
+### 运行应用
 
-1. **M2: FastAPI REST API服务器** ✅ **NEW!**
-启动完整的REST API服务：
-```bash
-python run_api_server.py
-# 访问 http://127.0.0.1:8000/docs (Swagger UI)
-# 访问 http://127.0.0.1:8000/redoc (ReDoc)
+1. **启动后端API服务器** ✅
+   ```bash
+   python run_api_server.py
+   ```
+   - API服务器运行在: `http://127.0.0.1:8000`
+   - Swagger UI文档: `http://127.0.0.1:8000/docs`
+   - ReDoc文档: `http://127.0.0.1:8000/redoc`
+
+2. **启动前端开发服务器** ✅
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   - 前端应用运行在: `http://localhost:5173`
+
+3. **命令行界面体验** ✅
+   ```bash
+   python -m aurawell.interfaces.cli_interface
+   ```
+
+### 运行测试
+
+1. **API接口测试**
+   ```bash
+   python -m pytest tests/test_api_interface.py -v
+   ```
+
+2. **基础功能测试**
+   ```bash
+   python examples/basic_test.py
+   ```
+
+3. **LangChain智能体测试**
+   ```bash
+   python examples/simplified_demo.py
+   ```
+
+4. **游戏化系统演示**
+   ```bash
+   python examples/phase4_gamification_demo.py
+   ```
+
+## 📊 项目架构
+
+### 高层架构图
+
+```
+┌─────────────────────────────────────────────────┐
+│                 Frontend Layer                  │
+│              Vue 3 + Tailwind CSS              │
+└─────────────────────┬───────────────────────────┘
+                      │ HTTP/REST API
+┌─────────────────────▼───────────────────────────┐
+│                  API Gateway                    │
+│                   FastAPI                       │
+└─────────────────────┬───────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────┐
+│                 Agent Router                    │
+│           智能路由 + 功能开关系统                 │
+└────────────┬────────────────────────┬───────────┘
+             │                        │
+             │                        │
+┌────────────▼──────────┐  ┌──────────▼───────────┐
+│   传统 Agent 引擎      │  │   LangChain 引擎     │
+│  ConversationAgent    │  │   LangChainAgent     │
+│  HealthToolsRegistry  │  │   Tools + Memory     │
+└────────────┬──────────┘  └──────────┬───────────┘
+             │                        │
+             └────────────┬───────────┘
+                          │
+┌─────────────────────────▼───────────────────────────┐
+│                 共享服务层                           │
+│  Database │ Health APIs │ Gamification │ Auth      │
+└─────────────────────────────────────────────────────┘
 ```
 
-2. **M1: 智能对话助手CLI** ✅
-体验完整的对话式健康助手：
-```bash
-python -m aurawell.interfaces.cli_interface
-```
-
-3. **API测试** ✅ **NEW!**
-运行完整的API测试套件：
-```bash
-python -m pytest tests/test_api_interface.py -v
-```
-
-4. **基础功能测试** ✅
-验证所有模块正常导入和基础功能：
-```bash
-python examples/basic_test.py
-```
-
-5. **简化功能演示** ✅
-展示健康数据模型、用户档案、AI集成：
-```bash
-python examples/simplified_demo.py
-```
-
-6. **游戏化系统演示** ✅
-体验完整的游戏化激励功能：
-```bash
-python examples/phase4_gamification_demo.py
-```
-
-7. **前端界面运行** ✅
-启动Vue前端开发服务器：
-```bash
-cd frontend
-npm run dev
-# 访问 http://localhost:5173
-```
-
-## 📊 项目结构
+### 目录结构
 
 ```
 aurawell/                          # 主应用包
-├── agent/                         # 🆕 M1: 智能体模块
-│   ├── __init__.py                # 智能体模块导出
-│   ├── tools_registry.py          # 工具注册中心
+├── agent/                         # 🔄 传统智能体模块
+│   ├── conversation_agent.py      # 传统对话代理
 │   ├── health_tools.py            # 健康工具函数集
-│   └── conversation_agent.py      # 对话智能体核心
-├── interfaces/                    # 🆕 M1: 用户接口层
-│   ├── __init__.py                # 接口模块导出
-│   └── cli_interface.py           # 命令行界面
-├── conversation/                  # 🆕 M1: 对话管理 (占位符)
-│   └── __init__.py                # 对话模块导出
+│   └── tools_registry.py          # 工具注册中心
+├── langchain_agent/               # 🆕 LangChain智能体模块
+│   ├── agent.py                   # LangChain Agent核心
+│   ├── tools/                     # 工具适配器
+│   │   ├── adapter.py            # 工具适配器基类
+│   │   └── health_tools.py       # 健康工具适配
+│   └── memory/                    # 对话记忆管理
+│       └── conversation_memory.py # 数据库记忆存储
 ├── core/                          # 核心AI和编排逻辑
-│   ├── deepseek_client.py         # DeepSeek AI客户端
-│   ├── orchestrator_v2.py         # 主健康编排器
-│   └── __init__.py                # 核心模块导出
+│   ├── agent_router.py            # 🆕 智能体路由器
+│   ├── feature_flags.py           # 🆕 功能开关管理
+│   └── deepseek_client.py         # DeepSeek AI客户端
+├── interfaces/                    # 用户接口层
+│   ├── api_interface.py           # FastAPI REST接口
+│   └── cli_interface.py           # 命令行界面
 ├── models/                        # 数据模型层
-│   ├── enums.py                   # 枚举定义(统一管理)
+│   ├── api_models.py              # API请求响应模型
 │   ├── health_data_model.py       # 健康数据模型
 │   ├── user_profile.py            # 用户档案模型
-│   └── health_data_parser.py      # 数据解析器
-├── database/                      # 🆕 数据库层
-│   ├── __init__.py                # 数据库模块导出
+│   ├── enums.py                   # 枚举定义
+│   └── error_codes.py             # 错误代码定义
+├── database/                      # 数据库层
 │   ├── connection.py              # 数据库连接管理
 │   ├── base.py                    # SQLAlchemy基础类
 │   ├── models.py                  # 数据库ORM模型
 │   └── migrations.py              # 数据库迁移工具
-├── repositories/                  # 🆕 数据访问层
-│   ├── __init__.py                # Repository模块导出
+├── repositories/                  # 数据访问层
 │   ├── base.py                    # Repository基础类
 │   ├── user_repository.py         # 用户数据Repository
 │   ├── health_data_repository.py  # 健康数据Repository
 │   └── achievement_repository.py  # 成就数据Repository
-├── services/                      # 🆕 业务服务层
-│   ├── __init__.py                # 服务模块导出
-│   └── database_service.py        # 数据库服务
+├── services/                      # 业务服务层
+│   ├── database_service.py        # 数据库服务
+│   └── health_service.py          # 健康数据服务
+├── auth/                          # 认证授权
+│   ├── jwt_auth.py                # JWT认证实现
+│   └── password_utils.py          # 密码工具
+├── middleware/                    # 中间件
+│   ├── cors_middleware.py         # CORS配置
+│   ├── error_handler.py           # 错误处理中间件
+│   └── auth_middleware.py         # 认证中间件
+├── utils/                         # 工具函数
+│   ├── cache.py                   # 缓存管理
+│   ├── async_tasks.py             # 异步任务处理
+│   ├── date_utils.py              # 日期工具
+│   └── encryption_utils.py        # 加密工具
 ├── integrations/                  # 第三方集成
 │   ├── generic_health_api_client.py  # 通用API客户端
 │   ├── xiaomi_health_client.py    # 小米健康
@@ -240,463 +301,166 @@ aurawell/                          # 主应用包
 │   └── apple_health_client.py     # 苹果健康
 ├── gamification/                  # 游戏化系统
 │   └── achievement_system.py      # 成就管理
-├── utils/                         # 工具函数
-│   ├── health_calculations.py     # 健康计算
-│   ├── date_utils.py              # 日期工具
-│   ├── data_validation.py         # 数据验证
-│   └── encryption_utils.py        # 加密工具
 ├── config/                        # 配置管理
 │   ├── settings.py                # 应用设置
 │   └── logging_config.py          # 日志配置
-└── __init__.py                    # 包初始化
+├── rag/                           # 🚧 RAG模块 (准备中)
+│   └── __init__.py               # Phase 2实现
+└── mcp/                           # 🚧 MCP模块 (准备中)
+    └── __init__.py               # Phase 3实现
 
-examples/                          # 示例和演示
-├── basic_test.py                  # 基础功能测试
-├── simplified_demo.py             # 功能演示
-└── phase4_gamification_demo.py    # 游戏化演示
+frontend/                          # Vue.js前端应用
+├── src/                          # 源代码
+│   ├── components/               # Vue组件
+│   ├── views/                    # 页面视图
+│   ├── router/                   # 路由配置
+│   └── utils/                    # 前端工具
+├── public/                       # 静态资源
+└── package.json                  # 前端依赖配置
 
-frontend/                          # 前端应用
-├── src/                           # Vue源代码
-│   ├── components/                # Vue组件
-│   ├── views/                     # 页面视图
-│   └── main.js                    # 应用入口
-├── public/                        # 静态资源
-├── package.json                   # 前端依赖
-├── vite.config.js                 # Vite配置
-└── index.html                     # HTML模板
+tests/                            # 测试代码
+├── test_api_interface.py         # API接口测试
+└── conftest.py                   # 测试配置
 
-tests/                             # 测试套件
-├── test_orchestrator.py           # 编排器测试
-└── test_orchestrator_v2.py        # V2编排器测试
+examples/                         # 示例代码
+├── basic_test.py                 # 基础功能测试
+├── simplified_demo.py            # LangChain演示
+└── phase4_gamification_demo.py   # 游戏化演示
 
-docs/                              # 项目文档
-├── ARCHITECTURE_SUMMARY.md        # 架构概览
-├── BUG_FIXES_SUMMARY.md           # Bug修复记录
-└── FIXES_SUMMARY.md               # 修复记录
-
-# 配置文件
-requirements.txt                   # 依赖管理
-env.example                        # 环境变量模板
-.gitignore                         # Git忽略规则
+docs/                             # 项目文档
+├── LANGCHAIN_MIGRATION_PHASE1_SUMMARY.md  # LangChain迁移总结
+└── issue_langchain_full_migration.md      # 完整迁移计划
 ```
 
-## 🎯 核心功能详解
+## 🔌 API文档
 
-### 🤖 AI智能分析
+### 认证端点
 
-AuraWell使用DeepSeek AI引擎进行健康数据分析：
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| POST | `/api/v1/auth/login` | 用户登录，获取JWT token | 无 |
 
-```python
-from aurawell.core.deepseek_client import DeepSeekClient
+### 用户管理
 
-client = DeepSeekClient()
-response = client.analyze_health_data(user_data)
-```
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| GET | `/api/v1/user/profile` | 获取用户档案 | Bearer Token |
+| PUT | `/api/v1/user/profile` | 更新用户档案 | Bearer Token |
 
-**支持功能**:
-- 健康数据模式识别
-- 个性化建议生成
-- 异常检测和预警
-- 目标完成度预测
+### AI对话
 
-### 📊 健康数据管理
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| POST | `/api/v1/chat` | AI对话接口（支持LangChain和传统引擎） | Bearer Token |
 
-统一的数据模型支持多平台数据:
+### 健康数据
 
-```python
-from aurawell.models.health_data_model import UnifiedActivitySummary
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| GET | `/api/v1/health/summary` | 获取健康数据摘要 | Bearer Token |
+| GET | `/api/v1/health/activity` | 获取活动数据 | Bearer Token |
+| GET | `/api/v1/health/sleep` | 获取睡眠数据 | Bearer Token |
 
-        activity = UnifiedActivitySummary(
-            date="2025-06-05",
-    steps=10000,
-    distance_meters=8000,
-    active_calories=400,
-    data_source="xiaomi_health"
-)
-```
+### 健康目标
 
-**数据类型**:
-- 活动数据 (步数、距离、卡路里)
-- 睡眠数据 (时长、质量、阶段)
-- 心率数据 (静息、运动、恢复)
-- 营养数据 (摄入、分析、建议)
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| GET | `/api/v1/health/goals` | 获取健康目标列表 | Bearer Token |
+| POST | `/api/v1/health/goals` | 创建新的健康目标 | Bearer Token |
+| GET | `/api/v1/health/goals/paginated` | 分页获取健康目标 | Bearer Token |
 
-### 🏆 游戏化激励
+### 成就系统
 
-成就系统提升用户参与度:
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| GET | `/api/v1/achievements` | 获取用户成就和进度 | Bearer Token |
 
-```python
-from aurawell.gamification.achievement_system import AchievementManager
+### 系统监控
 
-manager = AchievementManager()
-newly_unlocked = manager.update_progress(
-    user_id="user_001", 
-    achievement_type=AchievementType.DAILY_STEPS, 
-    current_value=10000
-)
-```
+| 方法 | 端点 | 描述 | 认证 |
+|------|------|------|------|
+| GET | `/api/v1/health` | 系统健康检查 | 无 |
+| GET | `/api/v1/system/performance` | 获取性能指标 | Bearer Token |
 
-**成就类型**:
-- 步数成就 (5K/10K/15K步)
-- 睡眠成就 (质量/时长)
-- 运动成就 (频率/强度)
-- 连击成就 (连续天数)
+### API文档访问
 
-## 🔒 安全与隐私
+- **Swagger UI**: `http://127.0.0.1:8000/docs`
+- **ReDoc**: `http://127.0.0.1:8000/redoc`
+- **OpenAPI Schema**: `http://127.0.0.1:8000/openapi.json`
 
-AuraWell遵循R.A.I.L.G.U.A.R.D安全原则:
+## 🔄 开发状态
 
-- **Risk First**: 优先考虑健康数据安全风险
-- **Always Constraints**: 严格的数据访问控制
-- **Interpret Securely**: 安全的数据解析和验证
-- **Local Defaults**: 本地优先的配置管理
-- **Gen Path Checks**: 生成内容的安全审查
-- **Uncertainty Disclosure**: 不确定性透明披露
-- **Auditability**: 完整的审计日志
-- **Revision + Dialogue**: 持续改进机制
+### 已完成功能 ✅
 
-### 数据加密
+- [x] **LangChain基础架构**: Agent Router + 双引擎支持
+- [x] **完整REST API**: 17个核心端点，100%测试通过
+- [x] **现代化数据库**: SQLAlchemy 2.0异步ORM
+- [x] **JWT认证系统**: 安全的Bearer Token认证
+- [x] **健康平台集成**: 小米健康/薄荷健康/苹果健康
+- [x] **游戏化系统**: 成就系统和进度追踪
+- [x] **Vue前端界面**: 现代化响应式设计
+- [x] **性能监控**: 缓存系统和响应时间监控
+- [x] **代码质量**: 结构化日志和异常处理
 
-```python
-from aurawell.utils.encryption_utils import encrypt_health_data
+### 进行中功能 🚧
 
-encrypted_data = encrypt_health_data(
-    data=sensitive_health_data,
-    user_id="user_001"
-)
-```
+- [ ] **RAG知识增强** (Phase 2): 向量数据库和健康知识库
+- [ ] **MCP协议集成** (Phase 3): 模型上下文协议支持
+- [ ] **多模态AI** (Phase 4): 图像和语音处理能力
 
-## 📈 使用示例
+### 性能指标 📈
 
-### M2: FastAPI REST API使用 🆕
-
-```python
-import requests
-
-# 启动API服务器
-# python run_api_server.py
-
-# 用户登录获取Token
-login_response = requests.post("http://127.0.0.1:8000/api/v1/auth/login",
-    json={"username": "demo_user", "password": "demo_password"})
-token = login_response.json()["access_token"]
-
-# 设置认证头
-headers = {"Authorization": f"Bearer {token}"}
-
-# 获取用户档案
-profile_response = requests.get("http://127.0.0.1:8000/api/v1/user/profile",
-    headers=headers)
-print(profile_response.json())
-
-# 发送AI对话请求
-chat_response = requests.post("http://127.0.0.1:8000/api/v1/chat",
-    json={"message": "我今天的健康数据怎么样？", "user_id": "user_001"},
-    headers=headers)
-print(chat_response.json())
-
-# 获取健康数据摘要
-health_response = requests.get("http://127.0.0.1:8000/api/v1/health/summary?days=7",
-    headers=headers)
-print(health_response.json())
-```
-
-### M1: 智能对话助手使用 🆕
-
-```python
-from aurawell.agent.conversation_agent import ConversationAgent
-
-# 创建对话智能体
-agent = ConversationAgent(user_id="user_001", demo_mode=True)
-
-# 异步对话交互
-response = await agent.a_run("我今天的活动数据怎么样？")
-print(response)
-# 输出: 根据您的活动数据分析: Activity summary will be implemented.
-#       在演示模式下，我模拟调用了活动摘要工具。建议您每天保持适量运动...
-```
-
-### M1: 工具注册与调用 🆕
-
-```python
-from aurawell.agent.tools_registry import HealthToolsRegistry
-
-# 创建工具注册中心
-registry = HealthToolsRegistry()
-
-# 获取可用工具
-tools = registry.get_tools_schema()
-print(f"可用工具数量: {len(tools)}")
-
-# 调用特定工具
-tool = registry.get_tool("get_user_activity_summary")
-result = await tool("user_001", days=7)
-```
-
-### 基础用户档案创建
-
-```python
-from aurawell.models.user_profile import UserProfile, Gender, ActivityLevel
-
-profile = UserProfile(
-    user_id="user_001",
-    display_name="张小明",
-    age=28,
-    gender=Gender.MALE,
-    height_cm=175,
-    weight_kg=75,
-    activity_level=ActivityLevel.MODERATELY_ACTIVE,
-    daily_steps_goal=10000
-)
-```
-
-### 健康数据同步
-
-```python
-from aurawell.integrations.xiaomi_health_client import XiaomiHealthClient
-
-client = XiaomiHealthClient()
-activity_data = await client.get_activity_data(
-    user_id="user_001",
-    start_date="2025-01-01",
-    end_date="2025-01-07"
-)
-```
-
-### AI健康分析
-
-```python
-from aurawell.core.orchestrator import AuraWellOrchestrator
-
-orchestrator = AuraWellOrchestrator()
-insights = await orchestrator.analyze_health_data(user_id="user_001")
-plan = await orchestrator.create_health_plan(user_id="user_001")
-```
-
-### 数据库操作 🆕
-
-```python
-from aurawell.services.database_service import DatabaseService
-from aurawell.models.user_profile import UserProfile, Gender
-
-# 创建数据库服务
-db_service = DatabaseService()
-
-# 创建用户档案
-user_profile = UserProfile(
-    user_id="user_001",
-    display_name="张小明",
-    age=28,
-    gender=Gender.MALE
-)
-await db_service.create_user_profile(user_profile)
-
-# 保存健康数据
-from aurawell.models.health_data_model import UnifiedActivitySummary
-activity = UnifiedActivitySummary(
-    date="2025-01-15",
-    steps=12000,
-    distance_meters=8500.0,
-    active_calories=450.0
-)
-await db_service.save_activity_data("user_001", activity)
-
-# 查询数据
-activity_summary = await db_service.get_activity_summary("user_001", days=7)
-user_achievements = await db_service.get_user_achievements("user_001")
-```
-
-## 🧪 演示程序
-
-项目核心功能已稳定运行：
-
-### 1. 基础功能测试 ✅
-验证所有模块正常导入和基础功能：
-```bash
-python examples/basic_test.py
-```
-
-### 2. 核心功能演示 ✅
-展示健康数据模型、用户档案、AI集成：
-```bash
-python examples/simplified_demo.py
-```
-
-### 3. 游戏化系统演示 ✅
-体验完整的游戏化激励功能：
-```bash
-python examples/phase4_gamification_demo.py
-```
-
-### 4. 系统完整测试 🆕
-全面测试各个模块和服务：
-```bash
-python test_complete_system.py
-```
-
-## 📚 架构文档
-
-- [📋 架构概览](docs/ARCHITECTURE_SUMMARY.md) - 系统架构和设计决策
-- [🔧 修复记录](docs/FIXES_SUMMARY.md) - 代码质量改进历史
-- [🧪 测试指南](tests/) - 完整的测试套件
-- [📖 API文档](examples/) - 使用示例和最佳实践
-
-## 📈 版本历史
-
-### v0.5.0 (2025-01-15) 🆕 **M2阶段完成**
-- ✅ **FastAPI REST API**: 完整实现10个核心API端点
-- ✅ **JWT认证系统**: Bearer Token认证，安全的用户会话管理
-- ✅ **自动文档生成**: Swagger UI + ReDoc，完整的OpenAPI规范
-- ✅ **CORS支持**: 前端集成就绪，支持跨域请求
-- ✅ **性能监控**: 响应时间 < 500ms，慢请求日志记录
-- ✅ **完整测试覆盖**: 15个单元测试全部通过
-- ✅ **API文档更新**: 完整的FastAPI实现文档
-- ✅ **项目清理**: 删除不必要的文件，优化项目结构
-
-### v0.4.1 (2025-06-07)
-- ✅ **关键修复**: 修复DeepSeek模型名称错误 (`deepseek-r1` → `deepseek-reasoner`)
-- ✅ **验证通过**: ConversationAgent演示模式bug已修复
-- ✅ **验证通过**: 数据库集成测试全部通过 (7/7)
-- ✅ **验证通过**: 游戏化系统运行正常
-- ✅ **验证通过**: 所有核心模块导入和功能测试通过
-- ✅ 更新文档和配置，确保API调用正常工作
-
-### v0.4.0 (2025-06-07)
-- ✅ 集成SQLAlchemy 2.0+ 异步ORM数据库层
-- ✅ 实现Repository模式数据访问层
-- ✅ 添加数据库迁移和初始化工具
-- ✅ 支持SQLite和PostgreSQL数据库
-- ✅ 完整的数据持久化：用户档案、健康数据、成就系统
-- ✅ 数据库服务层和事务管理
-- ✅ 全面的数据库集成测试套件
-
-### v0.3.0 (2025-06-06)
-- ✅ 添加Vue 3 + Vite前端框架
-- ✅ 修复重大bug和代码质量问题
-- ✅ 重构数据模型验证逻辑
-- ✅ 修复urllib3兼容性问题
-- ✅ 完善测试框架和断言逻辑
-- ✅ 统一代码格式和风格
-- ✅ 添加数据验证工具模块
-
-### v0.2.0 (2025-06-05)
-- ✅ 简化项目架构，移除微服务相关组件
-- ✅ 修复循环导入和枚举重复定义问题
-- ✅ 完善游戏化成就系统
-- ✅ 增强代码质量：类型注解、错误处理、文档
-
-### v0.1.0 (2025-01-15)
-- 🚀 项目初始版本
-- ✅ 基础AI集成和健康平台连接
-- ✅ 核心数据模型和用户档案系统
-
-## 📊 性能与指标
-
-### 系统性能
-- **响应时间**: < 500ms (本地处理)
-- **AI推理**: < 2s (DeepSeek API)
-- **数据同步**: < 5s (健康平台)
-- **并发支持**: 50+ 用户 (调整并发用户数以反映简化架构)
-
-### 准确性指标
-- **BMI计算**: 100% 准确
-- **卡路里估算**: ±5% 误差
-- **睡眠分析**: 85%+ 准确率
-- **活动识别**: 90%+ 准确率
-
-## 🔮 发展路线图
-
-### 🎯 当前阶段: M2 FastAPI REST API接口 ✅ (已完成)
-- [x] 完整REST API实现 (10个核心端点)
-- [x] JWT认证系统
-- [x] 自动文档生成 (Swagger UI + ReDoc)
-- [x] CORS支持和前端集成
-- [x] 性能监控和测试覆盖
-
-### 🎯 M1 智能工具注册与调用系统 ✅ (已完成)
-- [x] 智能工具注册中心 HealthToolsRegistry
-- [x] 健康工具函数集 (5个核心工具)
-- [x] 对话智能体核心 ConversationAgent
-- [x] 命令行界面 CLI
-- [x] OpenAI Function Calling 兼容
-
-### 🚀 下一阶段: M3 前端集成与优化 (计划中)
-- [ ] Vue.js前端与API集成
-- [ ] 实时数据可视化Dashboard
-- [ ] 用户认证界面
-- [ ] 移动端PWA适配
-
-### Phase 5: Web界面开发 ✅ (已完成)
-- [x] Vue 3前端框架集成
-- [x] Vite构建工具配置
-- [x] 现代化前端开发环境
-- [ ] 实时数据可视化Dashboard
-- [ ] 移动端PWA适配
-- [ ] 用户认证系统
-
-### Phase 6: 高级AI功能 (Q4 2025)
-- [ ] 机器学习个性化推荐
-- [ ] 计算机视觉健康分析
-- [ ] 语音交互界面
-- [ ] 智能设备IoT集成
-- [ ] 企业健康管理平台
-
-### Phase 7: 生态系统建设 (2026+)
-- [ ] 第三方插件系统
-- [ ] 开放API平台
-- [ ] 健康数据市场
-- [ ] 医疗机构合作
-- [ ] 研究数据平台
+- **API响应时间**: < 500ms (监控慢请求)
+- **测试覆盖率**: 100% (17/17 API测试通过)
+- **数据库性能**: 异步连接池 + 查询优化
+- **缓存命中率**: 智能缓存管理
+- **并发支持**: 异步处理架构
 
 ## 🤝 贡献指南
 
-我们欢迎社区贡献！请遵循以下步骤：
+### 开发环境设置
 
-1. **Fork项目仓库**
-2. **创建功能分支** (`git checkout -b feature/AmazingFeature`)
-3. **提交更改** (`git commit -m 'Add some AmazingFeature'`)
-4. **推送分支** (`git push origin feature/AmazingFeature`)
-5. **创建Pull Request**
+1. Fork此仓库
+2. 创建功能分支: `git checkout -b feature/amazing-feature`
+3. 提交更改: `git commit -m 'Add amazing feature'`
+4. 推送分支: `git push origin feature/amazing-feature`
+5. 创建Pull Request
 
 ### 代码规范
+
 - 遵循PEP 8 Python编码规范
-- 添加适当的类型提示
-- 编写单元测试
-- 更新相关文档
+- 使用类型提示 (Type Hints)
+- 函数和类名使用英文，注释支持中文
+- 提交前运行测试: `pytest tests/`
 
-### 安全指南
-- 不要在代码中硬编码API密钥
-- 遵循R.A.I.L.G.U.A.R.D安全原则
-- 对用户数据进行加密处理
-- 定期更新依赖包
+### 安全原则
 
-## 📝 许可证
+项目遵循R.A.I.L.G.U.A.R.D安全原则：
+- **Risk First**: 优先考虑用户数据安全
+- **Always Constraints**: 绝不硬编码敏感信息
+- **Interpret Securely**: 严格验证所有输入数据
+- **Local Defaults**: 敏感配置通过环境变量管理
+- **Gen Path Checks**: AI生成内容需要人工审查
+- **Uncertainty Disclosure**: 明确标识AI建议的置信度
+- **Auditability**: 关键操作全程日志记录
+- **Revision + Dialogue**: 支持代码审查和协作
 
-本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+## 📄 许可证
 
-## 🙏 致谢
-
-- [DeepSeek](https://deepseek.com/) - 提供强大的AI推理能力
-- [Pydantic](https://pydantic.dev/) - 数据验证和序列化
-- [小米健康](https://www.mi.com/health) - 健康数据平台
-- [薄荷健康](https://www.boohee.com/) - 营养数据支持
-- 所有贡献者和用户的反馈
+本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
 
 ## 📞 联系我们
 
-- **项目主页**: [AuraWell GitHub](https://github.com/PrescottClub/AuraWell_Agent)
+- **项目主页**: [GitHub Repository](https://github.com/PrescottClub/AuraWell_Agent)
 - **问题反馈**: [GitHub Issues](https://github.com/PrescottClub/AuraWell_Agent/issues)
-- **功能建议**: [GitHub Discussions](https://github.com/PrescottClub/AuraWell_Agent/discussions)
-- **邮箱**: prescottchun@163.com
+- **技术讨论**: [GitHub Discussions](https://github.com/PrescottClub/AuraWell_Agent/discussions)
 
 ---
 
 <div align="center">
 
-**AuraWell - 让健康生活更智能、更有趣！** 🌟
+**AuraWell - 让AI成为你的个人健康伙伴** 🤖💚
 
-[![Star](https://img.shields.io/badge/Star-⭐-yellow?style=for-the-badge)](https://github.com/PrescottClub/AuraWell_Agent)
-[![Fork](https://img.shields.io/badge/Fork-🍴-blue?style=for-the-badge)](https://github.com/PrescottClub/AuraWell_Agent/fork)
-[![Follow](https://img.shields.io/badge/Follow-👥-green?style=for-the-badge)](https://github.com/PrescottClub)
+*基于LangChain和DeepSeek构建的下一代健康管理平台*
 
 </div>
