@@ -133,15 +133,35 @@ async def get_user_repository():
             from ..models.user_profile import UserProfile
             from ..models.enums import Gender, ActivityLevel
 
+            # 处理gender枚举
+            gender_enum = Gender.OTHER  # 默认值
+            if update_data.get('gender'):
+                gender_str = update_data.get('gender')
+                if gender_str == 'male':
+                    gender_enum = Gender.MALE
+                elif gender_str == 'female':
+                    gender_enum = Gender.FEMALE
+                else:
+                    gender_enum = Gender.OTHER
+
+            # 处理activity_level枚举
+            activity_level_enum = ActivityLevel.MODERATELY_ACTIVE  # 默认值
+            if update_data.get('activity_level'):
+                activity_str = update_data.get('activity_level')
+                try:
+                    activity_level_enum = ActivityLevel(activity_str)
+                except ValueError:
+                    activity_level_enum = ActivityLevel.MODERATELY_ACTIVE
+
             return UserProfile(
                 user_id=user_id,
                 display_name=update_data.get('display_name', 'Test User'),
                 email=update_data.get('email', f'{user_id}@example.com'),
                 age=update_data.get('age', 25),
-                gender=Gender.MALE if update_data.get('gender') == 'male' else Gender.OTHER,
+                gender=gender_enum,
                 height_cm=update_data.get('height_cm', 170.0),
                 weight_kg=update_data.get('weight_kg', 70.0),
-                activity_level=ActivityLevel.MODERATELY_ACTIVE
+                activity_level=activity_level_enum
             )
 
         def to_pydantic(self, db_model):
