@@ -12,19 +12,26 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.openapi.utils import get_openapi
+from pydantic import ValidationError
 import time
 
 # Import models and authentication
 from ..models.api_models import (
-    BaseResponse, ErrorResponse, ResponseStatus,
-    LoginRequest, TokenResponse,
-    ChatRequest, ChatResponse,
+    BaseResponse, ErrorResponse, ResponseStatus, SuccessResponse,
+    LoginRequest, TokenResponse, TokenData,
+    ChatRequest, ChatResponse, ChatData,
     UserProfileRequest, UserProfileResponse,
     HealthGoalRequest, HealthGoalResponse, HealthGoalsListResponse,
     HealthSummaryResponse, ActivitySummary, SleepSummary,
     AchievementsResponse, Achievement,
     HealthDataRequest, ActivityDataResponse, SleepDataResponse,
     PaginationParams
+)
+from ..models.error_codes import ErrorCode
+from ..middleware.error_handler import (
+    AuraWellException, ValidationException, AuthenticationException,
+    aurawell_exception_handler, http_exception_handler,
+    validation_exception_handler, general_exception_handler
 )
 from ..auth import (
     get_current_user_id, get_optional_user_id,
@@ -67,6 +74,12 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=["localhost", "127.0.0.1", "*.aurawell.com", "testserver"]
 )
+
+# Register exception handlers
+app.add_exception_handler(AuraWellException, aurawell_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(ValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 # Global variables for dependency injection
 _db_manager = None
@@ -135,42 +148,7 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-# Exception handlers
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions"""
-    error_response = ErrorResponse(
-        message=exc.detail,
-        error_code=f"HTTP_{exc.status_code}",
-        details={"path": str(request.url.path)}
-    )
-    # Convert to dict and handle datetime serialization
-    content = error_response.model_dump()
-    content["timestamp"] = content["timestamp"].isoformat()
-
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=content
-    )
-
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    """Handle general exceptions"""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    error_response = ErrorResponse(
-        message="Internal server error",
-        error_code="INTERNAL_ERROR",
-        details={"path": str(request.url.path)}
-    )
-    # Convert to dict and handle datetime serialization
-    content = error_response.model_dump()
-    content["timestamp"] = content["timestamp"].isoformat()
-
-    return JSONResponse(
-        status_code=500,
-        content=content
-    )
+# Exception handlers are now registered above using app.add_exception_handler()
 
 
 # ============================================================================
@@ -189,23 +167,36 @@ async def login(login_request: LoginRequest):
         JWT access token and metadata
 
     Raises:
-        HTTPException: If authentication fails
+        AuthenticationException: If authentication fails
     """
-    user_id = authenticate_user(login_request.username, login_request.password)
+    try:
+        user_id = authenticate_user(login_request.username, login_request.password)
 
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+        if not user_id:
+            raise AuthenticationException(
+                message="Invalid username or password",
+                error_code=ErrorCode.INVALID_CREDENTIALS
+            )
+
+        token_data_dict = create_user_token(user_id)
+
+        # Create token data object
+        token_data = TokenData(**token_data_dict)
+
+        return TokenResponse(
+            data=token_data,
+            message="Login successful"
         )
 
-    token_data = create_user_token(user_id)
-
-    return TokenResponse(
-        message="Login successful",
-        **token_data
-    )
+    except AuthenticationException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise AuraWellException(
+            message="Authentication service error",
+            error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 # ============================================================================
