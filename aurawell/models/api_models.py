@@ -111,13 +111,10 @@ class LoginRequest(BaseModel):
     @field_validator('password')
     @classmethod
     def validate_password(cls, v):
-        """Validate password strength"""
+        """Validate password - simple and user-friendly rules"""
         if len(v.strip()) != len(v):
             raise ValueError('Password cannot start or end with whitespace')
-        if v.lower() == v:
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not any(c.isdigit() for c in v):
-            raise ValueError('Password must contain at least one number')
+        # 移除过于严格的要求，只保留基本的长度和空格检查
         return v
 
 
