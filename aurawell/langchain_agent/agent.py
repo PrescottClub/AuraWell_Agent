@@ -5,7 +5,6 @@ LangChain Agent 实现
 import logging
 import os
 from typing import Dict, Any, Optional, List
-import asyncio
 
 from ..core.agent_router import BaseAgent
 from ..conversation.memory_manager import MemoryManager
@@ -96,6 +95,7 @@ class LangChainAgent(BaseAgent):
             # 从工具注册表获取工具
             from .tools.health_tools import LangChainHealthTools
             health_tools = LangChainHealthTools(self.user_id)
+            tools.append(health_tools)
 
             # 这里可以添加更多工具
             logger.info(f"创建了 {len(tools)} 个工具")
@@ -229,6 +229,7 @@ class LangChainAgent(BaseAgent):
     async def _get_ai_response(self, message: str, context: Dict[str, Any]) -> str:
         """使用DeepSeek API生成AI响应"""
         try:
+            _ = context  # 避免未使用参数警告
             # 构建对话历史
             messages = []
 
@@ -265,6 +266,7 @@ class LangChainAgent(BaseAgent):
 
     async def _get_local_response(self, message: str, context: Dict[str, Any]) -> str:
         """生成本地智能响应（无API密钥时使用）"""
+        _ = context  # 避免未使用参数警告
         message_lower = message.lower()
 
         # 健康相关关键词响应
