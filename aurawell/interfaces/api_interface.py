@@ -42,6 +42,11 @@ from ..auth import (
     authenticate_user, create_user_token,
     get_security_schemes, get_security_requirements
 )
+from ..utils.cache import (
+    get_cache_manager, cache_user_data, cache_health_data,
+    cache_ai_response, cache_achievements, get_performance_monitor
+)
+from ..utils.async_tasks import get_task_manager, async_task
 from ..middleware import configure_cors
 
 # Import core components
@@ -136,18 +141,29 @@ async def get_tools_registry():
     return _tools_registry
 
 
-# Middleware for request timing
+# Middleware for request timing and performance monitoring
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
-    """Add response time header to all requests"""
+    """Add response time header and monitor performance"""
     start_time = time.time()
+
+    # Get performance monitor
+    perf_monitor = get_performance_monitor()
+
     response = await call_next(request)
     process_time = time.time() - start_time
+
+    # Add headers
     response.headers["X-Process-Time"] = str(process_time)
+    response.headers["X-Request-ID"] = getattr(request.state, 'request_id', 'unknown')
+
+    # Record performance metrics
+    endpoint = f"{request.method} {request.url.path}"
+    perf_monitor.record_request_time(endpoint, process_time)
 
     # Log slow requests (> 500ms as per requirement)
     if process_time > 0.5:
-        logger.warning(f"Slow request: {request.method} {request.url.path} took {process_time:.3f}s")
+        logger.warning(f"Slow request: {endpoint} took {process_time:.3f}s")
 
     return response
 
@@ -997,6 +1013,44 @@ async def health_check():
         message="AuraWell API is healthy and running",
         timestamp=datetime.now()
     )
+
+
+@app.get("/api/v1/system/performance", response_model=BaseResponse, tags=["System"])
+async def get_performance_metrics():
+    """
+    Get system performance metrics
+
+    Returns:
+        Performance statistics including response times and cache metrics
+    """
+    try:
+        perf_monitor = get_performance_monitor()
+        cache_manager = get_cache_manager()
+
+        # Get performance data
+        slow_endpoints = perf_monitor.get_slow_endpoints(threshold=0.5)
+        cache_hit_rate = perf_monitor.get_cache_hit_rate()
+
+        performance_data = {
+            'cache_hit_rate': cache_hit_rate,
+            'slow_endpoints': slow_endpoints,
+            'cache_stats': perf_monitor.cache_stats,
+            'cache_enabled': cache_manager.enabled,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        return BaseResponse(
+            message="Performance metrics retrieved successfully",
+            data=performance_data,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get performance metrics: {e}")
+        return BaseResponse(
+            message="Performance metrics unavailable",
+            timestamp=datetime.now()
+        )
 
 
 @app.get("/", response_model=BaseResponse, tags=["System"])
