@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-
+from datetime import timedelta
 
 class UserProfileDB(Base):
     """User profile database model"""
@@ -116,7 +116,19 @@ class SleepSessionDB(Base):
     source_platform: Mapped[str] = mapped_column(String(50), nullable=False)
     data_quality: Mapped[str] = mapped_column(String(20), default="unknown")
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    
+    # 添加自动计算总睡眠时间的方法，提高代码复用率
+    def _calculate_total_sleep_duration(self):
+        """自动计算睡眠时长"""
+        if self.bedtime_utc and self.wake_time_utc:
+            # 确保唤醒时间在就寝时间之后
+            if self.wake_time_utc > self.bedtime_utc:
+                duration = self.wake_time_utc - self.bedtime_utc
+                self.total_sleep_minutes = int(duration.total_seconds() / 60)
+            else:
+                # 处理跨午夜的情况
+                next_day_wake = self.wake_time_utc + timedelta(days=1)
+                duration = next_day_wake - self.bedtime_utc
+                self.total_sleep_minutes = int(duration.total_seconds() / 60)
     # Relationships
     user = relationship("UserProfileDB", back_populates="sleep_sessions")
     
@@ -198,7 +210,7 @@ class NutritionEntryDB(Base):
 class AchievementProgressDB(Base):
     """Achievement progress database model"""
     __tablename__ = "achievement_progress"
-    
+
     # Primary key
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     
@@ -208,15 +220,38 @@ class AchievementProgressDB(Base):
     # Achievement data
     achievement_type: Mapped[str] = mapped_column(String(100), nullable=False)
     achievement_level: Mapped[str] = mapped_column(String(50), nullable=False)
-    current_value: Mapped[float] = mapped_column(Float, default=0.0)
-    target_value: Mapped[float] = mapped_column(Float, nullable=False)
+    _current_value: Mapped[float] = mapped_column("current_value", Float, default=0.0)
+    target_value: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     is_unlocked: Mapped[bool] = mapped_column(Boolean, default=False)
     unlocked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     
     # Progress tracking
     progress_percentage: Mapped[float] = mapped_column(Float, default=0.0)
     last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    
+    # 增添自动计算方法，提高代码复用率
+    def _calculate_progress(self):
+        """计算进度百分比和解锁状态"""
+        # 处理 target_value 为 None 或 <=0 的情况
+        if self.target_value is None or self.target_value <= 0:
+            self.progress_percentage = 0.0
+            return
+        # 正常计算逻辑
+        self.progress_percentage = (self._current_value / self.target_value) * 100
+        # 检查是否达到解锁条件
+        if not self.is_unlocked and self.current_value >= self.target_value:
+            self.is_unlocked = True
+            if not self.unlocked_at:
+                self.unlocked_at = datetime.utcnow()
+
+    @property
+    def current_value(self):
+        return self._current_value
+
+    @current_value.setter
+    def current_value(self, value):
+        self._current_value = value
+        self._calculate_progress()
+        self.last_updated = datetime.utcnow()
     # Relationships
     user = relationship("UserProfileDB", back_populates="achievement_progress")
     
@@ -261,3 +296,18 @@ class PlatformConnectionDB(Base):
         UniqueConstraint("user_id", "platform_name", name="uq_user_platform"),
         Index("idx_platform_user_name", "user_id", "platform_name"),
     )
+
+# 这些事件监听器可以自动计算睡眠时长
+from sqlalchemy import event
+
+@event.listens_for(SleepSessionDB, 'before_insert')
+@event.listens_for(SleepSessionDB, 'before_update')
+def calculate_sleep_duration(mapper, connection, target):
+    """在数据库操作前自动计算睡眠时长"""
+    target._calculate_total_sleep_duration()
+# 用于自动计算成就进度的事件监听器
+@event.listens_for(AchievementProgressDB, 'before_insert')
+@event.listens_for(AchievementProgressDB, 'before_update')
+def calculate_achievement_progress(mapper, connection, target):
+    """在数据库操作前自动计算成就进度"""
+    target._calculate_progress()
