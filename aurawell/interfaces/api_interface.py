@@ -51,6 +51,7 @@ from ..middleware import configure_cors
 
 # Import core components
 from ..agent import ConversationAgent, HealthToolsRegistry
+from ..core.agent_router import agent_router
 from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 
@@ -226,16 +227,17 @@ async def login(login_request: LoginRequest):
 @app.post("/api/v1/chat", response_model=ChatResponse, tags=["Chat"])
 async def chat(
     chat_request: ChatRequest,
-    current_user_id: str = Depends(get_current_user_id),
-    tools_registry: HealthToolsRegistry = Depends(get_tools_registry)
+    current_user_id: str = Depends(get_current_user_id)
 ):
     """
     Process chat message and return AI response
 
+    使用代理路由器自动选择最合适的Agent（传统Agent或LangChain Agent）
+    确保API接口完全向后兼容
+
     Args:
         chat_request: Chat message and context
         current_user_id: Authenticated user ID
-        tools_registry: Health tools registry
 
     Returns:
         AI response with conversation metadata
@@ -244,28 +246,117 @@ async def chat(
         HTTPException: If chat processing fails
     """
     try:
-        # Create conversation agent
-        agent = ConversationAgent(
+        # 使用代理路由器处理消息，自动选择合适的Agent
+        response = await agent_router.process_message(
             user_id=current_user_id,
-            demo_mode=False  # Use real AI in production
+            message=chat_request.message,
+            context={"request_type": "chat"}
         )
 
-        # Process message
-        ai_response = await agent.a_run(chat_request.message)
+        # 确保响应格式与现有API完全一致
+        if response.get("success", True):
+            return ChatResponse(
+                message=response.get("message", "Chat processed successfully"),
+                reply=response.get("message", ""),
+                user_id=current_user_id,
+                conversation_id=f"conv_{current_user_id}_{int(datetime.now().timestamp())}",
+                tools_used=response.get("tools_used", [])
+            )
+        else:
+            # 处理错误响应
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=response.get("message", "Chat processing failed")
+            )
 
-        return ChatResponse(
-            message="Chat processed successfully",
-            reply=ai_response,
-            user_id=current_user_id,
-            conversation_id=f"conv_{current_user_id}_{int(datetime.now().timestamp())}",
-            tools_used=[]  # TODO: Extract from agent
-        )
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Chat processing failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Chat processing failed"
+        )
+
+
+# ============================================================================
+# FEATURE FLAGS ENDPOINTS (LangChain Migration Support)
+# ============================================================================
+
+@app.get("/api/v1/admin/feature-flags", tags=["System"])
+async def get_feature_flags(
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    获取功能开关状态（管理员功能）
+
+    Returns:
+        Dict: 所有功能开关的状态
+    """
+    try:
+        feature_status = agent_router.get_feature_status()
+        return {
+            "success": True,
+            "message": "Feature flags retrieved successfully",
+            "data": feature_status
+        }
+    except Exception as e:
+        logger.error(f"Failed to get feature flags: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve feature flags"
+        )
+
+
+@app.post("/api/v1/admin/feature-flags/langchain/enable", tags=["System"])
+async def enable_langchain_for_user(
+    target_user_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    为特定用户启用LangChain Agent（管理员功能）
+
+    Args:
+        target_user_id: 目标用户ID
+    """
+    try:
+        agent_router.enable_langchain_for_user(target_user_id)
+        return {
+            "success": True,
+            "message": f"LangChain Agent enabled for user {target_user_id}",
+            "data": {"user_id": target_user_id, "langchain_enabled": True}
+        }
+    except Exception as e:
+        logger.error(f"Failed to enable LangChain for user {target_user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to enable LangChain Agent"
+        )
+
+
+@app.post("/api/v1/admin/feature-flags/langchain/disable", tags=["System"])
+async def disable_langchain_for_user(
+    target_user_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    为特定用户禁用LangChain Agent（管理员功能）
+
+    Args:
+        target_user_id: 目标用户ID
+    """
+    try:
+        agent_router.disable_langchain_for_user(target_user_id)
+        return {
+            "success": True,
+            "message": f"LangChain Agent disabled for user {target_user_id}",
+            "data": {"user_id": target_user_id, "langchain_enabled": False}
+        }
+    except Exception as e:
+        logger.error(f"Failed to disable LangChain for user {target_user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to disable LangChain Agent"
         )
 
 

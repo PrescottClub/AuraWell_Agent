@@ -1,0 +1,22 @@
+{
+  "langchain_agent": {
+    "enabled": true,
+    "rollout_percentage": 0,
+    "user_whitelist": [
+      "test_user"
+    ],
+    "feature_whitelist": []
+  },
+  "rag_knowledge": {
+    "enabled": false,
+    "rollout_percentage": 0,
+    "user_whitelist": [],
+    "feature_whitelist": []
+  },
+  "mcp_protocol": {
+    "enabled": false,
+    "rollout_percentage": 0,
+    "user_whitelist": [],
+    "feature_whitelist": []
+  }
+}
