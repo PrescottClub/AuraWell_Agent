@@ -88,12 +88,16 @@ class TestProtectedEndpoints:
     
     def test_chat_endpoint(self, auth_headers):
         """Test chat endpoint"""
-        with patch('aurawell.interfaces.api_interface.ConversationAgent') as mock_agent:
-            # Mock the conversation agent
-            mock_instance = AsyncMock()
-            mock_instance.a_run.return_value = "Hello! I'm your health assistant."
-            mock_agent.return_value = mock_instance
-            
+        with patch('aurawell.interfaces.api_interface.agent_router') as mock_router:
+            # Mock the agent router - need to return an async mock
+            async def mock_process_message(*args, **kwargs):
+                return {
+                    "success": True,
+                    "message": "Hello! I'm your health assistant.",
+                    "tools_used": []
+                }
+            mock_router.process_message = mock_process_message
+
             response = client.post(
                 "/api/v1/chat",
                 json={

@@ -145,9 +145,12 @@ class ChatData(BaseModel):
     tools_used: Optional[List[str]] = None
 
 
-class ChatResponse(SuccessResponse[ChatData]):
-    """Chat conversation response"""
-    pass
+class ChatResponse(BaseResponse):
+    """Chat conversation response - 保持向后兼容的格式"""
+    reply: str
+    user_id: str
+    conversation_id: Optional[str] = None
+    tools_used: Optional[List[str]] = None
 
 
 # User Profile Models

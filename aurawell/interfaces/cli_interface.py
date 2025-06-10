@@ -1,6 +1,6 @@
 import asyncio
 import sys
-from aurawell.agent.conversation_agent import ConversationAgent
+from aurawell.langchain_agent.agent import LangChainAgent
 
 def main():
     """
@@ -13,7 +13,7 @@ def main():
     print("Type 'exit' or 'quit' to end the conversation.")
     print("-" * 20)
 
-    agent = ConversationAgent(user_id=user_id)
+    agent = LangChainAgent(user_id=user_id)
 
     # 在Windows上设置事件循环策略以支持asyncio.run
     if sys.platform == "win32":
@@ -28,8 +28,9 @@ def main():
                     break
                 
                 print("AuraWell is thinking...")
-                response = await agent.a_run(user_message)
-                print(f"AuraWell: {response}")
+                response = await agent.process_message(user_message, {})
+                message = response.get("message", "抱歉，我无法处理您的请求。")
+                print(f"AuraWell: {message}")
 
             except (KeyboardInterrupt, EOFError):
                 print("\n\nAuraWell: Goodbye! Session ended.")
