@@ -73,12 +73,12 @@ const onFinish = async (values) => {
 
         // 使用store保存token
         authStore.setToken(
-            response.data.access_token,
-            response.data.token_type,
-            response.data.expires_in
+            response.access_token,
+            response.token_type,
+            response.expires_in
         );
         localStorage.setItem('isLoggedIn', 'true');
-        console.log(response);
+        
         message.success('登录成功！');
         router.push('/admin');
     } catch (error) {
@@ -101,7 +101,6 @@ const onFinishFailed = (errorInfo) => {
     align-items: center;
     justify-content: center;
     background-color: #f0f2f5;
-
 }
 
 .login-form {

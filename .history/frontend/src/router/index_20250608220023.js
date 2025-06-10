@@ -48,11 +48,6 @@ const routes = [
         path: 'settings',
         name: 'Settings',
         component: () => import('../views/admin/Settings.vue')
-      },
-      {
-        path: 'health-summary',
-        name: 'HealthSummary',
-        component: () => import('../views/admin/HealthSummary.vue')
       }
     ]
   }

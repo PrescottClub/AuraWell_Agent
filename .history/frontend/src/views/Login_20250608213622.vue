@@ -51,15 +51,13 @@ import { reactive, ref } from 'vue';
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
-import request from '../utils/request';
-import { useAuthStore } from '../stores/auth';
+import request from '@/utils/request';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const loading = ref(false);
 const formState = reactive({
-    username: 'demo_user',
-    password: 'demo_password',
+    username: '',
+    password: '',
     remember: true,
 });
 
@@ -71,14 +69,12 @@ const onFinish = async (values) => {
             password: values.password
         });
 
-        // 使用store保存token
-        authStore.setToken(
-            response.data.access_token,
-            response.data.token_type,
-            response.data.expires_in
-        );
+        // 保存token到localStorage
+        localStorage.setItem('access_token', response.access_token);
+        localStorage.setItem('token_type', response.token_type);
+        localStorage.setItem('expires_in', response.expires_in);
         localStorage.setItem('isLoggedIn', 'true');
-        console.log(response);
+        
         message.success('登录成功！');
         router.push('/admin');
     } catch (error) {
@@ -101,7 +97,6 @@ const onFinishFailed = (errorInfo) => {
     align-items: center;
     justify-content: center;
     background-color: #f0f2f5;
-
 }
 
 .login-form {

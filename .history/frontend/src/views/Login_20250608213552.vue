@@ -51,38 +51,38 @@ import { reactive, ref } from 'vue';
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
-import request from '../utils/request';
-import { useAuthStore } from '../stores/auth';
+import axios from 'axios';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const loading = ref(false);
 const formState = reactive({
-    username: 'demo_user',
-    password: 'demo_password',
+    username: '',
+    password: '',
     remember: true,
 });
 
 const onFinish = async (values) => {
     try {
         loading.value = true;
-        const response = await request.post('/auth/login', {
+        const response = await axios.post('/api/v1/auth/login', {
             username: values.username,
             password: values.password
         });
 
-        // 使用store保存token
-        authStore.setToken(
-            response.data.access_token,
-            response.data.token_type,
-            response.data.expires_in
-        );
-        localStorage.setItem('isLoggedIn', 'true');
-        console.log(response);
-        message.success('登录成功！');
-        router.push('/admin');
+        if (response.data.status === 'success') {
+            // 保存token到localStorage
+            localStorage.setItem('access_token', response.data.access_token);
+            localStorage.setItem('token_type', response.data.token_type);
+            localStorage.setItem('expires_in', response.data.expires_in);
+            localStorage.setItem('isLoggedIn', 'true');
+            
+            message.success('登录成功！');
+            router.push('/admin');
+        } else {
+            message.error(response.data.message || '登录失败');
+        }
     } catch (error) {
-        console.error('登录失败：', error);
+        message.error('登录失败：' + (error.response?.data?.message || error.message || '未知错误'));
     } finally {
         loading.value = false;
     }
@@ -101,7 +101,6 @@ const onFinishFailed = (errorInfo) => {
     align-items: center;
     justify-content: center;
     background-color: #f0f2f5;
-
 }
 
 .login-form {

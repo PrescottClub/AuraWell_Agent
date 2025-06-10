@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { hasToken } from '../utils/auth';
 
 import App from '../App.vue';
 import BasicLayout from '../layout/BasicLayout.vue';
 import Login from '../views/Login.vue';
 import AdminLayout from '../layout/AdminLayout.vue';
-import Welcome from '../views/admin/Welcome.vue';
 
 const routes = [
   {
@@ -31,8 +31,12 @@ const routes = [
     children: [
       {
         path: '',
+        redirect: '/admin/welcome'
+      },
+      {
+        path: 'welcome',
         name: 'Welcome',
-        component: Welcome
+        component: () => import('../views/admin/Welcome.vue')
       },
       {
         path: 'dashboard',
@@ -48,27 +52,27 @@ const routes = [
         path: 'settings',
         name: 'Settings',
         component: () => import('../views/admin/Settings.vue')
-      },
-      {
-        path: 'health-summary',
-        name: 'HealthSummary',
-        component: () => import('../views/admin/HealthSummary.vue')
       }
     ]
   }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 });
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-  
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    next('/login');
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!hasToken()) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      });
+    } else {
+      next();
+    }
   } else {
     next();
   }
