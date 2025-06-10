@@ -163,5 +163,4 @@ build/
 .next/
 out/
 
-# Development tools
-.vite/ 
+# Development tools - keep .vite for frontend development 
