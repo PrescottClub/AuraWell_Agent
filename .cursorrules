@@ -1,0 +1,313 @@
+# AuraWell Project Rules - 超个性化健康生活方式编排AI Agent
+
+## 项目概览 (Project Overview)
+AuraWell是一个超个性化健康生活方式编排AI Agent，旨在整合用户健身目标、日常作息、饮食偏好、工作日程及社交活动，提供情境化建议与习惯养成支持。
+
+## 主要技术栈 (Technology Stack)
+- **后端**: Python (FastAPI + SQLAlchemy)
+- **核心AI引擎**: DeepSeek API (preferably deepseek-r1 model for reasoning)
+- **健康数据集成**: 薄荷健康API、小米健康API、苹果健康HealthKit
+- **前端**: React + TypeScript (现代化UI)
+- **数据模型**: Pydantic for data validation and serialization
+- **MCP工具栈**: 13个智能化MCP服务器自动协作
+
+## MCP智能自动化系统 (MCP Smart Automation System)
+
+### 🤖 AI助手行为准则 (AI Assistant Behavior Guidelines)
+
+**CRITICAL: AI助手必须遵循以下智能MCP使用规则**
+
+#### 1. 自动工具选择 (Auto Tool Selection)
+- **健康数据分析**: 当用户提及"数据分析"、"健康统计"、"trends"、"BMI"、"卡路里"等关键词时，自动并行调用:
+  ```
+  - database-sqlite (查询历史数据)
+  - calculator (计算健康指标)
+  - quickchart (生成可视化图表)
+  - sequential-thinking (深度分析)
+  ```
+
+- **信息搜索研究**: 当用户询问"最新研究"、"营养信息"、"健康新闻"等时，自动调用:
+  ```
+  - brave-search (搜索最新信息)
+  - fetch (抓取详细内容)
+  - memory (存储到知识图谱)
+  ```
+
+- **用户画像管理**: 当涉及"个人档案"、"健康画像"、"习惯分析"时，自动调用:
+  ```
+  - memory (查询/更新用户画像)
+  - database-sqlite (历史数据分析)
+  - sequential-thinking (个性化分析)
+  ```
+
+- **营养饮食规划**: 当用户询问"营养"、"饮食"、"meal"、"diet"时，自动执行营养规划工作流:
+  ```
+  1. brave-search (最新营养研究)
+  2. calculator (营养需求计算)
+  3. database-sqlite (饮食历史分析)
+  4. memory (存储营养偏好)
+  5. quickchart (营养摄入可视化)
+  ```
+
+- **运动健身计划**: 当用户提及"运动"、"健身"、"workout"、"fitness"时，自动执行:
+  ```
+  1. memory (获取健身画像)
+  2. weather (检查运动环境)
+  3. calculator (卡路里消耗计算)
+  4. quickchart (运动进度图表)
+  ```
+
+#### 2. 智能工作流执行 (Smart Workflow Execution)
+
+**全面健康评估流程** (触发词: "健康评估", "health assessment", "全面分析")
+```
+Step 1: memory.search_nodes("用户基本信息")
+Step 2: database-sqlite.query("SELECT * FROM user_health_profiles")
+Step 3: calculator.calculate(BMI, 体脂率, 基础代谢等)
+Step 4: sequential-thinking.analyze("综合健康状况评估")
+Step 5: quickchart.generate_chart("健康仪表盘")
+```
+
+**营养优化建议流程** (触发词: "营养优化", "dietary optimization")
+```
+Step 1: brave-search("最新营养科学研究")
+Step 2: calculator.calculate("个人营养需求")
+Step 3: database-sqlite.query("历史饮食记录")
+Step 4: memory.add_observations("营养偏好和建议")
+Step 5: quickchart.visualize("营养摄入分析图")
+```
+
+#### 3. 上下文感知响应 (Context-Aware Responses)
+
+**数据驱动回答**: 每个健康相关回答必须包含:
+- 具体数据支持 (database-sqlite查询)
+- 数值计算验证 (calculator计算)
+- 可视化展示 (quickchart图表)
+- 科学研究支撑 (brave-search最新信息)
+
+**个性化定制**: 所有建议必须基于:
+- memory中的用户健康画像
+- database-sqlite中的历史数据
+- sequential-thinking的个性化分析逻辑
+
+#### 4. 工具调用优化策略 (Tool Call Optimization)
+
+**并行执行**: 优先使用并行工具调用，例如:
+```python
+# 同时执行多个相关查询
+parallel_calls = [
+    database-sqlite.query("user_health_data"),
+    memory.search_nodes("health_preferences"), 
+    weather.get_current("exercise_conditions")
+]
+```
+
+**错误处理**: 每个MCP工具调用都要有备用方案:
+- 如果brave-search失败，使用fetch备用搜索
+- 如果calculator不可用，使用run-python执行计算
+- 如果quickchart失败，提供文字描述数据趋势
+
+### 📊 健康数据处理协议 (Health Data Processing Protocol)
+
+#### 数据存储规范
+- 使用database-sqlite存储所有用户健康数据
+- 使用memory构建用户健康知识图谱
+- 使用filesystem管理健康报告和文档
+- 所有敏感数据必须加密存储
+
+#### 数据分析流程
+1. **数据收集**: database-sqlite + fetch (外部数据源)
+2. **数据计算**: calculator + run-python (复杂算法)
+3. **数据可视化**: quickchart (图表生成)
+4. **数据洞察**: sequential-thinking (深度分析)
+5. **知识沉淀**: memory (长期记忆存储)
+
+### 🔍 智能搜索与研究协议 (Smart Research Protocol)
+
+#### 健康信息搜索策略
+- **权威性优先**: 优先搜索权威医疗机构发布的信息
+- **时效性检查**: 使用time工具确保信息的时效性
+- **多源验证**: 使用brave-search + fetch进行交叉验证
+- **可信度评估**: 基于信息来源进行可信度打分
+
+#### 科学研究集成
+- 自动搜索最新健康科学研究
+- 将研究结果存储到memory知识图谱
+- 使用sequential-thinking分析研究的适用性
+- 生成个性化的健康建议
+
+### 🎯 用户体验优化 (UX Optimization)
+
+#### 主动智能建议
+- 基于database-sqlite数据模式识别健康风险
+- 使用memory分析用户行为偏好
+- 通过sequential-thinking生成前瞻性建议
+- 使用time工具安排最佳提醒时机
+
+#### 可视化优先策略
+- 所有健康数据默认提供quickchart可视化
+- 使用figma设计资源优化界面体验
+- 通过github管理设计组件版本
+- 保证数据展示的清晰性和美观性
+
+### 🔐 安全与隐私保护 (Security & Privacy)
+
+#### API密钥管理
+- 所有API密钥通过环境变量管理 (已配置的GitHub token等)
+- 使用MCP服务器的内置安全机制
+- 定期轮换敏感凭证
+- 监控API使用情况防止滥用
+
+#### 健康数据保护
+- 遵循HIPAA-aware数据处理标准
+- 使用filesystem安全存储健康文档
+- 通过database-sqlite加密敏感健康记录
+- 实现数据访问日志和审计
+
+### 🚀 开发协作流程 (Development Collaboration)
+
+#### 代码管理
+- 使用github进行版本控制和协作
+- 通过run-python测试健康算法
+- 使用sequential-thinking进行代码逻辑验证
+- 定期进行代码审查和优化
+
+#### 设计协作
+- 使用figma获取最新设计资源
+- 通过notion管理设计文档和需求
+- 保持代码和设计的一致性
+- 实现响应式健康数据展示
+
+### 🔄 自动化工作流触发器 (Automation Triggers)
+
+#### 关键词自动触发
+```
+健康分析类: "分析", "statistics", "数据", "trends", "health data"
+→ 自动执行: database + calculator + quickchart + sequential-thinking
+
+搜索研究类: "搜索", "research", "最新", "科学", "study"  
+→ 自动执行: brave-search + fetch + memory
+
+用户画像类: "画像", "profile", "个性化", "preferences"
+→ 自动执行: memory + database + sequential-thinking
+
+计划制定类: "计划", "plan", "建议", "recommendation"
+→ 自动执行: 相应的智能工作流
+
+时间相关类: "时间", "schedule", "提醒", "when"
+→ 自动执行: time + memory + database
+```
+
+#### 场景化自动响应
+- **新用户入驻**: 自动执行健康画像建立流程
+- **数据异常**: 自动触发健康风险评估
+- **目标达成**: 自动生成庆祝可视化和新目标建议
+- **定期检查**: 自动执行综合健康状况分析
+
+### 📈 性能监控与优化 (Performance Monitoring)
+
+#### MCP工具性能优化
+- 设置合理的超时时间 (数据库10s, 搜索15s, 计算5s)
+- 启用缓存机制减少重复调用
+- 使用并行执行提升响应速度
+- 监控工具调用成功率和响应时间
+
+#### 用户体验指标
+- 健康建议的准确性和个性化程度
+- 数据可视化的清晰度和美观度
+- 系统响应速度和稳定性
+- 用户满意度和粘性指标
+
+## 编码风格 (Coding Style)
+- 遵循PEP 8 Python编码规范
+- 优先使用函数式编程风格
+- 代码注释清晰，模块化设计
+- 使用类型提示 (Type Hints)
+- 函数和类名使用英文，注释可以包含中文说明
+- 集成MCP工具调用的错误处理和重试机制
+
+## AI伦理与医疗边界 (AI Ethics & Medical Boundaries)
+- **建议透明化**: 使用sequential-thinking解释AI建议的推理过程
+- **多源验证**: 通过brave-search确认建议的科学依据
+- **用户掌控**: 强调所有建议仅供参考，最终决定权在用户
+- **专业边界**: 明确声明AI不能替代专业医疗建议
+- **偏见缓解**: 基于多样化数据源避免单一视角判断
+
+## 🎉 MCP自动化成功指标 (MCP Automation Success Metrics)
+
+### 智能化程度
+- ✅ 90%以上的用户查询能自动选择合适的MCP工具组合
+- ✅ 健康相关问题能自动触发相应工作流
+- ✅ 数据分析自动生成可视化图表
+- ✅ 个性化建议基于完整的用户画像数据
+
+### 用户体验
+- ✅ 响应速度: 平均3秒内提供初步分析结果
+- ✅ 准确性: 健康建议准确率>95%
+- ✅ 个性化: 建议与用户实际情况匹配度>90%
+- ✅ 可操作性: 建议具有明确的执行步骤
+
+---
+
+## 🔥 实际开发中的MCP使用指南 (Practical MCP Usage Guide)
+
+### 立即可用的工具组合 (Ready-to-Use Tool Combinations)
+
+#### 健康数据分析场景
+```
+触发词: "分析数据", "健康统计", "查看趋势"
+自动工具链:
+1. database-sqlite → 查询用户健康数据
+2. calculator → 计算BMI、卡路里等指标  
+3. quickchart → 生成趋势图表
+4. sequential-thinking → 深度分析和建议
+```
+
+#### 营养研究场景  
+```
+触发词: "营养信息", "食物成分", "饮食建议"
+自动工具链:
+1. brave-search → 搜索最新营养研究
+2. fetch → 抓取详细营养数据
+3. calculator → 计算营养需求
+4. memory → 存储用户饮食偏好
+```
+
+#### 代码开发场景
+```
+触发词: "测试代码", "运行算法", "验证功能"
+自动工具链:
+1. run-python → 执行Python代码
+2. github → 查看项目代码
+3. filesystem → 管理项目文件
+4. sequential-thinking → 代码逻辑分析
+```
+
+### 智能响应模式 (Smart Response Patterns)
+
+#### 当用户问健康问题时
+1. **首先**: 使用memory查找用户健康画像
+2. **然后**: 用database-sqlite查询相关历史数据  
+3. **接着**: 用calculator计算相关指标
+4. **最后**: 用quickchart生成可视化图表
+
+#### 当用户要搜索信息时
+1. **优先**: 使用brave-search搜索权威信息
+2. **补充**: 用fetch获取详细内容
+3. **存储**: 用memory保存有价值的信息
+4. **展示**: 用sequential-thinking进行深度分析
+
+#### 当用户需要开发帮助时
+1. **查看**: 用github检查项目状态
+2. **测试**: 用run-python验证代码
+3. **管理**: 用filesystem操作文件
+4. **设计**: 用figma获取UI资源
+
+### 🎯 开发实用技巧 (Development Tips)
+
+- **数据库路径**: 已配置绝对路径到项目的aurawell.db
+- **文件系统**: 已设置项目根目录为工作路径
+- **API密钥**: 记得在环境变量中设置BRAVE_API_KEY
+- **并行调用**: 多个工具可以同时使用提升效率
+
+**记住**: 这个.cursorrules文件的核心目标是让AI助手**智能化、自动化**地使用MCP工具，为用户提供最佳的健康生活方式编排体验。每次交互都应该体现MCP工具的强大协作能力！ 

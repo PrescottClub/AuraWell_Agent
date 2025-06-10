@@ -1,8 +1,14 @@
-# Cursor IDE specific files (keep local only)
-.cursor/
-.cursorrules
-.cursorignore
-.cursorindexingignore
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Cursor IDE specific files (selectively ignore)
+.cursor/settings/
+.cursor/logs/
+# Keep .cursorrules as it's part of project setup
 
 # Environment and secrets
 .env
@@ -69,13 +75,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -85,7 +84,7 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Testing
+# Testing and coverage
 .coverage
 .pytest_cache/
 .tox/
@@ -94,9 +93,11 @@ coverage.xml
 *.cover
 .hypothesis/
 .cache
+htmlcov/
 
 # Documentation builds
 docs/_build/
+site/
 
 # Backup files
 *.bak
@@ -140,4 +141,27 @@ celerybeat.pid
 # mypy
 .mypy_cache/
 .dmypy.json
-dmypy.json 
+dmypy.json
+
+# Frontend build artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Frontend environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Frontend build output
+dist/
+build/
+.next/
+out/
+
+# Development tools
+.vite/ 
