@@ -8,10 +8,5 @@
 
 </style>
 <script setup>
-
-  import BasicLayout from './layout/BasicLayout.vue';
-  import { RouterView, useRoute } from 'vue-router'
-  import { computed } from 'vue'
-  const route = useRoute()
-  const isLoginPage = computed(() => route.path === '/login')
+  import { RouterView } from 'vue-router'
 </script>

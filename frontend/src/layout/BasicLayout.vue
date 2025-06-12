@@ -31,18 +31,45 @@ import GlobalHeader from '../components/GlobalHeader.vue';
 }
 
 #basicLayout .content {
-    padding: 0 180px;
-    margin-bottom: 20px;
+    padding: 0;
+    margin-bottom: 60px; /* 为固定footer留出空间 */
     border-color: #fff;
     background-color: linear-gradient(to right,#fefefe,#fff);
+    min-height: calc(100vh - 120px); /* 减去header和footer的高度 */
 }
 
 #basicLayout .header{
     background: white;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     color: unset;
-    padding-inline: 20px;
-    padding: 0 180px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 响应式设计 */
+@media (min-width: 1200px) {
+    #basicLayout .content {
+        padding: 0 50px;
+    }
+
+    #basicLayout .header {
+        padding: 0 50px;
+    }
+}
+
+@media (max-width: 768px) {
+    #basicLayout .content {
+        padding: 0 16px;
+        margin-bottom: 80px;
+    }
+
+    #basicLayout .header {
+        padding: 0 16px;
+    }
+
+    #basicLayout .footer {
+        padding: 12px 16px;
+    }
 }
 
 

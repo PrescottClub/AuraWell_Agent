@@ -100,6 +100,31 @@ class LoginRequest(BaseModel):
         description="Password (6-128 characters)"
     )
 
+
+class RegisterRequest(BaseModel):
+    """User registration request"""
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        description="Username (3-50 characters, alphanumeric and underscore only)"
+    )
+    email: str = Field(
+        ...,
+        pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+        description="Valid email address"
+    )
+    password: str = Field(
+        ...,
+        min_length=6,
+        max_length=128,
+        description="Password (6-128 characters)"
+    )
+    health_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Initial health data"
+    )
+
     @field_validator('username')
     @classmethod
     def validate_username(cls, v):
@@ -134,6 +159,7 @@ class TokenResponse(SuccessResponse[TokenData]):
 class ChatRequest(BaseModel):
     """Chat conversation request"""
     message: str = Field(..., min_length=1, max_length=1000)
+    conversation_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
 
 
@@ -151,6 +177,100 @@ class ChatResponse(BaseResponse):
     user_id: str
     conversation_id: Optional[str] = None
     tools_used: Optional[List[str]] = None
+
+
+# Enhanced Chat Models for Health Management
+class HealthChatRequest(BaseModel):
+    """Enhanced health chat request with conversation context"""
+    message: str = Field(..., min_length=1, max_length=2000)
+    conversation_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+
+class HealthSuggestion(BaseModel):
+    """Health suggestion card"""
+    title: str
+    content: str
+    action: Optional[str] = None
+    action_text: Optional[str] = None
+
+
+class QuickReply(BaseModel):
+    """Quick reply option"""
+    text: str
+
+
+class HealthChatResponse(BaseResponse):
+    """Enhanced health chat response with suggestions and quick replies"""
+    reply: str
+    conversation_id: str
+    message_id: str
+    timestamp: datetime
+    suggestions: Optional[List[HealthSuggestion]] = None
+    quick_replies: Optional[List[QuickReply]] = None
+
+
+# Conversation Management Models
+class ConversationCreateRequest(BaseModel):
+    """Request to create a new conversation"""
+    type: str = Field(default="health_consultation")
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ConversationResponse(BaseModel):
+    """Conversation metadata response"""
+    conversation_id: str
+    type: str
+    created_at: datetime
+    title: Optional[str] = None
+    status: str = "active"
+
+
+class ConversationListItem(BaseModel):
+    """Conversation list item"""
+    id: str
+    title: Optional[str] = None
+    last_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+    status: str = "active"
+
+
+class ConversationListResponse(BaseResponse):
+    """List of user conversations"""
+    conversations: List[ConversationListItem] = Field(default_factory=list)
+
+
+# Message History Models
+class ChatMessage(BaseModel):
+    """Individual chat message"""
+    id: str
+    sender: str  # 'user' or 'agent'
+    content: str
+    timestamp: datetime
+    suggestions: Optional[List[HealthSuggestion]] = None
+    quick_replies: Optional[List[QuickReply]] = None
+
+
+class ChatHistoryRequest(BaseModel):
+    """Request for chat history"""
+    conversation_id: str
+    limit: int = Field(default=50, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
+
+class ChatHistoryResponse(BaseResponse):
+    """Chat history response"""
+    messages: List[ChatMessage]
+    total: int
+    has_more: bool
+
+
+# Health Suggestions Models
+class HealthSuggestionsResponse(BaseResponse):
+    """Health suggestions template response"""
+    suggestions: List[str]
 
 
 # User Profile Models
@@ -771,3 +891,117 @@ class BatchOperationResult(BaseModel):
 class BatchHealthGoalResponse(SuccessResponse[BatchOperationResult]):
     """Batch health goal operations response"""
     pass
+
+
+# Health Plan Models
+class HealthPlanModule(BaseModel):
+    """Health plan module"""
+    module_type: str = Field(..., description="Module type (diet, exercise, weight, sleep, mental)")
+    title: str = Field(..., description="Module title")
+    description: str = Field(..., description="Module description")
+    content: Dict[str, Any] = Field(..., description="Module content")
+    duration_days: int = Field(..., description="Module duration in days")
+
+
+class HealthPlan(BaseModel):
+    """Health plan model"""
+    plan_id: str
+    title: str
+    description: str
+    modules: List[HealthPlanModule]
+    duration_days: int
+    status: str = Field(default="active", description="Plan status")
+    progress: float = Field(default=0.0, ge=0.0, le=100.0, description="Completion progress")
+    created_at: datetime
+    updated_at: datetime
+
+
+class HealthPlanRequest(BaseModel):
+    """Health plan generation request"""
+    goals: List[str] = Field(..., description="Health goals")
+    modules: List[str] = Field(..., description="Plan modules to include")
+    duration_days: int = Field(default=30, ge=7, le=365, description="Plan duration in days")
+    preferences: Optional[Dict[str, Any]] = Field(None, description="User preferences")
+
+
+class HealthPlanResponse(BaseResponse):
+    """Health plan response"""
+    plan: HealthPlan
+
+
+class HealthPlansListResponse(BaseResponse):
+    """Health plans list response"""
+    plans: List[HealthPlan]
+    total_count: int
+
+
+class HealthPlanGenerateRequest(BaseModel):
+    """Health plan generation request"""
+    goals: List[str] = Field(..., min_items=1, description="Health goals")
+    modules: List[str] = Field(..., min_items=1, description="Plan modules")
+    duration_days: int = Field(default=30, ge=7, le=365, description="Plan duration")
+    user_preferences: Optional[Dict[str, Any]] = Field(None, description="User preferences")
+
+
+class HealthPlanGenerateResponse(BaseResponse):
+    """Health plan generation response"""
+    plan: HealthPlan
+    recommendations: List[str] = Field(default=[], description="Additional recommendations")
+
+
+# User Health Data Models
+class UserHealthDataRequest(BaseModel):
+    """User health data update request"""
+    age: Optional[int] = Field(None, ge=13, le=120, description="Age")
+    gender: Optional[str] = Field(None, pattern="^(male|female|other)$", description="Gender")
+    height: Optional[float] = Field(None, ge=50, le=300, description="Height in cm")
+    weight: Optional[float] = Field(None, ge=20, le=500, description="Weight in kg")
+    activity_level: Optional[str] = Field(None, description="Activity level")
+
+
+class UserHealthDataResponse(BaseResponse):
+    """User health data response"""
+    user_id: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
+    activity_level: Optional[str] = None
+    bmi: Optional[float] = None
+    bmi_category: Optional[str] = None
+    updated_at: datetime
+
+
+# User Health Goals Models
+class UserHealthGoalRequest(BaseModel):
+    """User health goal creation/update request"""
+    title: str = Field(..., min_length=1, max_length=200, description="Goal title")
+    description: Optional[str] = Field(None, max_length=1000, description="Goal description")
+    type: str = Field(..., description="Goal type")
+    target_value: Optional[float] = Field(None, description="Target value")
+    current_value: Optional[float] = Field(None, description="Current value")
+    unit: Optional[str] = Field(None, description="Unit of measurement")
+    target_date: Optional[date] = Field(None, description="Target completion date")
+    status: str = Field(default="active", description="Goal status")
+
+
+class UserHealthGoalResponse(BaseModel):
+    """User health goal response"""
+    id: str
+    title: str
+    description: Optional[str] = None
+    type: str
+    target_value: Optional[float] = None
+    current_value: Optional[float] = None
+    unit: Optional[str] = None
+    target_date: Optional[date] = None
+    status: str
+    progress: float = Field(default=0.0, ge=0.0, le=100.0)
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserHealthGoalsListResponse(BaseResponse):
+    """User health goals list response"""
+    goals: List[UserHealthGoalResponse]
+    total_count: int

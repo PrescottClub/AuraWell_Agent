@@ -55,6 +55,8 @@ class UserProfileDB(Base):
     nutrition_entries = relationship("NutritionEntryDB", back_populates="user")
     achievement_progress = relationship("AchievementProgressDB", back_populates="user")
     platform_connections = relationship("PlatformConnectionDB", back_populates="user")
+    conversations = relationship("ConversationDB", back_populates="user")
+    health_profile = relationship("UserHealthProfileDB", back_populates="user", uselist=False)
 
 
 class ActivitySummaryDB(Base):
@@ -231,33 +233,127 @@ class AchievementProgressDB(Base):
 class PlatformConnectionDB(Base):
     """Platform connection database model"""
     __tablename__ = "platform_connections"
-    
+
     # Primary key
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    
+
     # Foreign key
     user_id: Mapped[str] = mapped_column(String(255), ForeignKey("user_profiles.user_id"))
-    
+
     # Platform data
     platform_name: Mapped[str] = mapped_column(String(50), nullable=False)
     platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     access_token: Mapped[Optional[str]] = mapped_column(Text)  # Encrypted
     refresh_token: Mapped[Optional[str]] = mapped_column(Text)  # Encrypted
     token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    
+
     # Connection status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     sync_status: Mapped[str] = mapped_column(String(50), default="pending")
-    
+
     # Configuration (stored as JSON)
     sync_preferences: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
-    
+
     # Relationships
     user = relationship("UserProfileDB", back_populates="platform_connections")
-    
+
     # Constraints
     __table_args__ = (
         UniqueConstraint("user_id", "platform_name", name="uq_user_platform"),
         Index("idx_platform_user_name", "user_id", "platform_name"),
+    )
+
+
+class ConversationDB(Base):
+    """Conversation database model for health chat sessions"""
+    __tablename__ = "conversations"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign key
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("user_profiles.user_id"))
+
+    # Conversation metadata
+    title: Mapped[Optional[str]] = mapped_column(String(200))
+    type: Mapped[str] = mapped_column(String(50), default="health_consultation")
+    status: Mapped[str] = mapped_column(String(20), default="active")
+
+    # Additional metadata (stored as JSON)
+    extra_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    user = relationship("UserProfileDB")
+    messages = relationship("MessageDB", back_populates="conversation", cascade="all, delete-orphan")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_conversation_user_id", "user_id"),
+        Index("idx_conversation_created_at", "created_at"),
+        Index("idx_conversation_status", "status"),
+    )
+
+
+class MessageDB(Base):
+    """Message database model for chat messages"""
+    __tablename__ = "messages"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign keys
+    conversation_id: Mapped[str] = mapped_column(String(255), ForeignKey("conversations.id"))
+
+    # Message data
+    sender: Mapped[str] = mapped_column(String(20), nullable=False)  # 'user' or 'agent'
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Additional message metadata (stored as JSON)
+    extra_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    conversation = relationship("ConversationDB", back_populates="messages")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_message_conversation_id", "conversation_id"),
+        Index("idx_message_created_at", "created_at"),
+        Index("idx_message_sender", "sender"),
+    )
+
+
+class UserHealthProfileDB(Base):
+    """User health profile database model for storing health-specific information"""
+    __tablename__ = "user_health_profiles"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign key
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("user_profiles.user_id"), unique=True)
+
+    # Basic health information (stored as JSON for flexibility)
+    basic_info: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # height, weight, age, etc.
+    health_goals: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # weight loss, fitness goals, etc.
+    preferences: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # dietary preferences, exercise preferences
+    medical_history: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # encrypted sensitive data
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    user = relationship("UserProfileDB")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_health_profile_user_id", "user_id"),
     )
