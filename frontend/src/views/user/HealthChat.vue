@@ -143,16 +143,18 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { message as antMessage } from 'ant-design-vue'
-import { 
-  RobotOutlined, 
-  SendOutlined, 
-  HistoryOutlined, 
-  ClearOutlined 
+import {
+  RobotOutlined,
+  SendOutlined,
+  HistoryOutlined,
+  ClearOutlined
 } from '@ant-design/icons-vue'
 
 import ChatMessage from '../../components/chat/ChatMessage.vue'
 import TypingIndicator from '../../components/chat/TypingIndicator.vue'
 import HealthChatAPI from '../../api/chat.js'
+import { useAuthStore } from '../../stores/auth.js'
+import request from '../../utils/request.js'
 
 // 响应式数据
 const inputMessage = ref('')
@@ -175,6 +177,7 @@ const quickStartSuggestions = ref([
 
 // 生命周期
 onMounted(async () => {
+  await ensureAuthenticated()
   await initializeChat()
   await loadConversationHistory()
 })
@@ -187,12 +190,43 @@ watch(messages, () => {
 }, { deep: true })
 
 // 方法
+const ensureAuthenticated = async () => {
+  try {
+    const authStore = useAuthStore()
+
+    // 检查是否已有token
+    if (authStore.token) {
+      console.log('用户已认证')
+      return
+    }
+
+    // 自动登录（用于演示）
+    console.log('正在自动登录...')
+    const response = await request.post('/auth/login', {
+      username: 'test_user',
+      password: 'test_password'
+    })
+
+    if (response.data) {
+      authStore.setToken(
+        response.data.access_token,
+        response.data.token_type,
+        response.data.expires_in
+      )
+      console.log('自动登录成功')
+    }
+  } catch (error) {
+    console.error('认证失败:', error)
+    antMessage.error('认证失败，请刷新页面重试')
+  }
+}
+
 const initializeChat = async () => {
   try {
     // 创建新对话
     const response = await HealthChatAPI.createConversation()
-    if (response.data) {
-      currentConversationId.value = response.data.conversation_id
+    if (response.conversation_id || response.data?.conversation_id) {
+      currentConversationId.value = response.conversation_id || response.data.conversation_id
     }
   } catch (error) {
     console.error('初始化聊天失败:', error)
@@ -230,10 +264,10 @@ const sendMessage = async () => {
     const aiMessage = {
       id: Date.now() + 1,
       sender: 'agent',
-      content: response.data?.reply || response.data?.content || '抱歉，我现在无法处理您的请求，请稍后再试。',
+      content: response.reply || response.data?.reply || response.data?.content || '抱歉，我现在无法处理您的请求，请稍后再试。',
       timestamp: new Date().toISOString(),
-      suggestions: response.data?.suggestions || [],
-      quickReplies: response.data?.quickReplies || []
+      suggestions: response.suggestions || response.data?.suggestions || [],
+      quickReplies: response.quick_replies || response.data?.quickReplies || []
     }
 
     messages.value.push(aiMessage)
@@ -286,7 +320,7 @@ const loadConversationHistory = async () => {
   loadingHistory.value = true
   try {
     const response = await HealthChatAPI.getConversations()
-    conversationHistory.value = response.data || []
+    conversationHistory.value = response.conversations || response.data?.conversations || response.data || []
   } catch (error) {
     console.error('加载对话历史失败:', error)
   } finally {

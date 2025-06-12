@@ -12,8 +12,8 @@ export class HealthChatAPI {
    */
   static async sendMessage(message, conversationId = null) {
     try {
-      // 首先尝试真实API
-      const response = await request.post('/chat', {
+      // 使用新的健康聊天API端点
+      const response = await request.post('/chat/message', {
         message: message.trim(),
         conversation_id: conversationId,
         context: {
@@ -298,22 +298,30 @@ export class HealthChatAPI {
 
       // 返回模拟对话列表
       return {
-        data: [
-          {
-            id: 'mock_conv_1',
-            title: '减重计划咨询',
-            lastMessage: '我为您制定了个性化的减重方案...',
-            date: '今天',
-            created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30分钟前
-          },
-          {
-            id: 'mock_conv_2',
-            title: '睡眠质量改善',
-            lastMessage: '根据您的作息情况，建议...',
-            date: '昨天',
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1天前
-          }
-        ]
+        data: {
+          conversations: [
+            {
+              id: 'mock_conv_1',
+              title: '减重计划咨询',
+              last_message: '我为您制定了个性化的减重方案...',
+              date: '今天',
+              created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30分钟前
+              updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+              message_count: 15,
+              status: 'active'
+            },
+            {
+              id: 'mock_conv_2',
+              title: '睡眠质量改善',
+              last_message: '根据您的作息情况，建议...',
+              date: '昨天',
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1天前
+              updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+              message_count: 8,
+              status: 'active'
+            }
+          ]
+        }
       }
     }
   }

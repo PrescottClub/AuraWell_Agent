@@ -15,10 +15,42 @@
                   @click="handleMenuClick"
                 />
             </a-col>
-            <a-col felx="100px">
-                <div class="user-login-status">
-                <a-button type="primary" href="/login">LoginIn</a-button>
-            </div>
+            <a-col flex="200px">
+                <div class="user-actions">
+                    <!-- 未登录状态 -->
+                    <div v-if="!authStore.token" class="auth-buttons">
+                        <a-button @click="router.push('/login')">登录</a-button>
+                        <a-button type="primary" @click="router.push('/register')">注册</a-button>
+                    </div>
+
+                    <!-- 已登录状态 -->
+                    <div v-else class="user-menu">
+                        <a-dropdown>
+                            <a-button type="text" class="user-info-btn">
+                                <UserOutlined />
+                                <span class="username">{{ userStore.userProfile.username || '用户' }}</span>
+                                <DownOutlined />
+                            </a-button>
+                            <template #overlay>
+                                <a-menu>
+                                    <a-menu-item @click="router.push('/profile')">
+                                        <UserOutlined />
+                                        个人档案
+                                    </a-menu-item>
+                                    <a-menu-item @click="router.push('/health-plan')">
+                                        <FileTextOutlined />
+                                        我的计划
+                                    </a-menu-item>
+                                    <a-menu-divider />
+                                    <a-menu-item @click="handleLogout" class="logout-item">
+                                        <LogoutOutlined />
+                                        退出登录
+                                    </a-menu-item>
+                                </a-menu>
+                            </template>
+                        </a-dropdown>
+                    </div>
+                </div>
             </a-col>
         </a-row>
     </div>
@@ -29,12 +61,19 @@ import { useRouter, useRoute } from 'vue-router';
 import {
   HomeOutlined,
   MessageOutlined,
-  SettingOutlined,
-  DashboardOutlined
+  UserOutlined,
+  FileTextOutlined,
+  DownOutlined,
+  LogoutOutlined
 } from '@ant-design/icons-vue';
+import { useAuthStore } from '../stores/auth.js';
+import { useUserStore } from '../stores/user.js';
+import { message } from 'ant-design-vue';
 
 const router = useRouter();
 const route = useRoute();
+const authStore = useAuthStore();
+const userStore = useUserStore();
 const current = ref(['home']);
 
 const items = ref([
@@ -51,16 +90,16 @@ const items = ref([
         title: '健康咨询',
     },
     {
-        key: 'dashboard',
-        icon: () => h(DashboardOutlined),
-        label: '健康数据',
-        title: '健康数据',
+        key: 'health-plan',
+        icon: () => h(FileTextOutlined),
+        label: '健康计划',
+        title: '健康计划',
     },
     {
-        key: 'settings',
-        icon: () => h(SettingOutlined),
-        label: '设置',
-        title: '设置',
+        key: 'profile',
+        icon: () => h(UserOutlined),
+        label: '个人档案',
+        title: '个人档案',
     }
 ]);
 
@@ -75,12 +114,24 @@ const handleMenuClick = ({ key }) => {
     case 'health-chat':
       router.push('/health-chat');
       break;
-    case 'dashboard':
-      router.push('/admin/dashboard');
+    case 'health-plan':
+      router.push('/health-plan');
       break;
-    case 'settings':
-      router.push('/admin/settings');
+    case 'profile':
+      router.push('/profile');
       break;
+  }
+};
+
+// 处理用户退出登录
+const handleLogout = async () => {
+  try {
+    authStore.clearToken();
+    userStore.clearUserData();
+    message.success('退出登录成功');
+    router.push('/');
+  } catch (error) {
+    message.error('退出登录失败');
   }
 };
 
@@ -91,10 +142,12 @@ const updateCurrentMenu = () => {
     current.value = ['home'];
   } else if (path.includes('health-chat')) {
     current.value = ['health-chat'];
-  } else if (path.includes('dashboard')) {
-    current.value = ['dashboard'];
-  } else if (path.includes('settings')) {
-    current.value = ['settings'];
+  } else if (path.includes('health-plan')) {
+    current.value = ['health-plan'];
+  } else if (path.includes('profile')) {
+    current.value = ['profile'];
+  } else {
+    current.value = [];
   }
 };
 
@@ -105,6 +158,11 @@ router.afterEach(() => {
 
 // 初始化
 updateCurrentMenu();
+
+// 如果用户已登录，获取用户信息
+if (authStore.token && !userStore.userProfile.username) {
+  userStore.fetchUserProfile().catch(console.error);
+}
 </script>
 
 <style scoped>
@@ -127,6 +185,66 @@ updateCurrentMenu();
 
 .logo {
     height: 18px;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+}
+
+.user-info-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.user-info-btn:hover {
+    background-color: #f5f5f5;
+}
+
+.username {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.logout-item {
+    color: #ef4444 !important;
+}
+
+.logout-item:hover {
+    background-color: #fef2f2 !important;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .auth-buttons {
+        gap: 8px;
+    }
+
+    .auth-buttons .ant-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .username {
+        display: none;
+    }
 }
 
 

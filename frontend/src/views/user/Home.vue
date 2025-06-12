@@ -54,6 +54,49 @@
             </div>
         </section>
 
+        <!-- Quick Access Section -->
+        <section class="quick-access-section">
+            <div class="section-header">
+                <h2 class="section-title animate-on-scroll">
+                    <span class="title-icon">⚡</span>
+                    <span class="title-text">快速入口</span>
+                </h2>
+                <p class="section-subtitle animate-on-scroll">
+                    一键访问您的健康管理工具
+                </p>
+            </div>
+
+            <div class="quick-access-grid">
+                <div class="access-card animate-on-scroll" @click="router.push('/health-chat')" data-delay="0">
+                    <div class="access-icon">💬</div>
+                    <h3>健康咨询</h3>
+                    <p>与AI助手对话，获取个性化健康建议</p>
+                    <div class="access-arrow">→</div>
+                </div>
+
+                <div class="access-card animate-on-scroll" @click="router.push('/health-plan')" data-delay="100">
+                    <div class="access-icon">📋</div>
+                    <h3>健康计划</h3>
+                    <p>生成和管理您的个性化健康计划</p>
+                    <div class="access-arrow">→</div>
+                </div>
+
+                <div class="access-card animate-on-scroll" @click="router.push('/profile')" data-delay="200">
+                    <div class="access-icon">👤</div>
+                    <h3>个人档案</h3>
+                    <p>管理您的健康数据和目标设定</p>
+                    <div class="access-arrow">→</div>
+                </div>
+
+                <div class="access-card animate-on-scroll" @click="router.push('/register')" data-delay="300">
+                    <div class="access-icon">🚀</div>
+                    <h3>立即注册</h3>
+                    <p>加入AuraWell，开始健康管理之旅</p>
+                    <div class="access-arrow">→</div>
+                </div>
+            </div>
+        </section>
+
         <!-- Features Section -->
         <section class="features-section" ref="featuresSection">
             <div class="section-header">
@@ -586,6 +629,83 @@ onUnmounted(() => {
 .scroll-text {
     font-size: 0.9rem;
     opacity: 0.8;
+}
+
+/* Quick Access Section */
+.quick-access-section {
+    padding: 80px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.access-card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.access-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s ease;
+}
+
+.access-card:hover::before {
+    left: 100%;
+}
+
+.access-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+}
+
+.access-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.access-card h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+
+.access-card p {
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.access-arrow {
+    font-size: 1.5rem;
+    color: #667eea;
+    transition: transform 0.3s ease;
+}
+
+.access-card:hover .access-arrow {
+    transform: translateX(8px);
 }
 
 /* Features Section */

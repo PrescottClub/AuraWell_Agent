@@ -18,8 +18,10 @@ import time
 # Import models and authentication
 from ..models.api_models import (
     BaseResponse, ErrorResponse, ResponseStatus, SuccessResponse,
-    LoginRequest, TokenResponse, TokenData,
+    LoginRequest, RegisterRequest, TokenResponse, TokenData,
     ChatRequest, ChatResponse, ChatData,
+    HealthChatRequest, HealthChatResponse, ConversationCreateRequest, ConversationResponse,
+    ConversationListResponse, ChatHistoryRequest, ChatHistoryResponse, HealthSuggestionsResponse,
     UserProfileRequest, UserProfileResponse,
     HealthGoalRequest, HealthGoalResponse, HealthGoalsListResponse,
     HealthSummaryResponse, ActivitySummary, SleepSummary,
@@ -29,7 +31,11 @@ from ..models.api_models import (
     HealthGoalFilterParams, HealthDataFilterParams, AchievementFilterParams,
     PaginatedHealthGoalsResponse, PaginatedActivityDataResponse,
     PaginatedSleepDataResponse, PaginatedAchievementsResponse,
-    BatchHealthGoalRequest, BatchHealthGoalResponse, PaginationMeta
+    BatchHealthGoalRequest, BatchHealthGoalResponse, PaginationMeta,
+    HealthPlanRequest, HealthPlanResponse, HealthPlansListResponse,
+    HealthPlanGenerateRequest, HealthPlanGenerateResponse, HealthPlan, HealthPlanModule,
+    UserHealthDataRequest, UserHealthDataResponse,
+    UserHealthGoalRequest, UserHealthGoalResponse, UserHealthGoalsListResponse
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -54,6 +60,7 @@ from ..core.agent_router import agent_router
 from ..agent import HealthToolsRegistry  # 保持API兼容性
 from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
+from ..services.chat_service import ChatService
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +104,7 @@ _user_repo = None
 _health_repo = None
 _achievement_repo = None
 _tools_registry = None
+_chat_service = None
 
 
 async def get_db_manager():
@@ -121,6 +129,14 @@ async def get_user_repository():
 
         async def get_user_by_id(self, user_id: str):
             # 返回None表示用户不存在，需要创建新用户
+            return None
+
+        async def get_user_by_username(self, username: str):
+            # 检查用户名是否存在
+            return None
+
+        async def get_user_by_email(self, email: str):
+            # 检查邮箱是否存在
             return None
 
         async def create_user(self, user_profile):
@@ -206,6 +222,14 @@ async def get_tools_registry():
     return _tools_registry
 
 
+async def get_chat_service():
+    """Get chat service instance"""
+    global _chat_service
+    if _chat_service is None:
+        _chat_service = ChatService()
+    return _chat_service
+
+
 # Middleware for request timing and performance monitoring
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -284,6 +308,101 @@ async def login(login_request: LoginRequest):
         )
 
 
+@app.post("/api/v1/auth/register", response_model=SuccessResponse, tags=["Authentication"])
+async def register(
+    register_request: RegisterRequest,
+    user_repo: UserRepository = Depends(get_user_repository)
+):
+    """
+    Register a new user account
+
+    Args:
+        register_request: User registration data
+        user_repo: User repository instance
+
+    Returns:
+        Success response with registration confirmation
+
+    Raises:
+        ValidationException: If registration data is invalid
+        AuraWellException: If registration fails
+    """
+    try:
+        # Check if user already exists
+        existing_user = await user_repo.get_user_by_username(register_request.username)
+        if existing_user:
+            raise ValidationException(
+                message="Username already exists",
+                error_code=ErrorCode.DUPLICATE_RESOURCE
+            )
+
+        # Check if email already exists
+        existing_email = await user_repo.get_user_by_email(register_request.email)
+        if existing_email:
+            raise ValidationException(
+                message="Email already registered",
+                error_code=ErrorCode.DUPLICATE_RESOURCE
+            )
+
+        # Create user profile
+        from ..models.user_profile import UserProfile
+        from ..models.enums import Gender, ActivityLevel
+        import hashlib
+        import uuid
+
+        # Hash password
+        password_hash = hashlib.sha256(register_request.password.encode()).hexdigest()
+
+        # Process health data
+        health_data = register_request.health_data or {}
+
+        # Handle gender enum
+        gender_enum = Gender.OTHER
+        if health_data.get('gender') == 'male':
+            gender_enum = Gender.MALE
+        elif health_data.get('gender') == 'female':
+            gender_enum = Gender.FEMALE
+
+        # Handle activity level enum
+        activity_level_enum = ActivityLevel.MODERATELY_ACTIVE
+        if health_data.get('activity_level'):
+            try:
+                activity_level_enum = ActivityLevel(health_data.get('activity_level'))
+            except ValueError:
+                activity_level_enum = ActivityLevel.MODERATELY_ACTIVE
+
+        # Create user profile
+        user_profile = UserProfile(
+            user_id=str(uuid.uuid4()),
+            display_name=register_request.username,
+            email=register_request.email,
+            password_hash=password_hash,
+            age=health_data.get('age'),
+            gender=gender_enum,
+            height_cm=health_data.get('height'),
+            weight_kg=health_data.get('weight'),
+            activity_level=activity_level_enum
+        )
+
+        # Save user to repository
+        created_user = await user_repo.create_user(user_profile)
+
+        return SuccessResponse(
+            message="User registered successfully",
+            data={"user_id": created_user.user_id}
+        )
+
+    except (ValidationException, AuraWellException):
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise AuraWellException(
+            message="Registration service error",
+            error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 # ============================================================================
 # CHAT ENDPOINTS
 # ============================================================================
@@ -340,6 +459,207 @@ async def chat(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Chat processing failed"
+        )
+
+
+# ============================================================================
+# ENHANCED HEALTH CHAT ENDPOINTS
+# ============================================================================
+
+@app.post("/api/v1/chat/conversation", response_model=ConversationResponse, tags=["Chat"])
+async def create_conversation(
+    conversation_request: ConversationCreateRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Create a new health consultation conversation
+
+    Args:
+        conversation_request: Conversation creation parameters
+        current_user_id: Authenticated user ID
+        chat_service: Chat service instance
+
+    Returns:
+        New conversation metadata
+
+    Raises:
+        HTTPException: If conversation creation fails
+    """
+    try:
+        return await chat_service.create_conversation(
+            user_id=current_user_id,
+            conversation_type=conversation_request.type,
+            metadata=conversation_request.metadata
+        )
+    except Exception as e:
+        logger.error(f"Failed to create conversation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create conversation"
+        )
+
+
+@app.get("/api/v1/chat/conversations", response_model=ConversationListResponse, tags=["Chat"])
+async def get_conversations(
+    current_user_id: str = Depends(get_current_user_id),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Get user's conversation list
+
+    Args:
+        current_user_id: Authenticated user ID
+        chat_service: Chat service instance
+
+    Returns:
+        List of user conversations
+
+    Raises:
+        HTTPException: If retrieval fails
+    """
+    try:
+        return await chat_service.get_user_conversations(current_user_id)
+    except Exception as e:
+        logger.error(f"Failed to get conversations: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve conversations"
+        )
+
+
+@app.post("/api/v1/chat/message", response_model=HealthChatResponse, tags=["Chat"])
+async def send_health_chat_message(
+    chat_request: HealthChatRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Send a health chat message and get AI response with suggestions
+
+    Args:
+        chat_request: Health chat message and context
+        current_user_id: Authenticated user ID
+        chat_service: Chat service instance
+
+    Returns:
+        AI response with health suggestions and quick replies
+
+    Raises:
+        HTTPException: If message processing fails
+    """
+    try:
+        return await chat_service.process_chat_message(
+            user_id=current_user_id,
+            message=chat_request.message,
+            conversation_id=chat_request.conversation_id,
+            context=chat_request.context
+        )
+    except Exception as e:
+        logger.error(f"Failed to process health chat message: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process chat message"
+        )
+
+
+@app.get("/api/v1/chat/history", response_model=ChatHistoryResponse, tags=["Chat"])
+async def get_chat_history(
+    chat_history_request: ChatHistoryRequest = Depends(),
+    current_user_id: str = Depends(get_current_user_id),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Get chat history for a conversation
+
+    Args:
+        chat_history_request: History request parameters
+        current_user_id: Authenticated user ID
+        chat_service: Chat service instance
+
+    Returns:
+        Chat message history with pagination
+
+    Raises:
+        HTTPException: If history retrieval fails
+    """
+    try:
+        return await chat_service.get_chat_history(
+            conversation_id=chat_history_request.conversation_id,
+            user_id=current_user_id,
+            limit=chat_history_request.limit,
+            offset=chat_history_request.offset
+        )
+    except Exception as e:
+        logger.error(f"Failed to get chat history: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve chat history"
+        )
+
+
+@app.delete("/api/v1/chat/conversation/{conversation_id}", tags=["Chat"])
+async def delete_conversation(
+    conversation_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Delete a conversation and all its messages
+
+    Args:
+        conversation_id: ID of conversation to delete
+        current_user_id: Authenticated user ID
+        chat_service: Chat service instance
+
+    Returns:
+        Success confirmation
+
+    Raises:
+        HTTPException: If deletion fails
+    """
+    try:
+        success = await chat_service.delete_conversation(conversation_id, current_user_id)
+        if success:
+            return {"success": True, "message": "Conversation deleted successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete conversation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete conversation"
+        )
+
+
+@app.get("/api/v1/chat/suggestions", response_model=HealthSuggestionsResponse, tags=["Chat"])
+async def get_health_suggestions(
+    chat_service: ChatService = Depends(get_chat_service)
+):
+    """
+    Get health suggestion templates for quick access
+
+    Args:
+        chat_service: Chat service instance
+
+    Returns:
+        List of health suggestion templates
+
+    Raises:
+        HTTPException: If retrieval fails
+    """
+    try:
+        return await chat_service.get_health_suggestions()
+    except Exception as e:
+        logger.error(f"Failed to get health suggestions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health suggestions"
         )
 
 
@@ -475,13 +795,13 @@ async def update_user_profile(
 
             new_profile = UserProfile(
                 user_id=current_user_id,
-                display_name=profile_update.display_name,
-                email=profile_update.email,
-                age=profile_update.age,
-                gender=gender_enum,
-                height_cm=profile_update.height_cm,
-                weight_kg=profile_update.weight_kg,
-                activity_level=activity_level_enum
+                display_name=profile_update.display_name or f"User {current_user_id[-3:]}",
+                email=profile_update.email or f"{current_user_id}@example.com",
+                age=profile_update.age or 25,
+                gender=gender_enum or Gender.OTHER,
+                height_cm=profile_update.height_cm or 170.0,
+                weight_kg=profile_update.weight_kg or 70.0,
+                activity_level=activity_level_enum or ActivityLevel.MODERATELY_ACTIVE
             )
 
             updated_profile = await user_repo.create_user(new_profile)
@@ -888,6 +1208,560 @@ async def get_health_goals_paginated(
 
 
 # ============================================================================
+# USER HEALTH DATA ENDPOINTS
+# ============================================================================
+
+@app.get("/api/v1/user/health-data", response_model=UserHealthDataResponse, tags=["User Profile"])
+async def get_user_health_data(
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository)
+):
+    """
+    Get user's health data
+
+    Args:
+        current_user_id: Authenticated user ID
+        user_repo: User repository instance
+
+    Returns:
+        User health data with BMI calculations
+
+    Raises:
+        HTTPException: If data retrieval fails
+    """
+    try:
+        # Get user profile
+        user_profile = await user_repo.get_user_by_id(current_user_id)
+
+        if not user_profile:
+            # Return default health data
+            return UserHealthDataResponse(
+                message="Health data retrieved successfully",
+                user_id=current_user_id,
+                updated_at=datetime.now()
+            )
+
+        # Calculate BMI if height and weight are available
+        bmi = None
+        bmi_category = None
+        if user_profile.height_cm and user_profile.weight_kg:
+            height_m = user_profile.height_cm / 100
+            bmi = user_profile.weight_kg / (height_m ** 2)
+
+            # Determine BMI category
+            if bmi < 18.5:
+                bmi_category = "偏瘦"
+            elif bmi < 24:
+                bmi_category = "正常"
+            elif bmi < 28:
+                bmi_category = "偏胖"
+            else:
+                bmi_category = "肥胖"
+
+        return UserHealthDataResponse(
+            message="Health data retrieved successfully",
+            user_id=current_user_id,
+            age=user_profile.age,
+            gender=user_profile.gender.value if hasattr(user_profile.gender, 'value') else user_profile.gender,
+            height=user_profile.height_cm,
+            weight=user_profile.weight_kg,
+            activity_level=user_profile.activity_level.value if hasattr(user_profile.activity_level, 'value') else user_profile.activity_level,
+            bmi=round(bmi, 1) if bmi else None,
+            bmi_category=bmi_category,
+            updated_at=user_profile.updated_at or datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get user health data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health data"
+        )
+
+
+@app.put("/api/v1/user/health-data", response_model=UserHealthDataResponse, tags=["User Profile"])
+async def update_user_health_data(
+    health_data: UserHealthDataRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository)
+):
+    """
+    Update user's health data
+
+    Args:
+        health_data: Health data update request
+        current_user_id: Authenticated user ID
+        user_repo: User repository instance
+
+    Returns:
+        Updated health data with BMI calculations
+
+    Raises:
+        HTTPException: If update fails
+    """
+    try:
+        # Update user profile with health data
+        update_data = health_data.model_dump(exclude_unset=True)
+
+        # Map field names
+        if 'height' in update_data:
+            update_data['height_cm'] = update_data.pop('height')
+        if 'weight' in update_data:
+            update_data['weight_kg'] = update_data.pop('weight')
+
+        updated_profile = await user_repo.update_user_profile(current_user_id, **update_data)
+
+        # Calculate BMI
+        bmi = None
+        bmi_category = None
+        if updated_profile.height_cm and updated_profile.weight_kg:
+            height_m = updated_profile.height_cm / 100
+            bmi = updated_profile.weight_kg / (height_m ** 2)
+
+            if bmi < 18.5:
+                bmi_category = "偏瘦"
+            elif bmi < 24:
+                bmi_category = "正常"
+            elif bmi < 28:
+                bmi_category = "偏胖"
+            else:
+                bmi_category = "肥胖"
+
+        return UserHealthDataResponse(
+            message="Health data updated successfully",
+            user_id=current_user_id,
+            age=updated_profile.age,
+            gender=updated_profile.gender.value if hasattr(updated_profile.gender, 'value') else updated_profile.gender,
+            height=updated_profile.height_cm,
+            weight=updated_profile.weight_kg,
+            activity_level=updated_profile.activity_level.value if hasattr(updated_profile.activity_level, 'value') else updated_profile.activity_level,
+            bmi=round(bmi, 1) if bmi else None,
+            bmi_category=bmi_category,
+            updated_at=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to update user health data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update health data"
+        )
+
+
+# ============================================================================
+# USER HEALTH GOALS ENDPOINTS
+# ============================================================================
+
+@app.get("/api/v1/user/health-goals", response_model=UserHealthGoalsListResponse, tags=["User Profile"])
+async def get_user_health_goals(
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get user's health goals
+
+    Args:
+        current_user_id: Authenticated user ID
+
+    Returns:
+        List of user's health goals
+
+    Raises:
+        HTTPException: If goal retrieval fails
+    """
+    try:
+        # Mock implementation - return sample goals
+        goals = [
+            UserHealthGoalResponse(
+                id=f"goal_{current_user_id}_weight_001",
+                title="减重目标",
+                description="在3个月内减重5公斤",
+                type="weight_loss",
+                target_value=5.0,
+                current_value=2.0,
+                unit="kg",
+                target_date=date.today() + timedelta(days=90),
+                status="active",
+                progress=40.0,
+                created_at=datetime.now() - timedelta(days=10),
+                updated_at=datetime.now()
+            ),
+            UserHealthGoalResponse(
+                id=f"goal_{current_user_id}_steps_001",
+                title="每日步数目标",
+                description="每天走10000步",
+                type="steps",
+                target_value=10000.0,
+                current_value=7500.0,
+                unit="步",
+                target_date=date.today() + timedelta(days=30),
+                status="active",
+                progress=75.0,
+                created_at=datetime.now() - timedelta(days=5),
+                updated_at=datetime.now()
+            )
+        ]
+
+        return UserHealthGoalsListResponse(
+            message="Health goals retrieved successfully",
+            goals=goals,
+            total_count=len(goals)
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get user health goals: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health goals"
+        )
+
+
+@app.post("/api/v1/user/health-goals", response_model=UserHealthGoalResponse, tags=["User Profile"])
+async def create_user_health_goal(
+    goal_request: UserHealthGoalRequest,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Create a new user health goal
+
+    Args:
+        goal_request: Health goal creation request
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Created health goal
+
+    Raises:
+        HTTPException: If goal creation fails
+    """
+    try:
+        # Generate goal ID
+        goal_id = f"goal_{current_user_id}_{goal_request.type}_{int(datetime.now().timestamp())}"
+
+        # Calculate initial progress
+        progress = 0.0
+        if goal_request.target_value and goal_request.current_value:
+            progress = min((goal_request.current_value / goal_request.target_value) * 100, 100.0)
+
+        return UserHealthGoalResponse(
+            id=goal_id,
+            title=goal_request.title,
+            description=goal_request.description,
+            type=goal_request.type,
+            target_value=goal_request.target_value,
+            current_value=goal_request.current_value,
+            unit=goal_request.unit,
+            target_date=goal_request.target_date,
+            status=goal_request.status,
+            progress=progress,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to create user health goal: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create health goal"
+        )
+
+
+# ============================================================================
+# HEALTH PLAN ENDPOINTS
+# ============================================================================
+
+@app.get("/api/v1/health-plan/plans", response_model=HealthPlansListResponse, tags=["Health Plans"])
+async def get_health_plans(
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get user's health plans
+
+    Args:
+        current_user_id: Authenticated user ID
+
+    Returns:
+        List of user's health plans
+
+    Raises:
+        HTTPException: If plan retrieval fails
+    """
+    try:
+        # Mock implementation - return sample plans
+        from ..models.api_models import HealthPlan, HealthPlanModule
+
+        sample_modules = [
+            HealthPlanModule(
+                module_type="diet",
+                title="营养饮食计划",
+                description="个性化的营养饮食建议",
+                content={
+                    "daily_calories": 2000,
+                    "protein_ratio": 0.3,
+                    "carb_ratio": 0.4,
+                    "fat_ratio": 0.3,
+                    "meal_suggestions": [
+                        "早餐：燕麦粥配水果",
+                        "午餐：鸡胸肉沙拉",
+                        "晚餐：蒸鱼配蔬菜"
+                    ]
+                },
+                duration_days=30
+            ),
+            HealthPlanModule(
+                module_type="exercise",
+                title="运动健身计划",
+                description="适合您的运动训练方案",
+                content={
+                    "weekly_sessions": 4,
+                    "session_duration": 45,
+                    "exercises": [
+                        "有氧运动：跑步30分钟",
+                        "力量训练：哑铃训练15分钟",
+                        "拉伸放松：瑜伽15分钟"
+                    ]
+                },
+                duration_days=30
+            )
+        ]
+
+        plans = [
+            HealthPlan(
+                plan_id=f"plan_{current_user_id}_001",
+                title="30天健康生活计划",
+                description="综合性的健康管理计划，包含饮食、运动和生活方式建议",
+                modules=sample_modules,
+                duration_days=30,
+                status="active",
+                progress=25.0,
+                created_at=datetime.now() - timedelta(days=7),
+                updated_at=datetime.now()
+            )
+        ]
+
+        return HealthPlansListResponse(
+            message="Health plans retrieved successfully",
+            plans=plans,
+            total_count=len(plans)
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get health plans: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health plans"
+        )
+
+
+@app.post("/api/v1/health-plan/generate", response_model=HealthPlanGenerateResponse, tags=["Health Plans"])
+async def generate_health_plan(
+    plan_request: HealthPlanGenerateRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository)
+):
+    """
+    Generate a new personalized health plan
+
+    Args:
+        plan_request: Health plan generation request
+        current_user_id: Authenticated user ID
+        user_repo: User repository instance
+
+    Returns:
+        Generated health plan with recommendations
+
+    Raises:
+        HTTPException: If plan generation fails
+    """
+    try:
+        # Get user profile for personalization
+        user_profile = await user_repo.get_user_by_id(current_user_id)
+
+        # Generate plan ID
+        plan_id = f"plan_{current_user_id}_{int(datetime.now().timestamp())}"
+
+        # Generate modules based on request
+        modules = []
+        for module_type in plan_request.modules:
+            if module_type == "diet":
+                modules.append(HealthPlanModule(
+                    module_type="diet",
+                    title="个性化饮食计划",
+                    description="根据您的目标和偏好定制的营养计划",
+                    content={
+                        "daily_calories": 2000,
+                        "goals": plan_request.goals,
+                        "preferences": plan_request.user_preferences or {},
+                        "recommendations": [
+                            "多吃蔬菜水果",
+                            "控制碳水化合物摄入",
+                            "增加蛋白质比例"
+                        ]
+                    },
+                    duration_days=plan_request.duration_days
+                ))
+            elif module_type == "exercise":
+                modules.append(HealthPlanModule(
+                    module_type="exercise",
+                    title="运动健身计划",
+                    description="适合您体能水平的运动方案",
+                    content={
+                        "weekly_frequency": 4,
+                        "session_duration": 45,
+                        "intensity": "moderate",
+                        "exercises": [
+                            "有氧运动",
+                            "力量训练",
+                            "柔韧性训练"
+                        ]
+                    },
+                    duration_days=plan_request.duration_days
+                ))
+            elif module_type == "weight":
+                modules.append(HealthPlanModule(
+                    module_type="weight",
+                    title="体重管理计划",
+                    description="科学的体重管理策略",
+                    content={
+                        "target_weight_change": -5.0,
+                        "weekly_goal": -0.5,
+                        "strategies": [
+                            "控制热量摄入",
+                            "增加运动量",
+                            "规律作息"
+                        ]
+                    },
+                    duration_days=plan_request.duration_days
+                ))
+            elif module_type == "sleep":
+                modules.append(HealthPlanModule(
+                    module_type="sleep",
+                    title="睡眠优化计划",
+                    description="改善睡眠质量的方案",
+                    content={
+                        "target_sleep_hours": 8,
+                        "bedtime": "22:30",
+                        "wake_time": "06:30",
+                        "tips": [
+                            "睡前1小时避免电子设备",
+                            "保持卧室温度适宜",
+                            "建立固定的睡前仪式"
+                        ]
+                    },
+                    duration_days=plan_request.duration_days
+                ))
+            elif module_type == "mental":
+                modules.append(HealthPlanModule(
+                    module_type="mental",
+                    title="心理健康计划",
+                    description="心理健康和压力管理方案",
+                    content={
+                        "daily_meditation": 10,
+                        "stress_management": [
+                            "深呼吸练习",
+                            "正念冥想",
+                            "适度运动"
+                        ],
+                        "mood_tracking": True
+                    },
+                    duration_days=plan_request.duration_days
+                ))
+
+        # Create health plan
+        health_plan = HealthPlan(
+            plan_id=plan_id,
+            title=f"{plan_request.duration_days}天个性化健康计划",
+            description=f"基于您的目标：{', '.join(plan_request.goals)}",
+            modules=modules,
+            duration_days=plan_request.duration_days,
+            status="active",
+            progress=0.0,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+
+        # Generate recommendations
+        recommendations = [
+            "建议每天记录您的进展",
+            "保持计划的一致性很重要",
+            "如有不适请及时调整计划",
+            "定期评估和更新目标"
+        ]
+
+        return HealthPlanGenerateResponse(
+            message="Health plan generated successfully",
+            plan=health_plan,
+            recommendations=recommendations
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate health plan: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate health plan"
+        )
+
+
+@app.get("/api/v1/health-plan/plans/{plan_id}", response_model=HealthPlanResponse, tags=["Health Plans"])
+async def get_health_plan(
+    plan_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get a specific health plan by ID
+
+    Args:
+        plan_id: Health plan ID
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Health plan details
+
+    Raises:
+        HTTPException: If plan not found or access denied
+    """
+    try:
+        # Mock implementation - return sample plan
+        from ..models.api_models import HealthPlan, HealthPlanModule
+
+        sample_modules = [
+            HealthPlanModule(
+                module_type="diet",
+                title="营养饮食计划",
+                description="个性化的营养饮食建议",
+                content={
+                    "daily_calories": 2000,
+                    "meal_plan": "详细的每日餐食安排"
+                },
+                duration_days=30
+            )
+        ]
+
+        plan = HealthPlan(
+            plan_id=plan_id,
+            title="个性化健康计划",
+            description="根据您的需求定制的健康管理方案",
+            modules=sample_modules,
+            duration_days=30,
+            status="active",
+            progress=25.0,
+            created_at=datetime.now() - timedelta(days=7),
+            updated_at=datetime.now()
+        )
+
+        return HealthPlanResponse(
+            message="Health plan retrieved successfully",
+            plan=plan
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get health plan: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health plan"
+        )
+
+
+# ============================================================================
 # ACHIEVEMENTS ENDPOINTS
 # ============================================================================
 
@@ -1269,8 +2143,8 @@ def custom_openapi():
         for method in openapi_schema["paths"][path]:
             if method == "get" and path in ["/", "/api/v1/health"]:
                 continue  # Skip auth for public endpoints
-            if method == "post" and path == "/api/v1/auth/login":
-                continue  # Skip auth for login endpoint
+            if method == "post" and path in ["/api/v1/auth/login", "/api/v1/auth/register"]:
+                continue  # Skip auth for login and register endpoints
 
             # Add security requirement to protected endpoints
             openapi_schema["paths"][path][method]["security"] = get_security_requirements()
