@@ -3,8 +3,8 @@ import { message } from 'ant-design-vue';
 import { useAuthStore } from '../stores/auth';
 
 const request = axios.create({
-    baseURL: '/api/v1',
-    timeout: 5000
+    baseURL: import.meta.env.VITE_APP_API_BASE_URL || '/api/v1',
+    timeout: import.meta.env.VITE_API_TIMEOUT || 15000
 });
 
 // 请求拦截器

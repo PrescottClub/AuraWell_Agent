@@ -8,7 +8,12 @@
             </div>
             </a-col>
             <a-col flex="auto">
-                <a-menu v-model:selectedKeys="current" mode="horizontal" :items="items" />
+                <a-menu
+                  v-model:selectedKeys="current"
+                  mode="horizontal"
+                  :items="items"
+                  @click="handleMenuClick"
+                />
             </a-col>
             <a-col felx="100px">
                 <div class="user-login-status">
@@ -20,59 +25,86 @@
 </template>
 <script setup>
 import { h, ref } from 'vue';
-import { MailOutlined, AppstoreOutlined, SettingOutlined } from '@ant-design/icons-vue';
-const current = ref(['mail']);
+import { useRouter, useRoute } from 'vue-router';
+import {
+  HomeOutlined,
+  MessageOutlined,
+  SettingOutlined,
+  DashboardOutlined
+} from '@ant-design/icons-vue';
+
+const router = useRouter();
+const route = useRoute();
+const current = ref(['home']);
+
 const items = ref([
     {
-        key: 'mail',
-        icon: () => h(MailOutlined),
-        label: 'Navigation One',
-        title: 'Navigation One',
+        key: 'home',
+        icon: () => h(HomeOutlined),
+        label: '首页',
+        title: '首页',
     },
     {
-        key: 'app',
-        icon: () => h(AppstoreOutlined),
-        label: 'Navigation Two',
-        title: 'Navigation Two',
+        key: 'health-chat',
+        icon: () => h(MessageOutlined),
+        label: '健康咨询',
+        title: '健康咨询',
     },
     {
-        key: 'sub1',
+        key: 'dashboard',
+        icon: () => h(DashboardOutlined),
+        label: '健康数据',
+        title: '健康数据',
+    },
+    {
+        key: 'settings',
         icon: () => h(SettingOutlined),
-        label: 'Navigation Three - Submenu',
-        title: 'Navigation Three - Submenu',
-        children: [
-            {
-                type: 'group',
-                label: 'Item 1',
-                children: [
-                    {
-                        label: 'Option 1',
-                        key: 'setting:1',
-                    },
-                    {
-                        label: 'Option 2',
-                        key: 'setting:2',
-                    },
-                ],
-            },
-            {
-                type: 'group',
-                label: 'Item 2',
-                children: [
-                    {
-                        label: 'Option 3',
-                        key: 'setting:3',
-                    },
-                    {
-                        label: 'Option 4',
-                        key: 'setting:4',
-                    },
-                ],
-            },
-        ],
-    },
-
+        label: '设置',
+        title: '设置',
+    }
 ]);
+
+// 处理菜单点击
+const handleMenuClick = ({ key }) => {
+  current.value = [key];
+
+  switch (key) {
+    case 'home':
+      router.push('/');
+      break;
+    case 'health-chat':
+      router.push('/health-chat');
+      break;
+    case 'dashboard':
+      router.push('/admin/dashboard');
+      break;
+    case 'settings':
+      router.push('/admin/settings');
+      break;
+  }
+};
+
+// 根据当前路由设置选中状态
+const updateCurrentMenu = () => {
+  const path = route.path;
+  if (path === '/') {
+    current.value = ['home'];
+  } else if (path.includes('health-chat')) {
+    current.value = ['health-chat'];
+  } else if (path.includes('dashboard')) {
+    current.value = ['dashboard'];
+  } else if (path.includes('settings')) {
+    current.value = ['settings'];
+  }
+};
+
+// 监听路由变化
+router.afterEach(() => {
+  updateCurrentMenu();
+});
+
+// 初始化
+updateCurrentMenu();
 </script>
 
 <style scoped>

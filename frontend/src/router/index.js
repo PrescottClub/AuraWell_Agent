@@ -15,6 +15,26 @@ const routes = [
         path: '',
         name: 'Home',
         component: () => import('../views/user/Home.vue')
+      },
+      {
+        path: 'health-chat',
+        name: 'HealthChat',
+        component: () => import('../views/user/HealthChat.vue')
+      },
+      {
+        path: 'health-chat-demo',
+        name: 'HealthChatDemo',
+        component: () => import('../views/user/HealthChatDemo.vue')
+      },
+      {
+        path: 'test',
+        name: 'TestPage',
+        component: () => import('../views/user/TestPage.vue')
+      },
+      {
+        path: 'simple-demo',
+        name: 'SimpleChatDemo',
+        component: () => import('../views/user/SimpleChatDemo.vue')
       }
     ]
   },
