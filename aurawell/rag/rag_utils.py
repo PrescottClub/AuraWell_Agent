@@ -133,12 +133,12 @@ def get_file_type(file_path:str)->str:
             '.rtf': 'Rich Text',
 
             # 文档文件
-            '.pdf': '.pdf',
-            '.doc': '.doc',
-            '.docx': '.docx',
+            '.pdf': 'pdf',
+            '.doc': 'doc',
+            '.docx': 'docx',
             '.odt': 'OpenDocument Text',
-            '.xls': 'Excel Spreadsheet',
-            '.xlsx': 'Excel Spreadsheet',
+            '.xls': 'xls',
+            '.xlsx': 'xlsx',
             '.ppt': '.ppt',
             '.pptx': '.pptx',
 
