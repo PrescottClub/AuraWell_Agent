@@ -64,9 +64,9 @@
               <p class="plan-description">{{ plan.description }}</p>
               
               <div class="plan-modules">
-                <a-tag 
-                  v-for="module in plan.modules" 
-                  :key="module"
+                <a-tag
+                  v-for="module in getModulesList(plan.modules)"
+                  :key="getModuleKey(module)"
                   color="blue"
                   class="module-tag"
                 >
@@ -211,24 +211,100 @@
 
         <div class="detail-progress">
           <h4>整体进度</h4>
-          <a-progress 
-            :percent="healthPlanStore.currentPlanProgress" 
+          <a-progress
+            :percent="healthPlanStore.currentPlanProgress"
             :status="currentPlanDetail.status === 'completed' ? 'success' : 'active'"
           />
+        </div>
+
+        <!-- 专家建议 -->
+        <div v-if="currentPlanDetail.recommendations" class="detail-recommendations">
+          <h4>专家建议</h4>
+          <div class="recommendations-list">
+            <div
+              v-for="(recommendation, index) in currentPlanDetail.recommendations"
+              :key="index"
+              class="recommendation-item"
+            >
+              <div class="recommendation-icon">
+                <span>💡</span>
+              </div>
+              <div class="recommendation-text">{{ recommendation }}</div>
+            </div>
+          </div>
         </div>
 
         <div class="detail-modules">
           <h4>计划模块</h4>
           <a-tabs v-model:activeKey="activeModuleTab">
-            <a-tab-pane 
-              v-for="module in currentPlanDetail.plan_modules" 
-              :key="module.type"
-              :tab="getModuleLabel(module.type)"
+            <a-tab-pane
+              v-for="module in getDetailModules(currentPlanDetail)"
+              :key="module.module_type || module.type"
+              :tab="getModuleLabel(module.module_type || module.type)"
             >
               <div class="module-content">
                 <h5>{{ module.title }}</h5>
                 <p>{{ module.description }}</p>
-                
+
+                <!-- 模块内容展示 -->
+                <div v-if="module.content" class="module-details">
+                  <!-- 饮食计划模块 -->
+                  <div v-if="(module.module_type || module.type) === 'diet'" class="diet-module">
+                    <div v-if="module.content.daily_calories" class="detail-item">
+                      <h6>每日热量目标</h6>
+                      <p>{{ module.content.daily_calories }} 卡路里</p>
+                    </div>
+
+                    <div v-if="module.content.recommendations" class="detail-item">
+                      <h6>营养建议</h6>
+                      <ul>
+                        <li v-for="rec in module.content.recommendations" :key="rec">{{ rec }}</li>
+                      </ul>
+                    </div>
+
+                    <div v-if="module.content.goals" class="detail-item">
+                      <h6>饮食目标</h6>
+                      <a-tag v-for="goal in module.content.goals" :key="goal" color="green">{{ goal }}</a-tag>
+                    </div>
+                  </div>
+
+                  <!-- 运动计划模块 -->
+                  <div v-if="(module.module_type || module.type) === 'exercise'" class="exercise-module">
+                    <div v-if="module.content.weekly_frequency" class="detail-item">
+                      <h6>每周训练频率</h6>
+                      <p>{{ module.content.weekly_frequency }} 次/周</p>
+                    </div>
+
+                    <div v-if="module.content.session_duration" class="detail-item">
+                      <h6>单次训练时长</h6>
+                      <p>{{ module.content.session_duration }} 分钟</p>
+                    </div>
+
+                    <div v-if="module.content.intensity" class="detail-item">
+                      <h6>训练强度</h6>
+                      <a-tag :color="getIntensityColor(module.content.intensity)">
+                        {{ getIntensityLabel(module.content.intensity) }}
+                      </a-tag>
+                    </div>
+
+                    <div v-if="module.content.exercises" class="detail-item">
+                      <h6>推荐运动</h6>
+                      <a-tag v-for="exercise in module.content.exercises" :key="exercise" color="blue">
+                        {{ exercise }}
+                      </a-tag>
+                    </div>
+                  </div>
+
+                  <!-- 通用内容展示 -->
+                  <div v-if="!['diet', 'exercise'].includes(module.module_type || module.type)" class="generic-module">
+                    <div class="detail-item">
+                      <h6>模块内容</h6>
+                      <pre class="content-display">{{ formatModuleContent(module.content) }}</pre>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 每日任务 -->
                 <div v-if="module.daily_tasks" class="daily-tasks">
                   <h6>每日任务</h6>
                   <a-list
@@ -248,6 +324,7 @@
                   </a-list>
                 </div>
 
+                <!-- 周目标 -->
                 <div v-if="module.weekly_goals" class="weekly-goals">
                   <h6>周目标</h6>
                   <a-list
@@ -258,8 +335,8 @@
                       <a-list-item>
                         <div class="goal-item">
                           <span>{{ item.goal }}</span>
-                          <a-progress 
-                            :percent="item.progress || 0" 
+                          <a-progress
+                            :percent="item.progress || 0"
                             size="small"
                             style="width: 100px;"
                           />
@@ -269,6 +346,7 @@
                   </a-list>
                 </div>
 
+                <!-- 小贴士 -->
                 <div v-if="module.tips" class="module-tips">
                   <h6>小贴士</h6>
                   <ul>
@@ -333,7 +411,7 @@ onMounted(async () => {
 const handleGeneratePlan = async () => {
   try {
     await generateFormRef.value.validate()
-    
+
     const planRequest = {
       ...generateForm,
       user_profile: userStore.userProfile,
@@ -341,13 +419,27 @@ const handleGeneratePlan = async () => {
       health_goals: userStore.healthGoals
     }
 
-    await healthPlanStore.generatePlan(planRequest)
-    message.success('健康计划生成成功！')
-    resetGenerateForm()
+    const newPlan = await healthPlanStore.generatePlan(planRequest)
+
+    if (newPlan) {
+      message.success('健康计划生成成功！')
+      showGenerateModal.value = false
+      resetGenerateForm()
+
+      // 显示新生成的计划详情
+      setTimeout(() => {
+        if (newPlan.plan_id || newPlan.id) {
+          viewPlanDetail(newPlan.plan_id || newPlan.id)
+        }
+      }, 500)
+    } else {
+      message.error('生成计划失败，请重试')
+    }
   } catch (error) {
     if (error.errorFields) {
       return
     }
+    console.error('生成计划错误:', error)
     message.error('生成计划失败，请重试')
   }
 }
@@ -389,6 +481,11 @@ const resetGenerateForm = () => {
     duration: 30,
     requirements: ''
   })
+
+  // 重置表单验证状态
+  if (generateFormRef.value) {
+    generateFormRef.value.resetFields()
+  }
 }
 
 const getPlanStatusColor = (status) => {
@@ -412,6 +509,8 @@ const getPlanStatusLabel = (status) => {
 }
 
 const getModuleLabel = (module) => {
+  // 处理字符串或对象类型的模块
+  const moduleType = typeof module === 'string' ? module : (module?.module_type || module?.type)
   const labels = {
     diet: '饮食计划',
     exercise: '运动计划',
@@ -419,11 +518,117 @@ const getModuleLabel = (module) => {
     sleep: '睡眠计划',
     mental: '心理健康'
   }
-  return labels[module] || module
+  return labels[moduleType] || moduleType || '健康模块'
+}
+
+const getModulesList = (modules) => {
+  if (!Array.isArray(modules)) return []
+  return modules
+}
+
+const getModuleKey = (module) => {
+  if (typeof module === 'string') return module
+  if (typeof module === 'object') return module.module_type || module.type || module.id || JSON.stringify(module)
+  return String(module)
+}
+
+const getDetailModules = (planDetail) => {
+  if (!planDetail) return []
+
+  // 优先使用 modules 字段，然后是 plan_modules
+  const modules = planDetail.modules || planDetail.plan_modules || []
+
+  // 确保每个模块都有必要的字段
+  return modules.map(module => {
+    if (typeof module === 'string') {
+      return {
+        module_type: module,
+        type: module,
+        title: getModuleLabel(module),
+        description: `${getModuleLabel(module)}的详细内容`,
+        content: {}
+      }
+    }
+    return {
+      ...module,
+      module_type: module.module_type || module.type,
+      type: module.module_type || module.type,
+      title: module.title || getModuleLabel(module.module_type || module.type),
+      description: module.description || `${getModuleLabel(module.module_type || module.type)}的详细内容`
+    }
+  })
+}
+
+const getIntensityColor = (intensity) => {
+  const colors = {
+    low: 'green',
+    moderate: 'orange',
+    high: 'red',
+    light: 'green',
+    medium: 'orange',
+    intense: 'red'
+  }
+  return colors[intensity] || 'blue'
+}
+
+const getIntensityLabel = (intensity) => {
+  const labels = {
+    low: '低强度',
+    moderate: '中等强度',
+    high: '高强度',
+    light: '轻度',
+    medium: '中度',
+    intense: '高强度'
+  }
+  return labels[intensity] || intensity || '中等强度'
+}
+
+const formatModuleContent = (content) => {
+  if (!content || typeof content !== 'object') return ''
+
+  // 格式化对象内容为可读的文本
+  const formatted = Object.entries(content)
+    .filter(([key, value]) => value !== null && value !== undefined)
+    .map(([key, value]) => {
+      const keyLabel = getContentKeyLabel(key)
+      if (Array.isArray(value)) {
+        return `${keyLabel}: ${value.join(', ')}`
+      }
+      if (typeof value === 'object') {
+        return `${keyLabel}: ${JSON.stringify(value, null, 2)}`
+      }
+      return `${keyLabel}: ${value}`
+    })
+    .join('\n')
+
+  return formatted || '暂无详细内容'
+}
+
+const getContentKeyLabel = (key) => {
+  const labels = {
+    daily_calories: '每日热量',
+    weekly_frequency: '每周频率',
+    session_duration: '单次时长',
+    intensity: '强度',
+    goals: '目标',
+    recommendations: '建议',
+    exercises: '运动项目',
+    preferences: '偏好设置'
+  }
+  return labels[key] || key
 }
 
 const formatDate = (date) => {
-  return date ? new Date(date).toLocaleDateString() : ''
+  if (!date) return ''
+  try {
+    return new Date(date).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  } catch (error) {
+    return ''
+  }
 }
 </script>
 
@@ -608,5 +813,109 @@ const formatDate = (date) => {
 .module-tips li {
   margin-bottom: 4px;
   color: #6b7280;
+}
+
+/* 新增的模块详情样式 */
+.module-details {
+  margin-bottom: 24px;
+}
+
+.detail-item {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.detail-item h6 {
+  margin: 0 0 8px 0 !important;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.detail-item p {
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+}
+
+.detail-item ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.detail-item li {
+  margin-bottom: 4px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.diet-module .detail-item {
+  border-left-color: #10b981;
+}
+
+.exercise-module .detail-item {
+  border-left-color: #f59e0b;
+}
+
+.content-display {
+  background: #f3f4f6;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #374151;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 专家建议样式 */
+.detail-recommendations {
+  margin-bottom: 24px;
+}
+
+.detail-recommendations h4 {
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+}
+
+.recommendation-icon {
+  font-size: 18px;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.recommendation-text {
+  flex: 1;
+  color: #92400e;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
 }
 </style>
