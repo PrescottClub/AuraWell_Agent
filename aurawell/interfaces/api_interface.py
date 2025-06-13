@@ -213,6 +213,43 @@ async def get_achievement_repository():
     return MockAchievementRepository()
 
 
+async def get_health_plan_repository():
+    """Get health plan repository instance - simplified for API compatibility"""
+    # 返回一个模拟的repository，确保API正常工作
+    class MockHealthPlanRepository:
+        async def get_user_health_plans(self, user_id: str, status=None, limit=None, offset=None):
+            return []
+
+        async def get_health_plan_by_id(self, plan_id: str, user_id: str):
+            return None
+
+        async def create_health_plan(self, user_id: str, plan_data: dict):
+            return {"id": f"plan_{user_id}_{int(datetime.now().timestamp())}", **plan_data}
+
+        async def update_health_plan(self, plan_id: str, user_id: str, update_data: dict):
+            return {"id": plan_id, **update_data}
+
+        async def delete_health_plan(self, plan_id: str, user_id: str):
+            return True
+
+        async def get_plan_progress(self, plan_id: str, start_date=None, end_date=None, module_type=None):
+            return []
+
+        async def create_progress_record(self, plan_id: str, progress_data: dict):
+            return {"id": f"progress_{plan_id}_{int(datetime.now().timestamp())}", **progress_data}
+
+        async def create_feedback(self, plan_id: str, feedback_data: dict):
+            return {"id": f"feedback_{plan_id}_{int(datetime.now().timestamp())}", **feedback_data}
+
+        async def get_plan_templates(self, category=None, difficulty_level=None, is_active=True):
+            return []
+
+        async def get_template_by_id(self, template_id: str):
+            return None
+
+    return MockHealthPlanRepository()
+
+
 async def get_tools_registry():
     """Get health tools registry instance (compatibility mode)"""
     global _tools_registry
@@ -1471,13 +1508,15 @@ async def create_user_health_goal(
 
 @app.get("/api/v1/health-plan/plans", response_model=HealthPlansListResponse, tags=["Health Plans"])
 async def get_health_plans(
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_current_user_id),
+    health_plan_repo = Depends(get_health_plan_repository)
 ):
     """
     Get user's health plans
 
     Args:
         current_user_id: Authenticated user ID
+        health_plan_repo: Health plan repository
 
     Returns:
         List of user's health plans
@@ -1486,57 +1525,40 @@ async def get_health_plans(
         HTTPException: If plan retrieval fails
     """
     try:
-        # Mock implementation - return sample plans
-        from ..models.api_models import HealthPlan, HealthPlanModule
+        # Get plans from repository
+        plans_db = await health_plan_repo.get_user_health_plans(current_user_id)
 
-        sample_modules = [
-            HealthPlanModule(
-                module_type="diet",
-                title="营养饮食计划",
-                description="个性化的营养饮食建议",
-                content={
-                    "daily_calories": 2000,
-                    "protein_ratio": 0.3,
-                    "carb_ratio": 0.4,
-                    "fat_ratio": 0.3,
-                    "meal_suggestions": [
-                        "早餐：燕麦粥配水果",
-                        "午餐：鸡胸肉沙拉",
-                        "晚餐：蒸鱼配蔬菜"
-                    ]
-                },
-                duration_days=30
-            ),
-            HealthPlanModule(
-                module_type="exercise",
-                title="运动健身计划",
-                description="适合您的运动训练方案",
-                content={
-                    "weekly_sessions": 4,
-                    "session_duration": 45,
-                    "exercises": [
-                        "有氧运动：跑步30分钟",
-                        "力量训练：哑铃训练15分钟",
-                        "拉伸放松：瑜伽15分钟"
-                    ]
-                },
-                duration_days=30
-            )
-        ]
+        # Convert to API models
+        plans = []
+        for plan_db in plans_db:
+            # Convert database model to API model
+            from ..models.api_models import HealthPlan, HealthPlanModule
 
-        plans = [
-            HealthPlan(
-                plan_id=f"plan_{current_user_id}_001",
-                title="30天健康生活计划",
-                description="综合性的健康管理计划，包含饮食、运动和生活方式建议",
-                modules=sample_modules,
-                duration_days=30,
-                status="active",
-                progress=25.0,
-                created_at=datetime.now() - timedelta(days=7),
-                updated_at=datetime.now()
+            # Get modules for this plan
+            modules_db = await health_plan_repo.get_plan_modules(plan_db.get("id", ""))
+            modules = []
+            for module_db in modules_db:
+                module = HealthPlanModule(
+                    module_type=module_db.get("module_type", "general"),
+                    title=module_db.get("title", ""),
+                    description=module_db.get("description", ""),
+                    content=module_db.get("content", {}),
+                    duration_days=module_db.get("duration_days", 30)
+                )
+                modules.append(module)
+
+            plan = HealthPlan(
+                plan_id=plan_db.get("id", ""),
+                title=plan_db.get("title", ""),
+                description=plan_db.get("description", ""),
+                modules=modules,
+                duration_days=plan_db.get("duration_days", 30),
+                status=plan_db.get("status", "active"),
+                progress=plan_db.get("progress", 0.0),
+                created_at=plan_db.get("created_at", datetime.now()),
+                updated_at=plan_db.get("updated_at", datetime.now())
             )
-        ]
+            plans.append(plan)
 
         return HealthPlansListResponse(
             message="Health plans retrieved successfully",
@@ -1556,7 +1578,8 @@ async def get_health_plans(
 async def generate_health_plan(
     plan_request: HealthPlanGenerateRequest,
     current_user_id: str = Depends(get_current_user_id),
-    user_repo: UserRepository = Depends(get_user_repository)
+    user_repo: UserRepository = Depends(get_user_repository),
+    health_plan_repo = Depends(get_health_plan_repository)
 ):
     """
     Generate a new personalized health plan
@@ -1573,21 +1596,43 @@ async def generate_health_plan(
         HTTPException: If plan generation fails
     """
     try:
-        # Get user profile for personalization
-        user_profile = await user_repo.get_user_by_id(current_user_id)
-
         # Generate plan ID
         plan_id = f"plan_{current_user_id}_{int(datetime.now().timestamp())}"
 
-        # Generate modules based on request
+        # Create plan data
+        plan_data = {
+            "id": plan_id,
+            "title": f"{plan_request.duration_days}天个性化健康计划",
+            "description": f"基于您的目标：{', '.join(plan_request.goals)}",
+            "duration_days": plan_request.duration_days,
+            "status": "active",
+            "progress": 0.0,
+            "goals": plan_request.goals,
+            "preferences": plan_request.user_preferences or {}
+        }
+
+        # TODO: Create plan in database when database is properly configured
+        # created_plan = await health_plan_repo.create_health_plan(current_user_id, plan_data)
+
+        # Create modules for the plan
         modules = []
         for module_type in plan_request.modules:
+            module_data = {
+                "id": f"module_{plan_id}_{module_type}_{int(datetime.now().timestamp())}",
+                "module_type": module_type,
+                "title": f"{module_type.title()}计划",
+                "description": f"个性化的{module_type}方案",
+                "duration_days": plan_request.duration_days,
+                "content": {},
+                "status": "active",
+                "progress": 0.0
+            }
+
             if module_type == "diet":
-                modules.append(HealthPlanModule(
-                    module_type="diet",
-                    title="个性化饮食计划",
-                    description="根据您的目标和偏好定制的营养计划",
-                    content={
+                module_data.update({
+                    "title": "个性化饮食计划",
+                    "description": "根据您的目标和偏好定制的营养计划",
+                    "content": {
                         "daily_calories": 2000,
                         "goals": plan_request.goals,
                         "preferences": plan_request.user_preferences or {},
@@ -1596,15 +1641,13 @@ async def generate_health_plan(
                             "控制碳水化合物摄入",
                             "增加蛋白质比例"
                         ]
-                    },
-                    duration_days=plan_request.duration_days
-                ))
+                    }
+                })
             elif module_type == "exercise":
-                modules.append(HealthPlanModule(
-                    module_type="exercise",
-                    title="运动健身计划",
-                    description="适合您体能水平的运动方案",
-                    content={
+                module_data.update({
+                    "title": "运动健身计划",
+                    "description": "适合您体能水平的运动方案",
+                    "content": {
                         "weekly_frequency": 4,
                         "session_duration": 45,
                         "intensity": "moderate",
@@ -1613,15 +1656,13 @@ async def generate_health_plan(
                             "力量训练",
                             "柔韧性训练"
                         ]
-                    },
-                    duration_days=plan_request.duration_days
-                ))
+                    }
+                })
             elif module_type == "weight":
-                modules.append(HealthPlanModule(
-                    module_type="weight",
-                    title="体重管理计划",
-                    description="科学的体重管理策略",
-                    content={
+                module_data.update({
+                    "title": "体重管理计划",
+                    "description": "科学的体重管理策略",
+                    "content": {
                         "target_weight_change": -5.0,
                         "weekly_goal": -0.5,
                         "strategies": [
@@ -1629,15 +1670,13 @@ async def generate_health_plan(
                             "增加运动量",
                             "规律作息"
                         ]
-                    },
-                    duration_days=plan_request.duration_days
-                ))
+                    }
+                })
             elif module_type == "sleep":
-                modules.append(HealthPlanModule(
-                    module_type="sleep",
-                    title="睡眠优化计划",
-                    description="改善睡眠质量的方案",
-                    content={
+                module_data.update({
+                    "title": "睡眠优化计划",
+                    "description": "改善睡眠质量的方案",
+                    "content": {
                         "target_sleep_hours": 8,
                         "bedtime": "22:30",
                         "wake_time": "06:30",
@@ -1646,15 +1685,13 @@ async def generate_health_plan(
                             "保持卧室温度适宜",
                             "建立固定的睡前仪式"
                         ]
-                    },
-                    duration_days=plan_request.duration_days
-                ))
+                    }
+                })
             elif module_type == "mental":
-                modules.append(HealthPlanModule(
-                    module_type="mental",
-                    title="心理健康计划",
-                    description="心理健康和压力管理方案",
-                    content={
+                module_data.update({
+                    "title": "心理健康计划",
+                    "description": "心理健康和压力管理方案",
+                    "content": {
                         "daily_meditation": 10,
                         "stress_management": [
                             "深呼吸练习",
@@ -1662,19 +1699,31 @@ async def generate_health_plan(
                             "适度运动"
                         ],
                         "mood_tracking": True
-                    },
-                    duration_days=plan_request.duration_days
-                ))
+                    }
+                })
 
-        # Create health plan
+            # TODO: Create module in database when database is properly configured
+            # created_module = await health_plan_repo.create_plan_module(plan_id, module_data)
+
+            # Create API model for response
+            module = HealthPlanModule(
+                module_type=module_data["module_type"],
+                title=module_data["title"],
+                description=module_data["description"],
+                content=module_data["content"],
+                duration_days=module_data["duration_days"]
+            )
+            modules.append(module)
+
+        # Create health plan API model for response
         health_plan = HealthPlan(
             plan_id=plan_id,
-            title=f"{plan_request.duration_days}天个性化健康计划",
-            description=f"基于您的目标：{', '.join(plan_request.goals)}",
+            title=plan_data["title"],
+            description=plan_data["description"],
             modules=modules,
-            duration_days=plan_request.duration_days,
-            status="active",
-            progress=0.0,
+            duration_days=plan_data["duration_days"],
+            status=plan_data["status"],
+            progress=plan_data["progress"],
             created_at=datetime.now(),
             updated_at=datetime.now()
         )
@@ -1758,6 +1807,451 @@ async def get_health_plan(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve health plan"
+        )
+
+
+@app.put("/api/v1/health-plan/plans/{plan_id}", response_model=HealthPlanResponse, tags=["Health Plans"])
+async def update_health_plan(
+    plan_id: str,
+    plan_data: HealthPlanRequest,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Update a health plan
+
+    Args:
+        plan_id: Health plan ID
+        plan_data: Updated plan data
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Updated health plan
+
+    Raises:
+        HTTPException: If plan not found or update fails
+    """
+    try:
+        # Mock implementation - return updated plan
+        from ..models.api_models import HealthPlan, HealthPlanModule
+
+        # Generate modules based on request
+        modules = []
+        for module_type in plan_data.modules:
+            if module_type == "diet":
+                modules.append(HealthPlanModule(
+                    module_type="diet",
+                    title="个性化饮食计划",
+                    description="根据您的目标和偏好定制的营养计划",
+                    content={
+                        "daily_calories": 2000,
+                        "goals": plan_data.goals,
+                        "preferences": plan_data.preferences or {},
+                        "recommendations": [
+                            "多吃蔬菜水果",
+                            "控制碳水化合物摄入",
+                            "增加蛋白质比例"
+                        ]
+                    },
+                    duration_days=plan_data.duration_days
+                ))
+            elif module_type == "exercise":
+                modules.append(HealthPlanModule(
+                    module_type="exercise",
+                    title="运动健身计划",
+                    description="适合您体能水平的运动方案",
+                    content={
+                        "weekly_frequency": 4,
+                        "session_duration": 45,
+                        "intensity": "moderate",
+                        "exercises": [
+                            "有氧运动",
+                            "力量训练",
+                            "柔韧性训练"
+                        ]
+                    },
+                    duration_days=plan_data.duration_days
+                ))
+
+        updated_plan = HealthPlan(
+            plan_id=plan_id,
+            title=f"更新的{plan_data.duration_days}天健康计划",
+            description=f"基于您的目标：{', '.join(plan_data.goals)}",
+            modules=modules,
+            duration_days=plan_data.duration_days,
+            status="active",
+            progress=0.0,
+            created_at=datetime.now() - timedelta(days=7),
+            updated_at=datetime.now()
+        )
+
+        return HealthPlanResponse(
+            message="Health plan updated successfully",
+            plan=updated_plan
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to update health plan: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update health plan"
+        )
+
+
+@app.delete("/api/v1/health-plan/plans/{plan_id}", response_model=BaseResponse, tags=["Health Plans"])
+async def delete_health_plan(
+    plan_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Delete a health plan
+
+    Args:
+        plan_id: Health plan ID
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Deletion confirmation
+
+    Raises:
+        HTTPException: If plan not found or deletion fails
+    """
+    try:
+        # Mock implementation - simulate deletion
+        logger.info(f"Deleting health plan {plan_id} for user {current_user_id}")
+
+        return BaseResponse(
+            message="Health plan deleted successfully"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to delete health plan: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete health plan"
+        )
+
+
+@app.get("/api/v1/health-plan/plans/{plan_id}/export", tags=["Health Plans"])
+async def export_health_plan(
+    plan_id: str,
+    format: str = "pdf",
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Export health plan in specified format
+
+    Args:
+        plan_id: Health plan ID
+        format: Export format (pdf, json, txt)
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Exported plan file
+
+    Raises:
+        HTTPException: If plan not found or export fails
+    """
+    try:
+        # Mock implementation - return export confirmation
+        logger.info(f"Exporting health plan {plan_id} in {format} format for user {current_user_id}")
+
+        if format not in ["pdf", "json", "txt"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid export format. Supported formats: pdf, json, txt"
+            )
+
+        # In a real implementation, this would generate and return the actual file
+        return BaseResponse(
+            message=f"Health plan exported successfully in {format} format",
+            data={"export_format": format, "plan_id": plan_id}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to export health plan: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export health plan"
+        )
+
+
+@app.post("/api/v1/health-plan/plans/{plan_id}/feedback", response_model=BaseResponse, tags=["Health Plans"])
+async def save_plan_feedback(
+    plan_id: str,
+    feedback_data: Dict[str, Any],
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Save feedback for a health plan
+
+    Args:
+        plan_id: Health plan ID
+        feedback_data: Feedback data
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Feedback save confirmation
+
+    Raises:
+        HTTPException: If plan not found or feedback save fails
+    """
+    try:
+        # Mock implementation - save feedback
+        logger.info(f"Saving feedback for health plan {plan_id} from user {current_user_id}")
+
+        return BaseResponse(
+            message="Plan feedback saved successfully",
+            data={"plan_id": plan_id, "feedback_id": f"feedback_{plan_id}_{int(datetime.now().timestamp())}"}
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to save plan feedback: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save plan feedback"
+        )
+
+
+@app.get("/api/v1/health-plan/plans/{plan_id}/progress", response_model=BaseResponse, tags=["Health Plans"])
+async def get_plan_progress(
+    plan_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get progress for a health plan
+
+    Args:
+        plan_id: Health plan ID
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Plan progress data
+
+    Raises:
+        HTTPException: If plan not found or progress retrieval fails
+    """
+    try:
+        # Mock implementation - return progress data
+        progress_data = {
+            "plan_id": plan_id,
+            "overall_progress": 65.5,
+            "module_progress": {
+                "diet": 70.0,
+                "exercise": 60.0,
+                "weight": 65.0
+            },
+            "daily_progress": [
+                {"date": "2024-01-01", "progress": 10.0},
+                {"date": "2024-01-02", "progress": 20.0},
+                {"date": "2024-01-03", "progress": 35.0},
+                {"date": "2024-01-04", "progress": 50.0},
+                {"date": "2024-01-05", "progress": 65.5}
+            ],
+            "total_tasks": 20,
+            "completed_tasks": 13,
+            "last_updated": datetime.now().isoformat()
+        }
+
+        return BaseResponse(
+            message="Plan progress retrieved successfully",
+            data=progress_data
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get plan progress: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve plan progress"
+        )
+
+
+@app.put("/api/v1/health-plan/plans/{plan_id}/progress", response_model=BaseResponse, tags=["Health Plans"])
+async def update_plan_progress(
+    plan_id: str,
+    progress_data: Dict[str, Any],
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Update progress for a health plan
+
+    Args:
+        plan_id: Health plan ID
+        progress_data: Progress update data
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Progress update confirmation
+
+    Raises:
+        HTTPException: If plan not found or progress update fails
+    """
+    try:
+        # Mock implementation - update progress
+        logger.info(f"Updating progress for health plan {plan_id} from user {current_user_id}")
+
+        return BaseResponse(
+            message="Plan progress updated successfully",
+            data={
+                "plan_id": plan_id,
+                "updated_progress": progress_data.get("progress", 0),
+                "updated_at": datetime.now().isoformat()
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to update plan progress: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update plan progress"
+        )
+
+
+@app.get("/api/v1/health-plan/templates", response_model=BaseResponse, tags=["Health Plans"])
+async def get_plan_templates(
+    category: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Get health plan templates
+
+    Args:
+        category: Template category filter
+        difficulty: Difficulty level filter
+        current_user_id: Authenticated user ID
+
+    Returns:
+        List of plan templates
+
+    Raises:
+        HTTPException: If template retrieval fails
+    """
+    try:
+        # Mock implementation - return template data
+        templates = [
+            {
+                "id": "template_weight_loss_beginner",
+                "name": "减重入门计划",
+                "description": "适合初学者的减重计划，包含饮食和运动指导",
+                "category": "weight_loss",
+                "difficulty_level": "beginner",
+                "duration_days": 30,
+                "modules": ["diet", "exercise", "weight"],
+                "goals": ["减重", "健康饮食", "建立运动习惯"],
+                "usage_count": 156,
+                "rating": 4.5
+            },
+            {
+                "id": "template_fitness_intermediate",
+                "name": "健身进阶计划",
+                "description": "适合有一定基础的健身爱好者",
+                "category": "fitness",
+                "difficulty_level": "intermediate",
+                "duration_days": 60,
+                "modules": ["exercise", "weight", "mental"],
+                "goals": ["增强体质", "肌肉增长", "提高耐力"],
+                "usage_count": 89,
+                "rating": 4.7
+            },
+            {
+                "id": "template_wellness_beginner",
+                "name": "全面健康计划",
+                "description": "综合性的健康管理计划",
+                "category": "wellness",
+                "difficulty_level": "beginner",
+                "duration_days": 90,
+                "modules": ["diet", "exercise", "sleep", "mental"],
+                "goals": ["整体健康", "生活平衡", "压力管理"],
+                "usage_count": 234,
+                "rating": 4.3
+            }
+        ]
+
+        # Apply filters
+        if category:
+            templates = [t for t in templates if t["category"] == category]
+        if difficulty:
+            templates = [t for t in templates if t["difficulty_level"] == difficulty]
+
+        return BaseResponse(
+            message="Plan templates retrieved successfully",
+            data={"templates": templates, "total_count": len(templates)}
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get plan templates: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve plan templates"
+        )
+
+
+@app.post("/api/v1/health-plan/templates/{template_id}/create", response_model=HealthPlanResponse, tags=["Health Plans"])
+async def create_from_template(
+    template_id: str,
+    custom_data: Dict[str, Any],
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    Create a health plan from template
+
+    Args:
+        template_id: Template ID
+        custom_data: Customization data
+        current_user_id: Authenticated user ID
+
+    Returns:
+        Created health plan
+
+    Raises:
+        HTTPException: If template not found or plan creation fails
+    """
+    try:
+        # Mock implementation - create plan from template
+        from ..models.api_models import HealthPlan, HealthPlanModule
+
+        # Generate plan ID
+        plan_id = f"plan_{current_user_id}_{int(datetime.now().timestamp())}"
+
+        # Mock template data
+        template_modules = [
+            HealthPlanModule(
+                module_type="diet",
+                title="模板饮食计划",
+                description="基于模板的个性化饮食建议",
+                content={
+                    "daily_calories": custom_data.get("target_calories", 2000),
+                    "template_id": template_id,
+                    "customizations": custom_data
+                },
+                duration_days=custom_data.get("duration_days", 30)
+            )
+        ]
+
+        plan = HealthPlan(
+            plan_id=plan_id,
+            title=f"基于模板的健康计划",
+            description=f"使用模板 {template_id} 创建的个性化计划",
+            modules=template_modules,
+            duration_days=custom_data.get("duration_days", 30),
+            status="active",
+            progress=0.0,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+
+        return HealthPlanResponse(
+            message="Health plan created from template successfully",
+            plan=plan
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to create plan from template: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create plan from template"
         )
 
 

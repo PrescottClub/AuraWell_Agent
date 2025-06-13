@@ -19,7 +19,7 @@ def configure_cors(app: FastAPI) -> None:
     """
     # Get allowed origins from environment or use defaults
     allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
-    
+
     if allowed_origins_env:
         allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
     else:
@@ -27,10 +27,14 @@ def configure_cors(app: FastAPI) -> None:
         allowed_origins = [
             "http://localhost:3000",  # React dev server
             "http://localhost:8080",  # Vue dev server
-            "http://localhost:5173",  # Vite dev server
+            "http://localhost:5173",  # Vite dev server (default)
+            "http://localhost:5174",  # Vite dev server (alternative port)
+            "http://localhost:5175",  # Vite dev server (alternative port)
             "http://127.0.0.1:3000",
-            "http://127.0.0.1:8080", 
+            "http://127.0.0.1:8080",
             "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+            "http://127.0.0.1:5175",
         ]
     
     # Add production origins if specified

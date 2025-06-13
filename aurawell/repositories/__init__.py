@@ -9,10 +9,12 @@ from .base import BaseRepository
 from .user_repository import UserRepository
 from .health_data_repository import HealthDataRepository
 from .achievement_repository import AchievementRepository
+from .health_plan_repository import HealthPlanRepository
 
 __all__ = [
     "BaseRepository",
-    "UserRepository", 
+    "UserRepository",
     "HealthDataRepository",
     "AchievementRepository",
+    "HealthPlanRepository",
 ]
