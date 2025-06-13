@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { HealthPlanAPI } from '../api/healthPlan.js'
+import {
+  normalizePlan,
+  normalizePlanList,
+  normalizeApiResponse,
+  normalizeProgress
+} from '../utils/healthPlanUtils.js'
 
 export const useHealthPlanStore = defineStore('healthPlan', () => {
   // 状态
@@ -21,11 +27,8 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
   })
 
   const currentPlanProgress = computed(() => {
-    if (!currentPlan.value || !currentPlan.value.progress) return 0
-    const progress = currentPlan.value.progress
-    const totalTasks = progress.total_tasks || 1
-    const completedTasks = progress.completed_tasks || 0
-    return Math.round((completedTasks / totalTasks) * 100)
+    if (!currentPlan.value) return 0
+    return normalizeProgress(currentPlan.value.progress)
   })
 
   // 方法
@@ -35,7 +38,15 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     try {
       const response = await HealthPlanAPI.getPlans()
       if (response.data) {
-        plans.value = response.data
+        // 使用工具函数标准化响应数据
+        const normalizedResponse = normalizeApiResponse(response)
+        if (Array.isArray(normalizedResponse.data)) {
+          plans.value = normalizePlanList(normalizedResponse.data)
+        } else if (normalizedResponse.data.plans) {
+          plans.value = normalizePlanList(normalizedResponse.data.plans)
+        } else {
+          plans.value = []
+        }
       }
     } catch (err) {
       error.value = '获取健康计划失败'
@@ -51,9 +62,13 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     try {
       const response = await HealthPlanAPI.getPlanDetail(planId)
       if (response.data) {
-        currentPlan.value = response.data
+        // 使用工具函数标准化响应数据
+        const normalizedResponse = normalizeApiResponse(response)
+        const planData = normalizedResponse.data.plan || normalizedResponse.data
+        currentPlan.value = normalizePlan(planData)
+        return currentPlan.value
       }
-      return response.data
+      return null
     } catch (err) {
       error.value = '获取计划详情失败'
       console.error('获取计划详情失败:', err)
@@ -69,10 +84,13 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     try {
       const response = await HealthPlanAPI.generatePlan(planRequest)
       if (response.data) {
-        plans.value.unshift(response.data)
-        currentPlan.value = response.data
+        // 处理不同的响应格式
+        const planData = response.data.plan || response.data
+        plans.value.unshift(planData)
+        currentPlan.value = planData
+        return planData
       }
-      return response.data
+      return null
     } catch (err) {
       error.value = '生成健康计划失败'
       console.error('生成健康计划失败:', err)
@@ -88,11 +106,11 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     try {
       const response = await HealthPlanAPI.updatePlan(planId, planData)
       if (response.data) {
-        const index = plans.value.findIndex(plan => plan.id === planId)
+        const index = plans.value.findIndex(plan => (plan.plan_id === planId || plan.id === planId))
         if (index !== -1) {
           plans.value[index] = response.data
         }
-        if (currentPlan.value && currentPlan.value.id === planId) {
+        if (currentPlan.value && (currentPlan.value.plan_id === planId || currentPlan.value.id === planId)) {
           currentPlan.value = response.data
         }
       }
@@ -111,8 +129,8 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     error.value = ''
     try {
       await HealthPlanAPI.deletePlan(planId)
-      plans.value = plans.value.filter(plan => plan.id !== planId)
-      if (currentPlan.value && currentPlan.value.id === planId) {
+      plans.value = plans.value.filter(plan => (plan.plan_id !== planId && plan.id !== planId))
+      if (currentPlan.value && (currentPlan.value.plan_id === planId || currentPlan.value.id === planId)) {
         currentPlan.value = null
       }
     } catch (err) {
@@ -173,8 +191,13 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     error.value = ''
     try {
       const response = await HealthPlanAPI.getPlanProgress(planId)
-      if (response.data && currentPlan.value && currentPlan.value.id === planId) {
-        currentPlan.value.progress = response.data
+      if (response.data && currentPlan.value && (currentPlan.value.plan_id === planId || currentPlan.value.id === planId)) {
+        // 正确处理进度数据 - 只更新progress字段，不覆盖整个对象
+        if (typeof response.data === 'object' && response.data.overall_progress !== undefined) {
+          currentPlan.value.progress = response.data.overall_progress
+        } else if (typeof response.data === 'number') {
+          currentPlan.value.progress = response.data
+        }
       }
       return response.data
     } catch (err) {
@@ -191,8 +214,13 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     error.value = ''
     try {
       const response = await HealthPlanAPI.updatePlanProgress(planId, progressData)
-      if (response.data && currentPlan.value && currentPlan.value.id === planId) {
-        currentPlan.value.progress = response.data
+      if (response.data && currentPlan.value && (currentPlan.value.plan_id === planId || currentPlan.value.id === planId)) {
+        // 正确处理进度数据更新
+        if (typeof response.data === 'object' && response.data.overall_progress !== undefined) {
+          currentPlan.value.progress = response.data.overall_progress
+        } else if (typeof response.data === 'number') {
+          currentPlan.value.progress = response.data
+        }
       }
       return response.data
     } catch (err) {
@@ -210,7 +238,14 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     try {
       const response = await HealthPlanAPI.getPlanTemplates()
       if (response.data) {
-        planTemplates.value = response.data
+        // 处理不同的响应格式
+        if (Array.isArray(response.data)) {
+          planTemplates.value = response.data
+        } else if (response.data.templates) {
+          planTemplates.value = response.data.templates
+        } else {
+          planTemplates.value = []
+        }
       }
     } catch (err) {
       error.value = '获取计划模板失败'
@@ -226,10 +261,13 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     try {
       const response = await HealthPlanAPI.createFromTemplate(templateId, customData)
       if (response.data) {
-        plans.value.unshift(response.data)
-        currentPlan.value = response.data
+        // 处理不同的响应格式
+        const planData = response.data.plan || response.data
+        plans.value.unshift(planData)
+        currentPlan.value = planData
+        return planData
       }
-      return response.data
+      return null
     } catch (err) {
       error.value = '基于模板创建计划失败'
       console.error('基于模板创建计划失败:', err)

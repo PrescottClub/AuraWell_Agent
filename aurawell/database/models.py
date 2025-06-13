@@ -57,6 +57,7 @@ class UserProfileDB(Base):
     platform_connections = relationship("PlatformConnectionDB", back_populates="user")
     conversations = relationship("ConversationDB", back_populates="user")
     health_profile = relationship("UserHealthProfileDB", back_populates="user", uselist=False)
+    health_plans = relationship("HealthPlanDB", back_populates="user", cascade="all, delete-orphan")
 
 
 class ActivitySummaryDB(Base):
@@ -356,4 +357,190 @@ class UserHealthProfileDB(Base):
     # Constraints
     __table_args__ = (
         Index("idx_health_profile_user_id", "user_id"),
+    )
+
+
+class HealthPlanDB(Base):
+    """Health plan database model"""
+    __tablename__ = "health_plans"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign key
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("user_profiles.user_id"))
+
+    # Plan details
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    duration_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="active")  # active, paused, completed, cancelled
+    progress: Mapped[float] = mapped_column(Float, default=0.0)  # 0.0 to 100.0
+
+    # Plan metadata (stored as JSON)
+    goals: Mapped[List[str]] = mapped_column(JSON, default=list)
+    preferences: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    user = relationship("UserProfileDB", back_populates="health_plans")
+    modules = relationship("HealthPlanModuleDB", back_populates="plan", cascade="all, delete-orphan")
+    progress_records = relationship("HealthPlanProgressDB", back_populates="plan", cascade="all, delete-orphan")
+    feedback_records = relationship("HealthPlanFeedbackDB", back_populates="plan", cascade="all, delete-orphan")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_health_plan_user_id", "user_id"),
+        Index("idx_health_plan_status", "status"),
+        Index("idx_health_plan_created_at", "created_at"),
+    )
+
+
+class HealthPlanModuleDB(Base):
+    """Health plan module database model"""
+    __tablename__ = "health_plan_modules"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign key
+    plan_id: Mapped[str] = mapped_column(String(255), ForeignKey("health_plans.id"))
+
+    # Module details
+    module_type: Mapped[str] = mapped_column(String(50), nullable=False)  # diet, exercise, weight, sleep, mental
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    duration_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, default=0)  # For ordering modules
+
+    # Module content (stored as JSON)
+    content: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    # Module status
+    status: Mapped[str] = mapped_column(String(50), default="active")  # active, paused, completed
+    progress: Mapped[float] = mapped_column(Float, default=0.0)  # 0.0 to 100.0
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    plan = relationship("HealthPlanDB", back_populates="modules")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_health_plan_module_plan_id", "plan_id"),
+        Index("idx_health_plan_module_type", "module_type"),
+        UniqueConstraint("plan_id", "module_type", name="uq_plan_module_type"),
+    )
+
+
+class HealthPlanProgressDB(Base):
+    """Health plan progress tracking database model"""
+    __tablename__ = "health_plan_progress"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign key
+    plan_id: Mapped[str] = mapped_column(String(255), ForeignKey("health_plans.id"))
+
+    # Progress details
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    module_type: Mapped[Optional[str]] = mapped_column(String(50))  # Specific module or overall
+    progress_value: Mapped[float] = mapped_column(Float, nullable=False)  # 0.0 to 100.0
+
+    # Progress data (stored as JSON)
+    metrics: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    plan = relationship("HealthPlanDB", back_populates="progress_records")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_health_plan_progress_plan_date", "plan_id", "date"),
+        Index("idx_health_plan_progress_module", "module_type"),
+    )
+
+
+class HealthPlanFeedbackDB(Base):
+    """Health plan feedback database model"""
+    __tablename__ = "health_plan_feedback"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Foreign key
+    plan_id: Mapped[str] = mapped_column(String(255), ForeignKey("health_plans.id"))
+
+    # Feedback details
+    feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)  # adjustment, complaint, suggestion
+    module_type: Mapped[Optional[str]] = mapped_column(String(50))  # Specific module or overall
+    rating: Mapped[Optional[int]] = mapped_column(Integer)  # 1-5 rating
+
+    # Feedback content
+    title: Mapped[Optional[str]] = mapped_column(String(500))
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Feedback metadata (stored as JSON)
+    feedback_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    # Status
+    status: Mapped[str] = mapped_column(String(50), default="pending")  # pending, reviewed, implemented
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Relationships
+    plan = relationship("HealthPlanDB", back_populates="feedback_records")
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_health_plan_feedback_plan_id", "plan_id"),
+        Index("idx_health_plan_feedback_type", "feedback_type"),
+        Index("idx_health_plan_feedback_status", "status"),
+    )
+
+
+class HealthPlanTemplateDB(Base):
+    """Health plan template database model"""
+    __tablename__ = "health_plan_templates"
+
+    # Primary key
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+    # Template details
+    name: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)  # weight_loss, fitness, wellness, etc.
+    difficulty_level: Mapped[str] = mapped_column(String(50), default="beginner")  # beginner, intermediate, advanced
+    duration_days: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Template content (stored as JSON)
+    goals: Mapped[List[str]] = mapped_column(JSON, default=list)
+    modules: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list)
+    default_preferences: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    # Template metadata
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0)
+    rating: Mapped[Optional[float]] = mapped_column(Float)  # Average user rating
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # Constraints
+    __table_args__ = (
+        Index("idx_health_plan_template_category", "category"),
+        Index("idx_health_plan_template_difficulty", "difficulty_level"),
+        Index("idx_health_plan_template_active", "is_active"),
     )
