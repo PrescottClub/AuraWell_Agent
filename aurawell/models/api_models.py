@@ -902,6 +902,18 @@ class HealthPlanModule(BaseModel):
     content: Dict[str, Any] = Field(..., description="Module content")
     duration_days: int = Field(..., description="Module duration in days")
 
+    # 添加兼容性字段
+    @property
+    def type(self) -> str:
+        """兼容性字段：前端期望的type字段"""
+        return self.module_type
+
+    def model_dump(self, **kwargs):
+        """重写序列化方法，包含兼容性字段"""
+        data = super().model_dump(**kwargs)
+        data['type'] = self.module_type
+        return data
+
 
 class HealthPlan(BaseModel):
     """Health plan model"""
@@ -914,6 +926,24 @@ class HealthPlan(BaseModel):
     progress: float = Field(default=0.0, ge=0.0, le=100.0, description="Completion progress")
     created_at: datetime
     updated_at: datetime
+
+    # 添加兼容性字段
+    @property
+    def id(self) -> str:
+        """兼容性字段：前端期望的id字段"""
+        return self.plan_id
+
+    @property
+    def duration(self) -> int:
+        """兼容性字段：前端期望的duration字段"""
+        return self.duration_days
+
+    def model_dump(self, **kwargs):
+        """重写序列化方法，包含兼容性字段"""
+        data = super().model_dump(**kwargs)
+        data['id'] = self.plan_id
+        data['duration'] = self.duration_days
+        return data
 
 
 class HealthPlanRequest(BaseModel):

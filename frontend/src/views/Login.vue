@@ -143,10 +143,11 @@ const onFinish = async (values) => {
         });
 
         // 使用store保存token
+        const tokenData = response.data || response;
         authStore.setToken(
-            response.data.access_token,
-            response.data.token_type,
-            response.data.expires_in
+            tokenData.access_token,
+            tokenData.token_type,
+            tokenData.expires_in
         );
         localStorage.setItem('isLoggedIn', 'true');
 

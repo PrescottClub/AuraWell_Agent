@@ -2,7 +2,7 @@
   <a-card 
     class="plan-card"
     :class="{ 'active-plan': plan.status === 'active' }"
-    @click="$emit('view', plan.id)"
+    @click="$emit('view', plan.plan_id || plan.id)"
   >
     <template #title>
       <div class="plan-title">
@@ -48,9 +48,9 @@
       <p class="plan-description">{{ plan.description }}</p>
       
       <div class="plan-modules">
-        <a-tag 
-          v-for="module in plan.modules" 
-          :key="module"
+        <a-tag
+          v-for="module in getModulesList(plan.modules)"
+          :key="getModuleKey(module)"
           color="blue"
           class="module-tag"
         >
@@ -77,7 +77,7 @@
         </div>
         <div class="meta-item">
           <ClockCircleOutlined />
-          <span>{{ plan.duration }}天</span>
+          <span>{{ plan.duration_days || plan.duration }}天</span>
         </div>
       </div>
     </div>
@@ -125,6 +125,31 @@ const statusLabel = computed(() => {
   return labels[props.plan.status] || props.plan.status
 })
 
+const getModulesList = (modules) => {
+  if (!modules) return []
+
+  // 如果modules是对象数组（后端格式），提取module_type
+  if (Array.isArray(modules) && modules.length > 0 && typeof modules[0] === 'object') {
+    return modules.map(module => module.module_type || module.type || module)
+  }
+
+  // 如果modules是字符串数组（前端格式），直接返回
+  if (Array.isArray(modules)) {
+    return modules
+  }
+
+  return []
+}
+
+const getModuleKey = (module) => {
+  // 如果module是对象，使用其ID或type作为key
+  if (typeof module === 'object') {
+    return module.id || module.module_type || module.type || JSON.stringify(module)
+  }
+  // 如果module是字符串，直接使用
+  return module
+}
+
 const getModuleLabel = (module) => {
   const labels = {
     diet: '饮食计划',
@@ -133,7 +158,11 @@ const getModuleLabel = (module) => {
     sleep: '睡眠计划',
     mental: '心理健康'
   }
-  return labels[module] || module
+
+  // 如果module是对象，提取其类型
+  const moduleType = typeof module === 'object' ? (module.module_type || module.type) : module
+
+  return labels[moduleType] || moduleType || module
 }
 
 const formatDate = (date) => {

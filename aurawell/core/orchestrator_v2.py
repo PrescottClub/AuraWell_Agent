@@ -14,6 +14,26 @@ from ..models.enums import InsightType, InsightPriority
 
 logger = logging.getLogger(__name__)
 
+# Import the unified HealthPlan model from API models
+try:
+    from ..models.api_models import HealthPlan, HealthPlanModule
+except ImportError:
+    # Fallback for development/testing
+    logger.warning("Could not import HealthPlan from api_models, using local definition")
+
+    @dataclass
+    class HealthPlan:
+        """Fallback HealthPlan definition for compatibility"""
+        plan_id: str
+        title: str
+        description: str
+        modules: List[Dict[str, Any]]
+        duration_days: int
+        status: str = "active"
+        progress: float = 0.0
+        created_at: datetime = None
+        updated_at: datetime = None
+
 
 @dataclass
 class HealthInsight:
@@ -31,20 +51,8 @@ class HealthInsight:
     expires_at: Optional[datetime] = None
 
 
-@dataclass
-class HealthPlan:
-    """Represents a personalized health plan"""
-
-    plan_id: str
-    user_id: str
-    title: str
-    description: str
-    goals: List[Dict[str, Any]]
-    daily_recommendations: List[Dict[str, Any]]
-    weekly_targets: Dict[str, Any]
-    created_at: datetime
-    valid_until: datetime
-    last_updated: datetime
+# Note: HealthPlan model is now imported from api_models to maintain consistency
+# This dataclass is kept for backward compatibility but should be migrated to use the API model
 
 
 class AuraWellOrchestrator:
@@ -153,17 +161,34 @@ class AuraWellOrchestrator:
         else:
             plan_content = self._get_default_health_plan(user_profile)
 
+        # Create modules from plan content
+        modules = []
+        if "modules" in plan_content:
+            for module_data in plan_content["modules"]:
+                try:
+                    module = HealthPlanModule(
+                        module_type=module_data.get("type", "general"),
+                        title=module_data.get("title", "健康模块"),
+                        description=module_data.get("description", ""),
+                        content=module_data.get("content", {}),
+                        duration_days=plan_content.get("duration_days", 30)
+                    )
+                    modules.append(module)
+                except Exception as e:
+                    logger.warning(f"Failed to create module: {e}")
+                    # Fallback to dict format for compatibility
+                    modules.append(module_data)
+
         health_plan = HealthPlan(
             plan_id=plan_id,
-            user_id=user_id,
             title=plan_content.get("title", "个性化健康计划"),
             description=plan_content.get("description", "基于您的健康数据和目标制定的个性化计划"),
-            goals=plan_content.get("goals", []),
-            daily_recommendations=plan_content.get("daily_recommendations", []),
-            weekly_targets=plan_content.get("weekly_targets", {}),
+            modules=modules,
+            duration_days=plan_content.get("duration_days", 30),
+            status="active",
+            progress=0.0,
             created_at=datetime.now(timezone.utc),
-            valid_until=datetime.now(timezone.utc) + timedelta(days=30),
-            last_updated=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         # Cache the plan
@@ -551,6 +576,28 @@ class AuraWellOrchestrator:
         return {
             "title": "基础健康计划",
             "description": "基于您的基本信息制定的健康计划",
+            "duration_days": 30,
+            "modules": [
+                {
+                    "type": "exercise",
+                    "title": "基础运动计划",
+                    "description": "适合初学者的运动方案",
+                    "content": {
+                        "daily_steps_goal": user_profile.get("daily_steps_goal", 10000),
+                        "weekly_sessions": 3,
+                        "session_duration": 30
+                    }
+                },
+                {
+                    "type": "sleep",
+                    "title": "睡眠管理计划",
+                    "description": "改善睡眠质量的建议",
+                    "content": {
+                        "target_hours": user_profile.get("sleep_duration_goal_hours", 8.0),
+                        "bedtime_routine": ["避免电子设备", "放松活动", "规律作息"]
+                    }
+                }
+            ],
             "goals": [
                 {"type": "daily_steps", "target": user_profile.get("daily_steps_goal", 10000)},
                 {"type": "sleep_hours", "target": user_profile.get("sleep_duration_goal_hours", 8.0)},

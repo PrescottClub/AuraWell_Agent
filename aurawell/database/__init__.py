@@ -15,6 +15,11 @@ from .models import (
     NutritionEntryDB,
     AchievementProgressDB,
     PlatformConnectionDB,
+    HealthPlanDB,
+    HealthPlanModuleDB,
+    HealthPlanProgressDB,
+    HealthPlanFeedbackDB,
+    HealthPlanTemplateDB,
 )
 # 移除循环导入 - 对话模型将在需要时单独导入
 
@@ -29,4 +34,9 @@ __all__ = [
     "NutritionEntryDB",
     "AchievementProgressDB",
     "PlatformConnectionDB",
+    "HealthPlanDB",
+    "HealthPlanModuleDB",
+    "HealthPlanProgressDB",
+    "HealthPlanFeedbackDB",
+    "HealthPlanTemplateDB",
 ]
