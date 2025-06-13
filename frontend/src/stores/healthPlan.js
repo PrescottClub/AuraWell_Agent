@@ -83,13 +83,41 @@ export const useHealthPlanStore = defineStore('healthPlan', () => {
     error.value = ''
     try {
       const response = await HealthPlanAPI.generatePlan(planRequest)
-      if (response.data) {
-        // 处理不同的响应格式
-        const planData = response.data.plan || response.data
-        plans.value.unshift(planData)
-        currentPlan.value = planData
-        return planData
+
+      // 处理不同的响应格式
+      let planData = null
+
+      if (response.plan) {
+        // 新的API响应格式：plan字段包含计划数据
+        planData = response.plan
+      } else if (response.data && response.data.plan) {
+        // 旧的API响应格式：data.plan包含计划数据
+        planData = response.data.plan
+      } else if (response.data) {
+        // 直接在data字段中的计划数据
+        planData = response.data
       }
+
+      if (planData) {
+        // 标准化计划数据
+        const normalizedPlan = normalizePlan(planData)
+
+        // 如果响应中包含推荐信息，添加到计划中
+        if (response.recommendations) {
+          normalizedPlan.recommendations = response.recommendations
+        }
+
+        // 添加到计划列表的开头
+        plans.value.unshift(normalizedPlan)
+        currentPlan.value = normalizedPlan
+
+        // 重新获取计划列表以确保数据同步
+        await fetchPlans()
+
+        return normalizedPlan
+      }
+
+      console.warn('API响应中未找到计划数据:', response)
       return null
     } catch (err) {
       error.value = '生成健康计划失败'

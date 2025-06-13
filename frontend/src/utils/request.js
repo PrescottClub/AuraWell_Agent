@@ -18,9 +18,11 @@ request.interceptors.request.use(
             const authHeader = authStore.getAuthHeader();
             if (authHeader) {
                 config.headers['Authorization'] = authHeader;
-            } else if (import.meta.env.VITE_APP_ENV === 'development') {
-                // 开发环境使用测试token
-                config.headers['Authorization'] = 'Bearer dev-test-token';
+            } else if (import.meta.env.VITE_APP_ENV === 'development' || import.meta.env.DEV) {
+                // 开发环境：如果没有token，尝试从localStorage获取或使用测试token
+                const devToken = localStorage.getItem('dev_auth_token') || 'Bearer dev-test-token';
+                config.headers['Authorization'] = devToken;
+                console.warn('使用开发环境测试token，生产环境请确保正确的认证流程');
             }
         }
         return config;
@@ -67,10 +69,15 @@ request.interceptors.response.use(
                     // 处理验证错误
                     const validationErrors = error.response.data?.detail;
                     if (validationErrors && Array.isArray(validationErrors)) {
-                        const errorMessages = validationErrors.map(err => err.msg).join(', ');
+                        const errorMessages = validationErrors.map(err => {
+                            const field = err.loc ? err.loc.join('.') : '字段';
+                            return `${field}: ${err.msg}`;
+                        }).join('; ');
                         message.error(`输入验证失败: ${errorMessages}`);
+                    } else if (error.response.data?.message) {
+                        message.error(`验证错误: ${error.response.data.message}`);
                     } else {
-                        message.error(error.response.data?.message || '输入数据格式错误');
+                        message.error('输入数据格式错误，请检查您的输入');
                     }
                     break;
                 case 500:
