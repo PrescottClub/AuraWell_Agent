@@ -2,6 +2,7 @@
 增强检索方法，通过向量相似度查找，检索数据库中前K个和用户查询相关的字段，也提供将文档解析并上传至向量数据库的方法
 该拓展使用阿里巴巴提供的云服务，使用前请务必通过pip命令安装好对应的库
 目前通过.env解析密钥，未来将通过KMS密钥管理系统解析密钥
+rag_utils是一个辅助RAGExtension核心逻辑运行的工具类，其本身不会调用API
 """
 from rag_utils import get_file_type, process_list
 from alibabacloud_docmind_api20220711.client import Client as docmind_api20220711Client
@@ -363,7 +364,7 @@ if __name__ == "__main__":
     # retrieve_list = test_user.retrieve_topK("每日营养建议", 3)
     # print(len(retrieve_list))
     # print(retrieve_list)
-    sample_doc_path = "./testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+    sample_doc_path = os.path.join(".", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
     obj = Document()
     result = obj.file2VectorDB(sample_doc_path)
     print(result)

@@ -12,8 +12,8 @@ sys.path.insert(0, rag_dir)
 
 from rag_utils import get_file_type
 
-# 测试文件类型检测 - 修改路径指向rag文件夹下的testMaterial
-test_file = "../rag/testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+# 测试文件类型检测 - 修改路径指向rag文件夹下的testMaterials
+test_file = os.path.join("..", "rag", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
 print(f"Testing file: {test_file}")
 file_type = get_file_type(test_file)
 print(f"File type returned: '{file_type}'")

@@ -29,7 +29,10 @@ def test_filtered_vectorization():
     try:
         # 创建Document实例
         doc = Document()
-        sample_doc_path = "../rag/testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+        # 使用绝对路径确保在Windows上正确工作
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        sample_doc_path = os.path.join(parent_dir, "rag", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
         
         print("正在解析文档...")
         start_time = time.time()
@@ -91,7 +94,10 @@ def compare_with_without_filtering():
     
     try:
         doc = Document()
-        sample_doc_path = "../rag/testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+        # 使用绝对路径确保在Windows上正确工作
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        sample_doc_path = os.path.join(parent_dir, "rag", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
         
         # 解析文档
         raw_content = doc._Document__doc_analysation(sample_doc_path)

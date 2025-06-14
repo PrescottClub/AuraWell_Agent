@@ -32,7 +32,7 @@ def test_complete_rag_workflow():
     
     try:
         doc = Document()
-        sample_doc_path = "../rag/testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+        sample_doc_path = os.path.join("..", "rag", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
         
         print(f"📄 处理文档: {sample_doc_path}")
         

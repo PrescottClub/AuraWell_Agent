@@ -32,8 +32,8 @@ access_key_secret = os.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
 print(f"Access Key ID: {access_key_id}")
 print(f"Access Key Secret: {access_key_secret[:10]}...")
 
-# 测试文件 - 修改路径指向rag文件夹下的testMaterial
-file_path = "../rag/testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+# 测试文件 - 修改路径指向rag文件夹下的testMaterials
+file_path = os.path.join("..", "rag", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
 file_extension = get_file_type(file_path)
 print(f"File extension: '{file_extension}'")
 

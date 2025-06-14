@@ -78,7 +78,7 @@ def export_strings_to_files(self, raw_text):
             markdown = layout.get("markdownContent", None) if layout.get("markdownContent", None) is not None else ""
             query_list.append(markdown)
         # 创建目标目录（如果不存在）
-        output_dir = "./testMaterial/"
+        output_dir = os.path.join(".", "testMaterials")
         os.makedirs(output_dir, exist_ok=True)
 
         # 获取当前日期作为文件名前缀

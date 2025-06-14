@@ -166,8 +166,10 @@ def test_with_real_document():
     
     try:
         doc = Document()
-        # 修改路径指向rag文件夹下的testMaterial
-        sample_doc_path = "../rag/testMaterial/中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf"
+        # 修改路径指向rag文件夹下的testMaterials - 使用绝对路径确保在Windows上正确工作
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        sample_doc_path = os.path.join(parent_dir, "rag", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
         
         print("正在解析文档并检测引用...")
         
