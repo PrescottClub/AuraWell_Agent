@@ -21,15 +21,24 @@ import time
 import dashvector
 import numpy as np
 
-class Document:
-    def __init__(self):
-        """
-        从项目的根目录处加载.env文件，这个类需要读取的api key有：
-        ALIBABA_CLOUD_ACCESS_KEY_ID=SECRET
-        ALIBABA_CLOUD_ACCESS_KEY_SECRET=SECRET
-        DASHSCOPE_API_KEY=SECRET
-        正式部署时不能从.env文件中读取密钥，而是通过阿里巴巴的密钥管理系统管理密钥
-        """
+def load_api_keys():
+    """
+    从.env文件或环境变量中加载API密钥
+    优先尝试从.env文件加载，如果失败则从环境变量加载
+
+    Returns:
+        dict: 包含所有API密钥的字典，如果某个密钥未找到则值为None
+        bool: 是否成功加载了所有必需的密钥
+    """
+    keys = {
+        "ALIBABA_CLOUD_ACCESS_KEY_ID": None,
+        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": None,
+        "DASHSCOPE_API_KEY": None,
+        "DASH_VECTOR_API": None
+    }
+
+    # 方法1: 尝试从.env文件加载
+    try:
         # 获取当前文件的绝对路径
         current_file_path = os.path.abspath(__file__)
         # 获取当前文件所在目录（即 aurawell/rag）
@@ -38,12 +47,60 @@ class Document:
         project_root = os.path.dirname(os.path.dirname(current_dir))
         # 构建 .env 文件的完整路径
         dotenv_path = os.path.join(project_root, '.env')
-        # 加载指定路径下的 .env 文件
-        load_dotenv(dotenv_path=dotenv_path)
-        self.access_key_id = os.getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")
-        self.access_key_secret = os.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
-        self.dash_scope_key = os.getenv("DASHSCOPE_API_KEY")
-        self.dash_vector_key = os.getenv("DASH_VECTOR_API")
+
+        # 如果.env文件存在，尝试加载
+        if os.path.exists(dotenv_path):
+            load_dotenv(dotenv_path=dotenv_path)
+            print(f"✅ 尝试从.env文件加载密钥: {dotenv_path}")
+        else:
+            print(f"⚠️  .env文件不存在: {dotenv_path}")
+    except Exception as e:
+        print(f"⚠️  从.env文件加载密钥失败: {e}")
+
+    # 方法2: 从环境变量读取（包括.env加载后的环境变量）
+    for key in keys.keys():
+        value = os.getenv(key)
+        if value:
+            keys[key] = value
+            print(f"✅ 成功加载密钥: {key}")
+        else:
+            print(f"❌ 未找到密钥: {key}")
+
+    # 检查是否所有必需的密钥都已加载
+    missing_keys = [key for key, value in keys.items() if not value]
+    success = len(missing_keys) == 0
+
+    if success:
+        print("🎉 所有API密钥加载成功")
+    else:
+        print(f"⚠️  缺少以下密钥: {missing_keys}")
+
+    return keys, success
+
+class Document:
+    def __init__(self):
+        """
+        从.env文件或环境变量中加载API密钥，这个类需要读取的api key有：
+        ALIBABA_CLOUD_ACCESS_KEY_ID=SECRET
+        ALIBABA_CLOUD_ACCESS_KEY_SECRET=SECRET
+        DASHSCOPE_API_KEY=SECRET
+        DASH_VECTOR_API=SECRET
+
+        优先从.env文件加载，如果失败则从环境变量加载
+        """
+        print("🔄 Document类初始化：开始加载API密钥...")
+
+        # 加载API密钥
+        keys, success = load_api_keys()
+
+        if not success:
+            raise ValueError("❌ 无法加载必需的API密钥，请检查.env文件或环境变量设置")
+
+        # 设置实例变量
+        self.access_key_id = keys["ALIBABA_CLOUD_ACCESS_KEY_ID"]
+        self.access_key_secret = keys["ALIBABA_CLOUD_ACCESS_KEY_SECRET"]
+        self.dash_scope_key = keys["DASHSCOPE_API_KEY"]
+        self.dash_vector_key = keys["DASH_VECTOR_API"]
 
         # 访问的域名
         # 阿里云docmind服务的节点地址，写成类属性是为了方便未来更换
@@ -52,6 +109,8 @@ class Document:
         self.vectorDB_endpoint = "vrs-cn-6sa4axaiv0001c.dashvector.cn-shanghai.aliyuncs.com"
         self.bailian_endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1"
         self.region_id = "cn-hangzhou"
+
+        print("✅ Document类初始化完成")
     def __doc_analysation(self, file_path:str):
         """
         使用阿里云的docmind服务对文档进行解析，返回解析结果
@@ -298,29 +357,34 @@ class Document:
 class UserRetrieve:
     def __init__(self):
         """
-        从项目的根目录处加载.env文件，这个类需要读取的api key有：
-        ALIBABA_CLOUD_ACCESS_KEY_ID=SECRET
-        ALIBABA_CLOUD_ACCESS_KEY_SECRET=SECRET
+        从.env文件或环境变量中加载API密钥，这个类需要读取的api key有：
         DASHSCOPE_API_KEY=SECRET
-        正式部署时不能从.env文件中读取密钥，而是通过阿里巴巴的密钥管理系统管理密钥
+        DASH_VECTOR_API=SECRET
+
+        优先从.env文件加载，如果失败则从环境变量加载
         """
-        # 获取当前文件的绝对路径
-        current_file_path = os.path.abspath(__file__)
-        # 获取当前文件所在目录（即 aurawell/rag）
-        current_dir = os.path.dirname(current_file_path)
-        # 获取项目根目录
-        project_root = os.path.dirname(os.path.dirname(current_dir))
-        # 构建 .env 文件的完整路径
-        dotenv_path = os.path.join(project_root, '.env')
-        # 加载指定路径下的 .env 文件
-        load_dotenv(dotenv_path=dotenv_path)
-        self.dash_scope_key = os.getenv("DASHSCOPE_API_KEY")
-        self.dash_vector_key = os.getenv("DASH_VECTOR_API")
+        print("🔄 UserRetrieve类初始化：开始加载API密钥...")
+
+        # 加载API密钥
+        keys, success = load_api_keys()
+
+        # UserRetrieve只需要部分密钥
+        required_keys = ["DASHSCOPE_API_KEY", "DASH_VECTOR_API"]
+        missing_keys = [key for key in required_keys if not keys.get(key)]
+
+        if missing_keys:
+            raise ValueError(f"❌ UserRetrieve类缺少必需的API密钥: {missing_keys}")
+
+        # 设置实例变量
+        self.dash_scope_key = keys["DASHSCOPE_API_KEY"]
+        self.dash_vector_key = keys["DASH_VECTOR_API"]
 
         # 访问的域名
         # 阿里云的向量数据库服务的节点地址
         self.vectorDB_endpoint = "vrs-cn-6sa4axaiv0001c.dashvector.cn-shanghai.aliyuncs.com"
         self.bailian_endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+        print("✅ UserRetrieve类初始化完成")
     def __user_query_vectorised(self, raw_user_query:str):
         # 目前阿里云已经推出DashScope调用，但是OpenAI兼容方法对应的文档更清晰，先用着
         client = OpenAI(
