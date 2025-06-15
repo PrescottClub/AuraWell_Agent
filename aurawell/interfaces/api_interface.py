@@ -36,7 +36,14 @@ from ..models.api_models import (
     HealthPlanGenerateRequest, HealthPlanGenerateResponse, HealthPlan, HealthPlanModule,
     UserHealthDataRequest, UserHealthDataResponse,
     UserHealthGoalRequest, UserHealthGoalResponse, UserHealthGoalsListResponse,
-    HealthAdviceRequest, HealthAdviceResponse as APIHealthAdviceResponse
+    HealthAdviceRequest, HealthAdviceResponse as APIHealthAdviceResponse,
+    # Family Management Models
+    FamilyCreateRequest, FamilyInfoResponse, FamilyListResponse,
+    InviteMemberRequest, InviteMemberResponse, AcceptInviteRequest, DeclineInviteRequest,
+    FamilyMembersResponse, UpdateMemberRoleRequest, RemoveMemberRequest,
+    TransferOwnershipRequest, LeaveFamilyRequest, DeleteFamilyRequest,
+    FamilyPermissionResponse, FamilyActivityLogResponse, FamilySettingsRequest,
+    FamilySettingsResponse, PendingInviteResponse
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -62,6 +69,7 @@ from ..agent import HealthToolsRegistry  # 保持API兼容性
 from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 from ..services.chat_service import ChatService
+from ..services.family_service import FamilyService, get_family_service
 
 # Import LangChain Agent components
 from ..langchain_agent.services.health_advice_service import HealthAdviceService
@@ -128,6 +136,7 @@ app = FastAPI(
         {"name": "Health Data", "description": "Health data retrieval and analysis"},
         {"name": "Health Goals", "description": "Health goal setting and tracking"},
         {"name": "Achievements", "description": "Achievement system and gamification"},
+        {"name": "Family Management", "description": "Family creation and member management"},
         {"name": "System", "description": "System health and monitoring"},
         {"name": "Health Advice", "description": "Health advice generation"}
     ]
@@ -157,6 +166,7 @@ _health_plan_repo = None
 _tools_registry = None
 _chat_service = None
 _health_advice_service = None
+_family_service = None
 
 
 async def get_db_manager():
@@ -519,6 +529,25 @@ async def get_health_advice_service():
     return _health_advice_service
 
 
+async def get_family_service() -> FamilyService:
+    """Get family service instance"""
+    global _family_service
+    if _family_service is None:
+        db_manager = await get_db_manager()
+        # Create a simple session wrapper for family service
+        # In production, this should use proper session management
+        class SessionWrapper:
+            def __init__(self, db_manager):
+                self.db_manager = db_manager
+            async def rollback(self):
+                # Mock rollback for now
+                pass
+        
+        session = SessionWrapper(db_manager)
+        _family_service = FamilyService(session)
+    return _family_service
+
+
 @app.post("/api/v1/health/advice/comprehensive", response_model=APIHealthAdviceResponse, tags=["Health Advice"])
 async def generate_comprehensive_health_advice(
     advice_request: HealthAdviceRequest,
@@ -684,6 +713,355 @@ async def add_process_time_header(request: Request, call_next):
 
 
 # Exception handlers are now registered above using app.add_exception_handler()
+
+
+# ============================================================================
+# FAMILY MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.post("/api/v1/family", response_model=FamilyInfoResponse, tags=["Family Management"])
+async def create_family(
+    family_request: FamilyCreateRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Create a new family with the current user as owner
+    
+    Args:
+        family_request: Family creation request with name and description
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        FamilyInfoResponse: Created family information
+        
+    Raises:
+        ConflictError: If user already owns maximum families (3)
+        ValidationError: If input validation fails
+    """
+    try:
+        logger.info(f"User {current_user_id} creating family: {family_request.name}")
+        
+        family_info = await family_service.create_family(family_request, current_user_id)
+        
+        return FamilyInfoResponse(
+            data=family_info,
+            message="Family created successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error creating family: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST if e.error_code == "VALIDATION_ERROR" 
+                           else status.HTTP_409_CONFLICT if e.error_code == "CONFLICT" 
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create family"
+        )
+
+
+@app.get("/api/v1/family/{family_id}", response_model=FamilyInfoResponse, tags=["Family Management"])
+async def get_family_info(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Get information about a specific family
+    
+    Args:
+        family_id: ID of the family to retrieve
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        FamilyInfoResponse: Family information
+        
+    Raises:
+        NotFoundError: If family not found
+        AuthorizationError: If user is not a member
+    """
+    try:
+        family_info = await family_service.get_family_info(family_id, current_user_id)
+        
+        return FamilyInfoResponse(
+            data=family_info,
+            message="Family information retrieved successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting family info: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND if e.error_code == "NOT_FOUND"
+                           else status.HTTP_403_FORBIDDEN if e.error_code == "AUTHORIZATION_ERROR"
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get family information"
+        )
+
+
+@app.get("/api/v1/family", response_model=FamilyListResponse, tags=["Family Management"])
+async def get_user_families(
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Get all families that the current user is a member of
+    
+    Args:
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        FamilyListResponse: List of families
+    """
+    try:
+        families = await family_service.get_user_families(current_user_id)
+        
+        return FamilyListResponse(
+            data=families,
+            message=f"Retrieved {len(families)} families"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting user families: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get user families"
+        )
+
+
+@app.post("/api/v1/family/{family_id}/invite", response_model=InviteMemberResponse, tags=["Family Management"])
+async def invite_family_member(
+    family_id: str,
+    invite_request: InviteMemberRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Invite a new member to the family
+    
+    Args:
+        family_id: ID of the family
+        invite_request: Invitation request with email and role
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        InviteMemberResponse: Invitation information
+        
+    Raises:
+        AuthorizationError: If user doesn't have permission to invite
+        ConflictError: If user is already a member or has pending invite
+        ValidationError: If email is invalid or user not found
+    """
+    try:
+        logger.info(f"User {current_user_id} inviting {invite_request.email} to family {family_id}")
+        
+        invite_info = await family_service.invite_member(family_id, invite_request, current_user_id)
+        
+        return InviteMemberResponse(
+            data=invite_info,
+            message="Invitation sent successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error inviting family member: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN if e.error_code == "AUTHORIZATION_ERROR"
+                           else status.HTTP_409_CONFLICT if e.error_code == "CONFLICT"
+                           else status.HTTP_400_BAD_REQUEST if e.error_code == "VALIDATION_ERROR"
+                           else status.HTTP_404_NOT_FOUND if e.error_code == "NOT_FOUND"
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to invite family member"
+        )
+
+
+@app.post("/api/v1/family/invitation/accept", response_model=FamilyInfoResponse, tags=["Family Management"])
+async def accept_family_invitation(
+    accept_request: AcceptInviteRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Accept a family invitation
+    
+    Args:
+        accept_request: Accept invitation request with invite code
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        FamilyInfoResponse: Family information after joining
+        
+    Raises:
+        NotFoundError: If invitation not found
+        ValidationError: If invitation is invalid or expired
+        AuthorizationError: If user is not the intended recipient
+    """
+    try:
+        logger.info(f"User {current_user_id} accepting family invitation")
+        
+        family_info = await family_service.accept_invitation(accept_request, current_user_id)
+        
+        return FamilyInfoResponse(
+            data=family_info,
+            message="Successfully joined family"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error accepting invitation: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND if e.error_code == "NOT_FOUND"
+                           else status.HTTP_400_BAD_REQUEST if e.error_code == "VALIDATION_ERROR"
+                           else status.HTTP_403_FORBIDDEN if e.error_code == "AUTHORIZATION_ERROR"
+                           else status.HTTP_409_CONFLICT if e.error_code == "CONFLICT"
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to accept invitation"
+        )
+
+
+@app.post("/api/v1/family/invitation/decline", response_model=BaseResponse, tags=["Family Management"])
+async def decline_family_invitation(
+    decline_request: DeclineInviteRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Decline a family invitation
+    
+    Args:
+        decline_request: Decline invitation request with invite code and reason
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        BaseResponse: Success confirmation
+        
+    Raises:
+        NotFoundError: If invitation not found
+        ValidationError: If invitation is invalid
+        AuthorizationError: If user is not the intended recipient
+    """
+    try:
+        logger.info(f"User {current_user_id} declining family invitation")
+        
+        success = await family_service.decline_invitation(decline_request, current_user_id)
+        
+        return BaseResponse(
+            success=True,
+            message="Invitation declined successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error declining invitation: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND if e.error_code == "NOT_FOUND"
+                           else status.HTTP_400_BAD_REQUEST if e.error_code == "VALIDATION_ERROR"
+                           else status.HTTP_403_FORBIDDEN if e.error_code == "AUTHORIZATION_ERROR"
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to decline invitation"
+        )
+
+
+@app.get("/api/v1/family/{family_id}/members", response_model=FamilyMembersResponse, tags=["Family Management"])
+async def get_family_members(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Get all members of a family
+    
+    Args:
+        family_id: ID of the family
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        FamilyMembersResponse: List of family members
+        
+    Raises:
+        AuthorizationError: If user is not a member of the family
+    """
+    try:
+        members = await family_service.get_family_members(family_id, current_user_id)
+        
+        return FamilyMembersResponse(
+            data=members,
+            message=f"Retrieved {len(members)} family members"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting family members: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN if e.error_code == "AUTHORIZATION_ERROR"
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get family members"
+        )
+
+
+@app.get("/api/v1/family/{family_id}/permissions", response_model=FamilyPermissionResponse, tags=["Family Management"])
+async def get_family_permissions(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Get the current user's permissions within a family
+    
+    Args:
+        family_id: ID of the family
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        FamilyPermissionResponse: User's permissions
+        
+    Raises:
+        NotFoundError: If user is not a member of the family
+    """
+    try:
+        permissions = await family_service.get_user_family_permissions(family_id, current_user_id)
+        
+        return FamilyPermissionResponse(
+            data=permissions,
+            message="Permissions retrieved successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting family permissions: {e}")
+        if hasattr(e, 'error_code'):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND if e.error_code == "NOT_FOUND"
+                           else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get family permissions"
+        )
 
 
 # ============================================================================
