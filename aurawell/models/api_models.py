@@ -1063,3 +1063,283 @@ class HealthAdviceData(BaseModel):
 class HealthAdviceResponse(BaseResponse):
     """健康建议响应"""
     data: Optional[Dict[str, Any]] = Field(None, description="健康建议数据")
+
+
+# ================================
+# Family Management Models
+# ================================
+
+class FamilyRole(str, Enum):
+    """Family member role enumeration"""
+    OWNER = "owner"          # Full control, can delete family
+    MANAGER = "manager"      # Can invite/remove members, view all data
+    VIEWER = "viewer"        # Can only view shared data
+
+
+class InviteStatus(str, Enum):
+    """Invitation status enumeration"""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
+
+
+class FamilyCreateRequest(BaseModel):
+    """Request to create a new family"""
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Family name (1-100 characters)"
+    )
+    description: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Family description (optional, max 500 characters)"
+    )
+    
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        """Validate family name"""
+        if not v.strip():
+            raise ValueError('Family name cannot be empty or whitespace only')
+        return v.strip()
+
+
+class FamilyMember(BaseModel):
+    """Family member information"""
+    user_id: str
+    username: str
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+    role: FamilyRole
+    joined_at: datetime
+    last_active: Optional[datetime] = None
+    is_active: bool = True
+
+
+class FamilyInfo(BaseModel):
+    """Family information"""
+    family_id: str
+    name: str
+    description: Optional[str] = None
+    owner_id: str
+    created_at: datetime
+    updated_at: datetime
+    member_count: int
+    is_active: bool = True
+
+
+class FamilyInfoResponse(SuccessResponse[FamilyInfo]):
+    """Family information response"""
+    pass
+
+
+class FamilyListResponse(SuccessResponse[List[FamilyInfo]]):
+    """Family list response"""
+    pass
+
+
+class InviteMemberRequest(BaseModel):
+    """Request to invite a member to family"""
+    email: str = Field(
+        ...,
+        pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+        description="Valid email address of the user to invite"
+    )
+    role: FamilyRole = Field(
+        default=FamilyRole.VIEWER,
+        description="Role to assign to the invited member"
+    )
+    message: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Optional invitation message (max 500 characters)"
+    )
+
+
+class InviteInfo(BaseModel):
+    """Invitation information"""
+    invite_id: str
+    family_id: str
+    family_name: str
+    inviter_id: str
+    inviter_name: str
+    invitee_email: str
+    role: FamilyRole
+    status: InviteStatus
+    message: Optional[str] = None
+    created_at: datetime
+    expires_at: datetime
+    responded_at: Optional[datetime] = None
+
+
+class InviteMemberResponse(SuccessResponse[InviteInfo]):
+    """Invite member response"""
+    pass
+
+
+class PendingInviteResponse(SuccessResponse[List[InviteInfo]]):
+    """Pending invitations response"""
+    pass
+
+
+class AcceptInviteRequest(BaseModel):
+    """Request to accept a family invitation"""
+    invite_code: str = Field(
+        ...,
+        min_length=1,
+        description="Invitation code received via email"
+    )
+
+
+class DeclineInviteRequest(BaseModel):
+    """Request to decline a family invitation"""
+    invite_code: str = Field(
+        ...,
+        min_length=1,
+        description="Invitation code received via email"
+    )
+    reason: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Optional reason for declining (max 200 characters)"
+    )
+
+
+class FamilyMembersResponse(SuccessResponse[List[FamilyMember]]):
+    """Family members list response"""
+    pass
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    """Request to update a family member's role"""
+    user_id: str = Field(..., description="User ID of the member to update")
+    new_role: FamilyRole = Field(..., description="New role to assign")
+    
+    @field_validator('new_role')
+    @classmethod
+    def validate_role_change(cls, v):
+        """Validate role change"""
+        if v == FamilyRole.OWNER:
+            raise ValueError('Cannot assign owner role through role update. Use transfer ownership instead.')
+        return v
+
+
+class RemoveMemberRequest(BaseModel):
+    """Request to remove a family member"""
+    user_id: str = Field(..., description="User ID of the member to remove")
+    reason: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Optional reason for removal (max 200 characters)"
+    )
+
+
+class TransferOwnershipRequest(BaseModel):
+    """Request to transfer family ownership"""
+    new_owner_id: str = Field(..., description="User ID of the new owner")
+    confirmation_message: str = Field(
+        ...,
+        pattern="^I understand that I will lose ownership of this family$",
+        description="Confirmation message to prevent accidental transfers"
+    )
+
+
+class LeaveFamilyRequest(BaseModel):
+    """Request to leave a family"""
+    family_id: str = Field(..., description="Family ID to leave")
+    reason: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Optional reason for leaving (max 200 characters)"
+    )
+
+
+class DeleteFamilyRequest(BaseModel):
+    """Request to delete a family (owner only)"""
+    family_id: str = Field(..., description="Family ID to delete")
+    confirmation_message: str = Field(
+        ...,
+        pattern="^DELETE FAMILY PERMANENTLY$",
+        description="Confirmation message to prevent accidental deletion"
+    )
+
+
+class FamilyPermissionInfo(BaseModel):
+    """Family permission information for a user"""
+    family_id: str
+    user_id: str
+    role: FamilyRole
+    permissions: List[str]  # List of specific permissions
+    can_invite_members: bool
+    can_remove_members: bool
+    can_view_all_data: bool
+    can_modify_family_settings: bool
+    can_delete_family: bool
+
+
+class FamilyPermissionResponse(SuccessResponse[FamilyPermissionInfo]):
+    """Family permission check response"""
+    pass
+
+
+class FamilyActivityLog(BaseModel):
+    """Family activity log entry"""
+    log_id: str
+    family_id: str
+    user_id: str
+    username: str
+    action: str  # e.g., "member_invited", "member_joined", "role_changed"
+    details: Dict[str, Any]
+    timestamp: datetime
+
+
+class FamilyActivityLogResponse(SuccessResponse[List[FamilyActivityLog]]):
+    """Family activity log response"""
+    pass
+
+
+class FamilySettingsRequest(BaseModel):
+    """Request to update family settings"""
+    name: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=100,
+        description="Family name"
+    )
+    description: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Family description"
+    )
+    privacy_settings: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Privacy settings for the family"
+    )
+    
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        """Validate family name"""
+        if v is not None and not v.strip():
+            raise ValueError('Family name cannot be empty or whitespace only')
+        return v.strip() if v else v
+
+
+class FamilySettings(BaseModel):
+    """Family settings information"""
+    family_id: str
+    name: str
+    description: Optional[str] = None
+    privacy_settings: Dict[str, Any]
+    member_permissions: Dict[str, List[str]]
+    data_sharing_settings: Dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+class FamilySettingsResponse(SuccessResponse[FamilySettings]):
+    """Family settings response"""
+    pass
