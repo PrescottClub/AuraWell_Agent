@@ -1,18 +1,18 @@
-# AuraWell 🌟
+# AuraWell 🌟 - 超个性化健康生活方式编排AI Agent
 
 <div align="center">
 
 ![AuraWell](https://img.shields.io/badge/AuraWell-AI%20Health%20Assistant-4A90E2?style=for-the-badge&logo=heart&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![LangChain](https://img.shields.io/badge/LangChain-0.1+-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Vue.js](https://img.shields.io/badge/Vue.js-3.5+-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![DeepSeek](https://img.shields.io/badge/DeepSeek-R1/V3-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
+![Vue.js](https://img.shields.io/badge/Vue.js-3.0+-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
+![Alibaba Cloud](https://img.shields.io/badge/Alibaba%20Cloud-FC-FF6A00?style=for-the-badge&logo=alibabacloud&logoColor=white)
 
-**基于AI的超个性化健康生活方式编排平台**
+**基于阿里云Serverless的家庭健康管理AI Agent**
 
-*整合健身目标、日常作息、饮食偏好，提供智能化健康建议与习惯养成支持*
+*整合健身目标、日常作息、饮食偏好、工作日程及社交活动，提供情境化建议与习惯养成支持*
 
-[🚀 快速开始](#快速开始) • [📖 功能特性](#功能特性) • [🔧 API文档](#api文档) • [🛠️ 技术架构](#技术架构)
+[🚀 快速开始](#快速开始) • [🏠 家庭健康](#家庭健康管理) • [🤖 AI Agent](#ai-agent架构) • [☁️ 云架构](#阿里云架构)
 
 </div>
 
@@ -20,331 +20,417 @@
 
 ## 🎯 项目简介
 
-AuraWell是一个现代化的AI健康助手，基于**LangChain框架**和**DeepSeek推理模型**构建，为用户提供个性化的健康生活方式编排服务。通过智能分析用户的健康数据、作息习惯和生活目标，为用户提供科学、实用的健康建议。
+AuraWell是一个基于**阿里云Serverless架构**的超个性化健康生活方式编排AI Agent，专注为**家庭用户群体**提供智能健康管理服务。通过集成**DeepSeek R1推理模型**、**LangChain工具链**和**RAG知识检索**，为每个家庭成员提供个性化的健康建议与习惯养成支持。
 
-### ✨ 核心价值
+### 🌟 核心创新
 
-- 🤖 **AI驱动决策** - 基于DeepSeek深度推理，提供科学的健康建议
-- 🎯 **个性化定制** - 根据用户画像和数据，量身定制健康方案
-- 📊 **数据整合** - 连接小米健康、苹果健康、薄荷健康等主流平台
-- 🎮 **游戏化体验** - 成就系统激励用户持续改进健康习惯
+- 🏠 **家庭多用户管理** - 主账号+家庭成员架构，支持多角色权限控制
+- 🤖 **智能Agent编排** - DeepSeek R1 + LangChain + RAG，科学可信的健康建议
+- ☁️ **Serverless架构** - 阿里云FC + API Gateway，弹性扩缩容，按需付费
+- 🔄 **实时数据同步** - 对接Apple Health、华为健康、小米运动等主流平台
+- 📊 **智能健康报告** - AI生成周/月报告，图文结合，深度解读
+- 💬 **流式对话体验** - WebSocket + Token流式输出，打字机式交互体验
+
+---
+
+## 🏠 家庭健康管理
+
+### 👨‍👩‍👧‍👦 多用户架构
+
+```
+主账号 (Owner)
+├── 配偶 (Manager)
+├── 父母 (Viewer)
+└── 孩子 (Viewer)
+
+权限体系
+├── Owner: 全部成员数据，创建邀请，接收告警
+├── Manager: 指定成员数据，设置目标，相关告警
+└── Viewer: 个人数据，生成个人计划
+```
+
+### 🔐 权限控制体系
+
+| 角色 | 权限范围 | 功能访问 |
+|------|----------|----------|
+| **Owner** | 全部成员数据 | 创建/邀请成员、设置权限、接收所有告警 |
+| **Manager** | 指定成员数据 | 查看数据、设置目标、接收相关告警 |
+| **Viewer** | 自己数据 | 查看个人数据、生成个人计划 |
+
+### 🚨 智能告警机制
+
+- **健康异常监测** - 体重骤变、心率异常、睡眠不达标
+- **多渠道推送** - 微信、短信、App内通知
+- **触发机制** - 火山引擎函数 + 消息队列
+- **权限过滤** - 仅推送给有权限的家庭成员
+
+---
+
+## 🤖 AI Agent架构
+
+### 🧠 核心智能引擎
+
+**DeepSeek R1/V3** - 阿里云DashScope托管
+- **深度推理能力** - 复杂健康场景的逻辑分析
+- **流式输出** - Token级别的实时响应
+- **工具调用** - Function Calling支持复杂工具链
+
+**LangChain工具链** - 可插拔智能决策
+```python
+tools = [
+    UserProfileLookup(),    # 用户档案查询
+    CalcMetrics(),         # BMI/BMR/TDEE计算
+    SearchKnowledge(),     # RAG知识检索
+    HealthDataSync(),      # 健康数据同步
+    FamilyPermission()     # 家庭权限控制
+]
+```
+
+**RAG知识检索** - OpenSearch Vector
+- **权威医学文献** - 中国居民膳食指南、WHO健康标准
+- **实时更新** - 最新健康科学研究
+- **个性化检索** - 基于用户画像的精准匹配
+
+### 💬 五模块结构化输出
+
+- 🍎 **饮食营养** - 个性化营养需求计算
+- 🏃‍♂️ **运动健身** - 基于体质的运动计划
+- ⚖️ **体重管理** - 科学减重/增重策略
+- 😴 **睡眠优化** - 睡眠质量改善建议
+- 🧘‍♀️ **心理健康** - 压力管理和情绪调节
+
+---
+
+## ☁️ 阿里云架构
+
+### 🏗️ Serverless技术栈
+
+| 服务 | 用途 | 特性 |
+|------|------|------|
+| **Function Compute** | 后端运行时 | 按请求计费，弹性扩缩容，150,000 CU·s免费额度 |
+| **API Gateway** | 统一入口 | WebSocket支持，JWT认证，流控限流 |
+| **DashScope** | AI推理 | DeepSeek R1/V3，OpenAI兼容，100万Token免费 |
+| **OpenSearch Vector** | 知识检索 | RAG向量检索，自动运维，ANN查询 |
+| **RDS MySQL** | 数据存储 | 用户档案、健康数据、权限管理 |
+| **OSS** | 文件存储 | 健康报告、用户头像、数据备份 |
+| **SLS** | 日志监控 | 函数日志、错误告警、性能监控 |
+
+### 🔄 系统整体流程
+
+```
+用户输入 → API Gateway → Function Compute → LangChain Agent
+                                    ↓
+DeepSeek R1 ← Vector Search ← RDS MySQL
+    ↓              ↓              ↓
+Token流式输出 → WebSocket → 前端实时显示
+```
 
 ---
 
 ## 🚀 快速开始
 
-### 环境要求
+### 📋 环境要求
 
-- Python 3.8+
-- Node.js 18+ (前端开发)
-- 数据库: SQLite (开发) / PostgreSQL (生产)
+- Python 3.10+
+- Node.js 18+
+- 阿里云账号 (开通FC、API Gateway、DashScope等服务)
 
-### 后端启动
+### ⚡ 本地开发
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-repo/aurawell.git
+git clone https://github.com/your-org/aurawell.git
 cd aurawell
 
-# 2. 创建虚拟环境
+# 2. 后端环境设置
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3. 安装依赖
 pip install -r requirements.txt
 
-# 4. 配置环境变量
-cp .env.example .env
-# 编辑.env文件，添加API密钥
+# 3. 环境变量配置
+cp env.example .env
+# 编辑.env文件，配置以下密钥：
+# - DASHSCOPE_API_KEY: 阿里云DashScope API密钥
+# - ALIYUN_ACCESS_KEY_ID: 阿里云访问密钥ID
+# - ALIYUN_ACCESS_KEY_SECRET: 阿里云访问密钥Secret
+# - ENABLE_RAG: true/false (开启/关闭RAG检索)
 
-# 5. 启动服务
-python -m aurawell.main
+# 4. 启动本地开发服务
+python run_api_server.py
 ```
 
-### 前端启动
+### 🌐 前端开发
 
 ```bash
 cd frontend
 npm install
-npm run dev  # 开发模式
+npm run dev  # 开发模式: http://localhost:5175
 npm run build  # 生产构建
 ```
 
-### 🌐 访问地址
-
-- **API服务**: http://localhost:8000
-- **前端界面**: http://localhost:5175
-- **API文档**: http://localhost:8000/docs
-- **ReDoc文档**: http://localhost:8000/redoc
-
-### 🧪 功能测试
+### ☁️ 云端部署
 
 ```bash
-# 运行API端点测试
-python test_api_endpoints.py
+# 安装Serverless Devs CLI
+npm install -g @serverless-devs/s
 
-# 访问主要功能页面
-# 用户注册: http://localhost:5175/register
-# 用户登录: http://localhost:5175/login
-# 个人档案: http://localhost:5175/profile
-# 健康计划: http://localhost:5175/health-plan
-# AI咨询: http://localhost:5175/health-chat
+# 配置阿里云凭证
+s config add
+
+# 一键部署到阿里云
+s deploy
 ```
 
 ---
 
-## 📖 功能特性
+## 📊 核心功能模块
 
-### 🔐 用户认证系统
-- **用户注册** - 支持用户名、邮箱、密码验证，初始健康数据收集
-- **安全登录** - JWT Token认证，安全的会话管理
-- **权限控制** - 基于token的API访问控制
-- **美化界面** - 现代化登录注册界面，统一视觉风格
+### 🎯 健康数据同步
+**支持平台**
+- Apple Health (HealthKit)
+- 华为健康 (Huawei Health)
+- 小米运动 (Mi Fitness)
+- 薄荷健康 (Bohe Health)
 
-### 👤 用户档案管理
-- **个人信息** - 完整的用户基本信息管理和编辑
-- **健康数据** - 身高、体重、年龄、性别、活动水平等
-- **BMI计算** - 自动计算BMI并提供健康分类（偏瘦/正常/偏胖/肥胖）
-- **数据隐私** - 严格的数据保护和加密存储
+**同步数据**
+- 步数、距离、卡路里消耗
+- 心率、血压、体重
+- 睡眠时长、深睡比例
+- 运动类型、运动时长
 
-### 📋 健康计划系统
-- **AI计划生成** - 基于用户档案的个性化健康计划
-- **五大模块** - 饮食、运动、体重管理、睡眠、心理健康
-- **计划管理** - 创建、查看、编辑、导出健康计划
-- **进度追踪** - 可视化的计划执行进度和状态管理
+### 📈 智能健康报告
 
-### 🎯 健康目标管理
-- **多种目标类型** - 减重、增重、健身、营养、睡眠、压力管理等
-- **数值目标** - 支持目标值、当前值、单位设置
-- **进度追踪** - 实时进度计算和可视化展示
-- **状态管理** - 活跃、完成、暂停等目标状态
+**AI深度解读**
+```
+"过去两周深睡时间下降15%，可能与工作强度上升有关，
+建议睡前做5分钟深呼吸放松。"
+```
 
-### 🤖 AI智能对话
-- **自然语言交互** - 支持中英文健康咨询
-- **多轮对话** - 上下文记忆和连续对话支持
-- **个性化建议** - 根据用户档案提供定制化健康方案
-- **专业咨询** - 减重、睡眠、运动、饮食等专业健康领域
+**可视化图表**
+- 体重趋势折线图
+- 运动量柱状图
+- 睡眠质量热力图
+- 心理状态雷达图
 
-### 📊 健康数据集成
-- **多平台支持** - 小米健康、苹果HealthKit、薄荷健康
-- **数据同步** - 自动同步活动、睡眠、营养数据
-- **数据可视化** - 直观的健康数据图表展示
+### 🛡️ 数据安全与合规
 
-### 🏆 游戏化激励
-- **成就系统** - 丰富的健康成就解锁
-- **进度可视化** - 直观的进步展示
-- **社交分享** - 健康成果分享功能
+**传输安全**
+- 全链路TLS 1.3加密
+- API Gateway统一鉴权
+- JWT Token过期管理
+
+**存储安全**
+- 敏感字段AES-256加密
+- 数据库访问最小权限
+- 定期数据备份与恢复
 
 ---
 
-## 🔧 API文档
+## 🔧 开发指南
 
-### 核心端点
-
-| 分类 | 端点 | 方法 | 描述 |
-|------|------|------|------|
-| **认证** | `/api/v1/auth/login` | POST | 用户登录获取Token |
-| **认证** | `/api/v1/auth/register` | POST | 用户注册 |
-| **用户档案** | `/api/v1/user/profile` | GET/PUT | 用户档案管理 |
-| **健康数据** | `/api/v1/user/health-data` | GET/PUT | 用户健康数据管理 |
-| **健康目标** | `/api/v1/user/health-goals` | GET/POST | 用户健康目标管理 |
-| **健康计划** | `/api/v1/health-plan/plans` | GET | 获取健康计划列表 |
-| **健康计划** | `/api/v1/health-plan/generate` | POST | AI生成个性化健康计划 |
-| **健康计划** | `/api/v1/health-plan/plans/{id}` | GET | 获取特定健康计划详情 |
-| **AI对话** | `/api/v1/chat` | POST | AI健康咨询对话 |
-| **对话历史** | `/api/v1/chat/conversations` | GET | 获取对话历史 |
-| **健康数据** | `/api/v1/health/summary` | GET | 健康数据汇总 |
-| **健康数据** | `/api/v1/health/activity` | GET | 活动数据查询 |
-| **健康数据** | `/api/v1/health/sleep` | GET | 睡眠数据查询 |
-| **目标管理** | `/api/v1/health/goals` | GET/POST | 健康目标管理 |
-| **成就系统** | `/api/v1/achievements` | GET | 用户成就数据 |
-| **系统监控** | `/api/v1/health` | GET | 系统健康检查 |
-
-### 🔗 完整API文档
-- **Swagger UI**: [localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [localhost:8000/redoc](http://localhost:8000/redoc)
-
----
-
-## 🛠️ 技术架构
-
-### 核心技术栈
-
-| 技术领域 | 技术选型 | 版本 | 说明 |
-|----------|----------|------|------|
-| **AI框架** | LangChain | 0.1+ | 现代化AI应用框架 |
-| **AI模型** | DeepSeek | latest | 深度推理模型 |
-| **后端框架** | FastAPI | 0.110+ | 高性能异步API框架 |
-| **前端框架** | Vue.js | 3.5+ | 渐进式前端框架 |
-| **数据库ORM** | SQLAlchemy | 2.0+ | 异步ORM框架 |
-| **认证系统** | JWT + bcrypt | - | 安全认证加密 |
-| **数据验证** | Pydantic | 2.0+ | 数据模型验证 |
-
-### 架构图
-
-```
-┌─────────────────────────────────────────────────┐
-│                 Frontend Layer                  │
-│              Vue 3 + Tailwind CSS              │
-└─────────────────────┬───────────────────────────┘
-                      │ HTTP/REST API
-┌─────────────────────▼───────────────────────────┐
-│                  API Gateway                    │
-│                   FastAPI                       │
-└─────────────────────┬───────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────┐
-│                LangChain Agent                  │
-│              统一智能对话接口                    │
-└─────────────┬───────────────────┬───────────────┘
-              │                   │
-    ┌─────────▼─────────┐  ┌──────▼──────┐
-    │   DeepSeek AI     │  │ Health Tools │
-    │    推理引擎       │  │   工具集     │
-    └───────────────────┘  └─────────────┘
-                      │
-┌─────────────────────▼───────────────────────────┐
-│              Data & Services Layer              │
-│        SQLAlchemy ORM + Health Platforms       │
-└─────────────────────────────────────────────────┘
-```
-
-### 🗂️ 项目结构
+### 📁 项目结构
 
 ```
 aurawell/
 ├── 🏗️ core/                     # 核心组件
-│   ├── agent_router.py          # Agent统一路由器
-│   └── deepseek_client.py       # DeepSeek AI客户端
+│   ├── agent_router.py          # Agent统一路由
+│   └── deepseek_client.py       # DeepSeek客户端
 ├── ⭐ langchain_agent/          # LangChain智能体
-│   ├── agent.py                 # Agent核心实现
-│   ├── tools/                   # 工具适配器
-│   └── memory/                  # 对话记忆管理
+│   ├── agent.py                 # 核心Agent实现
+│   ├── tools/                   # 工具链
+│   │   ├── user_profile_tool.py # 用户档案工具
+│   │   ├── calc_metrics_tool.py # 计算工具
+│   │   └── search_knowledge_tool.py # 检索工具
+│   └── services/                # Agent服务
+│       ├── health_advice_service.py # 健康建议服务
+│       └── parsers.py           # 输出解析器
 ├── 🔌 interfaces/               # API接口层
-│   └── api_interface.py         # FastAPI REST API
+│   └── api_interface.py         # FastAPI接口
 ├── 📊 models/                   # 数据模型
-│   ├── api_models.py            # API数据模型
-│   └── database_models.py       # 数据库模型
+│   ├── database_models.py       # 数据库模型
+│   └── api_models.py            # API模型
 ├── 🔐 auth/                     # 认证系统
-│   └── jwt_auth.py              # JWT认证实现
+│   └── jwt_auth.py              # JWT认证
+├── 🏠 repositories/             # 数据访问层
+│   ├── user_repository.py       # 用户数据访问
+│   └── family_repository.py     # 家庭数据访问
 ├── 🩺 integrations/             # 健康平台集成
+│   ├── apple_health/            # Apple HealthKit
 │   ├── xiaomi_health/           # 小米健康
-│   ├── apple_health/            # 苹果健康
-│   └── bohe_health/             # 薄荷健康
-└── 🧪 tests/                    # 测试套件
-    └── test_*.py                # 单元测试
+│   └── huawei_health/           # 华为健康
+└── ☁️ deployment/               # 部署配置
+    ├── serverless.yml           # Serverless配置
+    └── template.yml             # 阿里云资源模板
 
 frontend/                        # Vue.js前端
 ├── src/
-│   ├── components/              # Vue组件
-│   │   ├── health/              # 健康相关组件
-│   │   │   ├── PlanCard.vue     # 健康计划卡片
-│   │   │   └── GoalCard.vue     # 健康目标卡片
-│   │   └── GlobalHeader.vue     # 全局导航头
+│   ├── components/              # 组件库
+│   │   ├── family/              # 家庭管理组件
+│   │   ├── health/              # 健康组件
+│   │   └── chat/                # 对话组件
 │   ├── views/                   # 页面视图
-│   │   ├── Register.vue         # 用户注册页面
-│   │   ├── Login.vue            # 用户登录页面
-│   │   └── user/                # 用户相关页面
-│   │       ├── Profile.vue      # 个人档案页面
-│   │       ├── HealthPlan.vue   # 健康计划页面
-│   │       ├── HealthChat.vue   # AI健康咨询页面
-│   │       └── Home.vue         # 首页
-│   ├── api/                     # API服务层
-│   │   ├── user.js              # 用户API
-│   │   ├── healthPlan.js        # 健康计划API
-│   │   └── chat.js              # 聊天API
-│   ├── stores/                  # Pinia状态管理
-│   │   ├── auth.js              # 认证状态
-│   │   ├── user.js              # 用户状态
-│   │   └── healthPlan.js        # 健康计划状态
-│   └── router/                  # 路由配置
-└── public/                      # 静态资源
+│   │   ├── FamilyDashboard.vue  # 家庭仪表盘
+│   │   ├── HealthChat.vue       # AI健康对话
+│   │   └── HealthReport.vue     # 健康报告
+│   └── stores/                  # Pinia状态管理
+│       ├── auth.js              # 认证状态
+│       ├── family.js            # 家庭状态
+│       └── health.js            # 健康数据状态
+```
+
+### 🚀 开发工作流
+
+**团队角色分工**
+
+| 角色 | 职责 | 技术栈 |
+|------|------|--------|
+| **FE** | 前端开发 | Vue 3 + TypeScript + Pinia |
+| **CLOUD** | 云基础设施 | 阿里云FC + API Gateway + RDS |
+| **AI** | Agent开发 | LangChain + DeepSeek + RAG |
+| **AI+DX** | 数据内容 | 健康知识库 + 测试数据 |
+
+**开发里程碑**
+
+| 阶段 | 周期 | 交付目标 |
+|------|------|----------|
+| **Phase I** | Week 1-2 | 基础通路打通，WebSocket连接，Mock数据 |
+| **Phase II** | Week 3-4 | 核心功能实现，RAG检索，家庭权限 |
+| **Phase III** | Week 5-6 | 完善优化，监控告警，性能调优 |
+
+---
+
+## 📋 API接口规范
+
+### 📡 核心端点
+
+| 分类 | 端点 | 方法 | 描述 |
+|------|------|------|------|
+| **认证** | `/api/v1/auth/login` | POST | 用户登录 |
+| **家庭** | `/api/v1/family/members` | GET/POST | 家庭成员管理 |
+| **权限** | `/api/v1/family/permissions` | PUT | 权限设置 |
+| **对话** | `/api/v1/chat` | WebSocket | AI健康对话 |
+| **数据** | `/api/v1/health/sync` | POST | 健康数据同步 |
+| **报告** | `/api/v1/reports/generate` | POST | 生成健康报告 |
+| **告警** | `/api/v1/alerts/settings` | GET/PUT | 告警设置 |
+
+### 💬 WebSocket消息格式
+
+```javascript
+// 发送消息
+{
+  "text": "帮我制定减重计划",
+  "member_id": "user123",
+  "history": [
+    {"role": "user", "content": "之前的对话"},
+    {"role": "assistant", "content": "AI回复"}
+  ]
+}
+
+// 接收消息
+{
+  "type": "token",
+  "content": "建议您",
+  "member_id": "user123"
+}
 ```
 
 ---
 
-## 🔄 系统特性
+## 🔍 监控与运维
 
-### ✅ 已实现功能
+### 📊 关键监控指标
 
-#### 🔐 用户管理系统
-- ✅ **用户注册** - 完整的注册流程，支持健康数据收集
-- ✅ **用户登录** - JWT认证，安全的会话管理
-- ✅ **个人档案** - 用户信息管理，BMI自动计算
-- ✅ **权限控制** - 基于token的API访问控制
+**性能指标**
+- API响应时间P99 < 3s
+- WebSocket连接成功率 > 99%
+- 函数冷启动时间 < 300ms
+- AI推理准确率 > 95%
 
-#### 📋 健康管理功能
-- ✅ **健康计划生成** - AI驱动的个性化计划生成
-- ✅ **五大健康模块** - 饮食、运动、体重、睡眠、心理健康
-- ✅ **健康目标管理** - 目标设定、进度追踪、状态管理
-- ✅ **健康数据管理** - 身高体重管理，BMI分类
+**业务指标**
+- 日活用户数 (DAU)
+- 对话完成率
+- 健康建议采纳率
+- 家庭互动参与度
 
-#### 🤖 AI对话系统
-- ✅ **LangChain架构** - 现代化AI对话系统
-- ✅ **多轮对话** - 上下文记忆和连续对话
-- ✅ **智能推理** - DeepSeek模型深度健康分析
-- ✅ **专业咨询** - 多领域健康专业建议
+### 💰 成本优化策略
 
-#### 🎨 前端界面
-- ✅ **Vue.js 3** - 现代化响应式用户界面
-- ✅ **组件化设计** - 可复用的健康管理组件
-- ✅ **现代化UI** - 统一视觉风格，流畅动画效果
-- ✅ **响应式设计** - 完美适配桌面和移动设备
+**免费额度充分利用**
+- Function Compute: 150,000 CU·s/月
+- DashScope: 100万Token/月
+- API Gateway: 100万次调用/月
 
-#### 🔧 技术架构
-- ✅ **完整REST API** - 16个核心端点，完整测试覆盖
-- ✅ **数据验证** - Pydantic模型验证和错误处理
-- ✅ **状态管理** - Pinia store统一状态管理
-- ✅ **路由权限** - 完整的路由守卫和权限控制
+**按需付费模式**
+- 无需预留资源，真正按使用付费
+- 自动扩缩容，应对流量高峰
+- 冷启动优化，平均300ms启动时间
 
-### 📈 性能指标
+---
 
-- **API端点**: 16个完整实现
-- **前端页面**: 8个主要功能页面
-- **Vue组件**: 15+个可复用组件
-- **代码行数**: 5,500+行新增代码
-- **测试覆盖**: 100% API端点测试通过
+## 🎉 创新特色
+
+### 🔬 技术创新
+
+1. **RAG增强的医学AI** - 权威健康知识 + 深度推理能力
+2. **可插拔工具链** - LangChain ReAct模式，自主决策调用工具
+3. **流式WebSocket体验** - Token级实时响应，沉浸式交互
+4. **Serverless极简架构** - 按需扩容，真正零运维
+
+### 🏠 场景创新
+
+1. **家庭健康协作** - 多用户权限管理，家庭健康互动
+2. **主动关怀机制** - AI识别异常，智能推送告警
+3. **年轻化社交** - 点赞挑战，游戏化健康管理
+4. **跨平台数据融合** - 统一健康数据标准，全场景覆盖
+
+---
+
+## 📚 相关资源
+
+### 📖 文档链接
+
+- [阿里云Function Compute文档](https://help.aliyun.com/product/50980.html)
+- [DashScope API文档](https://help.aliyun.com/zh/dashscope/)
+- [LangChain官方文档](https://python.langchain.com/)
+- [Vue 3官方文档](https://vuejs.org/)
+
+### 🔗 API参考
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **WebSocket测试**: ws://localhost:8000/chat
 
 ---
 
 ## 🤝 贡献指南
 
-### 开发环境配置
+### 🔄 提交规范
 
-1. **Fork项目** 并克隆到本地
-2. **创建功能分支**: `git checkout -b feature/awesome-feature`
-3. **提交更改**: `git commit -m 'Add awesome feature'`
-4. **推送分支**: `git push origin feature/awesome-feature`
-5. **创建Pull Request**
+```bash
+# 功能开发
+git commit -m "feat: 添加家庭权限管理功能"
 
-### 代码规范
+# 问题修复
+git commit -m "fix: 修复WebSocket连接断开问题"
 
-- 遵循 **PEP 8** Python编码规范
-- 使用 **类型提示** (Type Hints)
-- 编写完整的 **单元测试**
-- 添加清晰的 **代码注释**
+# 文档更新
+git commit -m "docs: 更新API接口文档"
+
+# 性能优化
+git commit -m "perf: 优化RAG检索响应时间"
+```
 
 ---
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
----
-
-## 🙏 致谢
-
-- [LangChain](https://github.com/langchain-ai/langchain) - 强大的AI应用框架
-- [FastAPI](https://fastapi.tiangolo.com/) - 现代化Python Web框架
-- [Vue.js](https://vuejs.org/) - 渐进式前端框架
-- [DeepSeek](https://deepseek.com/) - 优秀的AI推理模型
+本项目采用 [MIT License](LICENSE) 开源协议。
 
 ---
 
 <div align="center">
 
-**⭐ 如果这个项目对你有帮助，请给我们一个Star！**
+**AuraWell** - *让每个家庭都拥有智能健康管家* 💙
 
-Made with ❤️ by AuraWell Team
+[![Star on GitHub](https://img.shields.io/github/stars/your-org/aurawell?style=social)](https://github.com/your-org/aurawell)
 
-</div>
+</div> 
