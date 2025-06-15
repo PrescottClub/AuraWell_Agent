@@ -1343,3 +1343,168 @@ class FamilySettings(BaseModel):
 class FamilySettingsResponse(SuccessResponse[FamilySettings]):
     """Family settings response"""
     pass
+
+
+# ============================================================================
+# MEMBER SWITCHING & DATA ISOLATION MODELS
+# ============================================================================
+
+class SwitchMemberRequest(BaseModel):
+    """Request to switch active family member"""
+    family_id: str = Field(..., description="Family ID")
+    member_id: str = Field(..., description="Member ID to switch to")
+    
+    @field_validator('family_id')
+    @classmethod
+    def validate_family_id(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Family ID cannot be empty')
+        return v.strip()
+    
+    @field_validator('member_id')
+    @classmethod
+    def validate_member_id(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Member ID cannot be empty')
+        return v.strip()
+
+
+class ActiveMemberInfo(BaseModel):
+    """Active member information"""
+    member_id: str
+    user_id: str
+    family_id: str
+    username: str
+    display_name: Optional[str] = None
+    role: FamilyRole
+    permissions: List[str]
+    data_access_level: str  # 'full', 'limited', 'basic'
+    switched_at: datetime
+
+
+class SwitchMemberResponse(SuccessResponse[ActiveMemberInfo]):
+    """Response for member switching"""
+    pass
+
+
+class EnhancedHealthChatRequest(BaseModel):
+    """Enhanced health chat request with member context"""
+    message: str = Field(..., min_length=1, max_length=2000)
+    conversation_id: Optional[str] = None
+    member_id: Optional[str] = Field(None, description="Active family member ID for data isolation")
+    context: Optional[Dict[str, Any]] = None
+    
+    @field_validator('member_id')
+    @classmethod
+    def validate_member_id(cls, v):
+        if v is not None and (not v or not v.strip()):
+            raise ValueError('Member ID cannot be empty if provided')
+        return v.strip() if v else None
+
+
+class DataAccessLevel(str, Enum):
+    """Data access level enumeration"""
+    FULL = "full"        # Full access to all data
+    LIMITED = "limited"  # Limited access with some restrictions
+    BASIC = "basic"      # Basic access with heavy restrictions
+
+
+class DataSanitizationRule(BaseModel):
+    """Data sanitization rule"""
+    field_name: str
+    access_level: DataAccessLevel
+    sanitization_type: str  # 'mask', 'remove', 'aggregate', 'anonymize'
+    replacement_value: Optional[str] = None
+
+
+class MemberDataContext(BaseModel):
+    """Member data context for isolation"""
+    user_id: str
+    member_id: Optional[str] = None
+    family_id: Optional[str] = None
+    requester_role: Optional[FamilyRole] = None
+    data_access_level: DataAccessLevel = DataAccessLevel.BASIC
+    allowed_fields: List[str] = Field(default_factory=list)
+    sanitization_rules: List[DataSanitizationRule] = Field(default_factory=list)
+    
+    @property
+    def isolation_key(self) -> str:
+        """Generate isolation key for data separation"""
+        if self.member_id:
+            return f"{self.user_id}:{self.member_id}"
+        return self.user_id
+    
+    @property
+    def is_family_context(self) -> bool:
+        """Check if this is a family context"""
+        return self.family_id is not None and self.member_id is not None
+
+
+class ConversationHistoryKey(BaseModel):
+    """Conversation history composite key"""
+    user_id: str
+    member_id: Optional[str] = None
+    session_id: Optional[str] = None
+    
+    @property
+    def composite_key(self) -> str:
+        """Generate composite key for conversation isolation"""
+        if self.member_id:
+            base_key = f"{self.user_id}:{self.member_id}"
+        else:
+            base_key = self.user_id
+            
+        if self.session_id:
+            return f"{base_key}:{self.session_id}"
+        return base_key
+
+
+class DataPrivacySettings(BaseModel):
+    """Data privacy settings for family members"""
+    family_id: str
+    member_id: str
+    share_health_data: bool = False
+    share_activity_data: bool = False
+    share_conversation_history: bool = False
+    share_goals: bool = False
+    share_achievements: bool = False
+    data_retention_days: int = Field(default=90, ge=1, le=365)
+    anonymize_sensitive_data: bool = True
+
+
+class FamilyDataAccessRequest(BaseModel):
+    """Request for accessing family member data"""
+    family_id: str
+    target_member_id: str
+    requested_data_types: List[str] = Field(..., min_length=1)
+    access_reason: Optional[str] = None
+    
+    @field_validator('requested_data_types')
+    @classmethod
+    def validate_data_types(cls, v):
+        valid_types = [
+            'health_profile', 'activity_data', 'conversation_history',
+            'goals', 'achievements', 'sleep_data', 'nutrition_data'
+        ]
+        for data_type in v:
+            if data_type not in valid_types:
+                raise ValueError(f'Invalid data type: {data_type}. Valid types: {valid_types}')
+        return v
+
+
+class SanitizedUserData(BaseModel):
+    """Sanitized user data based on access level"""
+    user_id: str
+    member_id: Optional[str] = None
+    display_name: Optional[str] = None
+    basic_health_info: Optional[Dict[str, Any]] = None
+    activity_summary: Optional[Dict[str, Any]] = None
+    goals_summary: Optional[Dict[str, Any]] = None
+    data_access_level: DataAccessLevel
+    sanitized_fields: List[str] = Field(default_factory=list)
+    last_updated: datetime = Field(default_factory=datetime.now)
+
+
+class FamilyDataAccessResponse(SuccessResponse[SanitizedUserData]):
+    """Response for family data access"""
+    pass

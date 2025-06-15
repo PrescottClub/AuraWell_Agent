@@ -43,7 +43,9 @@ from ..models.api_models import (
     FamilyMembersResponse, UpdateMemberRoleRequest, RemoveMemberRequest,
     TransferOwnershipRequest, LeaveFamilyRequest, DeleteFamilyRequest,
     FamilyPermissionResponse, FamilyActivityLogResponse, FamilySettingsRequest,
-    FamilySettingsResponse, PendingInviteResponse
+    FamilySettingsResponse, PendingInviteResponse,
+    # Member Switching & Data Isolation Models
+    SwitchMemberRequest, SwitchMemberResponse, EnhancedHealthChatRequest
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -1055,6 +1057,68 @@ async def get_family_permissions(
         )
 
 
+@app.post("/api/v1/family/switch-member", response_model=SwitchMemberResponse, tags=["Family Management"])
+async def switch_active_member(
+    switch_request: SwitchMemberRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service)
+):
+    """
+    Switch active family member for data isolation
+    
+    Args:
+        switch_request: Member switching request
+        current_user_id: ID of the authenticated user
+        
+    Returns:
+        SwitchMemberResponse: Member context and isolation key
+        
+    Raises:
+        NotFoundError: If member not found or access denied
+    """
+    try:
+        logger.info(f"User {current_user_id} switching to member {switch_request.member_id}")
+        
+        # Verify user has permission to access this member's data
+        member_info = await family_service.get_family_member(
+            family_id=switch_request.family_id,
+            member_id=switch_request.member_id,
+            requester_user_id=current_user_id
+        )
+        
+        if not member_info:
+            raise ValueError("Member not found or access denied")
+        
+        # Create member context for data isolation
+        isolation_key = f"{current_user_id}:{switch_request.member_id}"
+        switched_at = datetime.utcnow().isoformat()
+        
+        return SwitchMemberResponse(
+            data={
+                "member_id": switch_request.member_id,
+                "family_id": switch_request.family_id,
+                "member_name": member_info.get("name", "Unknown"),
+                "access_level": member_info.get("access_level", "basic"),
+                "isolation_key": isolation_key,
+                "switched_at": switched_at
+            },
+            message=f"Successfully switched to member {member_info.get('name', 'Unknown')}"
+        )
+        
+    except ValueError as e:
+        logger.warning(f"Member switch error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error switching member: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to switch member"
+        )
+
+
 # ============================================================================
 # AUTHENTICATION ENDPOINTS
 # ============================================================================
@@ -1325,7 +1389,7 @@ async def get_conversations(
 
 @app.post("/api/v1/chat/message", response_model=HealthChatResponse, tags=["Chat"])
 async def send_health_chat_message(
-    chat_request: HealthChatRequest,
+    chat_request: EnhancedHealthChatRequest,
     current_user_id: str = Depends(get_current_user_id),
     chat_service: ChatService = Depends(get_chat_service)
 ):
@@ -1348,7 +1412,8 @@ async def send_health_chat_message(
             user_id=current_user_id,
             message=chat_request.message,
             conversation_id=chat_request.conversation_id,
-            context=chat_request.context
+            context=chat_request.context,
+            member_id=chat_request.member_id
         )
     except Exception as e:
         logger.error(f"Failed to process health chat message: {e}")
@@ -1383,7 +1448,8 @@ async def get_chat_history(
             conversation_id=chat_history_request.conversation_id,
             user_id=current_user_id,
             limit=chat_history_request.limit,
-            offset=chat_history_request.offset
+            offset=chat_history_request.offset,
+            member_id=getattr(chat_history_request, 'member_id', None)
         )
     except Exception as e:
         logger.error(f"Failed to get chat history: {e}")

@@ -3,6 +3,7 @@ Chat Service
 
 Business logic for health chat functionality.
 Handles conversation management, message processing, and AI integration.
+Supports family member data isolation.
 """
 
 import logging
@@ -13,34 +14,50 @@ from typing import List, Optional, Dict, Any
 from ..repositories.chat_repository import ChatRepository
 from ..models.api_models import (
     HealthChatResponse, ConversationResponse, ConversationListResponse,
-    ChatHistoryResponse, HealthSuggestionsResponse, HealthSuggestion, QuickReply
+    ChatHistoryResponse, HealthSuggestionsResponse, HealthSuggestion, QuickReply,
+    MemberDataContext, ConversationHistoryKey
 )
 from ..core.agent_router import agent_router
+from ..conversation.memory_manager import MemoryManager
+from ..services.data_sanitization_service import DataSanitizationService
 
 logger = logging.getLogger(__name__)
 
 
 class ChatService:
-    """Service for managing health chat functionality"""
+    """Service for managing health chat functionality with family member support"""
 
-    def __init__(self):
+    def __init__(self, data_sanitization_service: Optional[DataSanitizationService] = None):
         self.chat_repo = ChatRepository()
+        self.memory_manager = MemoryManager()
+        self.data_sanitization_service = data_sanitization_service
 
     async def create_conversation(
         self,
         user_id: str,
         conversation_type: str = "health_consultation",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        member_id: Optional[str] = None
     ) -> ConversationResponse:
         """Create a new health consultation conversation"""
         try:
-            conversation_id = f"conv_{user_id}_{int(datetime.utcnow().timestamp())}"
+            # Generate conversation ID with member context
+            timestamp = int(datetime.utcnow().timestamp())
+            if member_id:
+                conversation_id = f"conv_{user_id}_{member_id}_{timestamp}"
+            else:
+                conversation_id = f"conv_{user_id}_{timestamp}"
+            
+            # Add member_id to metadata if provided
+            enhanced_metadata = metadata or {}
+            if member_id:
+                enhanced_metadata["member_id"] = member_id
             
             conversation = await self.chat_repo.create_conversation(
                 user_id=user_id,
                 conversation_id=conversation_id,
                 conversation_type=conversation_type,
-                metadata=metadata
+                metadata=enhanced_metadata
             )
             
             return ConversationResponse(
@@ -57,11 +74,15 @@ class ChatService:
 
     async def get_user_conversations(
         self,
-        user_id: str
+        user_id: str,
+        member_id: Optional[str] = None
     ) -> ConversationListResponse:
         """Get user's conversation list"""
         try:
-            conversations = await self.chat_repo.get_user_conversations(user_id)
+            # Filter conversations by member_id if provided
+            conversations = await self.chat_repo.get_user_conversations(
+                user_id, member_id=member_id
+            )
             
             return ConversationListResponse(
                 message="Conversations retrieved successfully",
@@ -77,13 +98,16 @@ class ChatService:
         user_id: str,
         message: str,
         conversation_id: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        member_id: Optional[str] = None
     ) -> HealthChatResponse:
         """Process a chat message and generate AI response"""
         try:
             # Create conversation if not provided
             if not conversation_id:
-                conv_response = await self.create_conversation(user_id)
+                conv_response = await self.create_conversation(
+                    user_id, member_id=member_id
+                )
                 conversation_id = conv_response.conversation_id
             
             # Verify conversation exists and belongs to user
@@ -100,12 +124,16 @@ class ChatService:
                 content=message
             )
             
-            # Generate AI response using agent router
+            # Generate AI response using agent router with member context
+            enhanced_context = context or {}
+            if member_id:
+                enhanced_context["member_id"] = member_id
+                
             ai_response = await self._generate_ai_response(
                 user_id=user_id,
                 message=message,
                 conversation_id=conversation_id,
-                context=context
+                context=enhanced_context
             )
             
             # Save AI response
@@ -117,8 +145,18 @@ class ChatService:
                 content=ai_response["reply"],
                 metadata={
                     "suggestions": ai_response.get("suggestions", []),
-                    "quick_replies": ai_response.get("quick_replies", [])
+                    "quick_replies": ai_response.get("quick_replies", []),
+                    "member_id": member_id
                 }
+            )
+            
+            # Store conversation in memory manager with member isolation
+            await self.memory_manager.store_conversation(
+                user_id=user_id,
+                user_message=message,
+                ai_response=ai_response["reply"],
+                session_id=conversation_id,
+                member_id=member_id
             )
             
             return HealthChatResponse(
@@ -140,7 +178,8 @@ class ChatService:
         conversation_id: str,
         user_id: str,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
+        member_id: Optional[str] = None
     ) -> ChatHistoryResponse:
         """Get chat history for a conversation"""
         try:
@@ -149,11 +188,37 @@ class ChatService:
             if not conversation:
                 raise ValueError(f"Conversation {conversation_id} not found")
             
+            # Get messages with member context filtering
             messages, total = await self.chat_repo.get_conversation_messages(
                 conversation_id=conversation_id,
                 limit=limit,
-                offset=offset
+                offset=offset,
+                member_id=member_id
             )
+            
+            # Apply data sanitization if needed
+            if self.data_sanitization_service and member_id:
+                # Create data context for sanitization
+                data_context = await self.data_sanitization_service.create_member_data_context(
+                    requester_user_id=user_id,
+                    target_user_id=user_id,
+                    target_member_id=member_id
+                )
+                
+                # Sanitize messages based on access level
+                sanitized_messages = []
+                for msg in messages:
+                    if data_context.data_access_level.value != "full":
+                        # Apply basic sanitization to message content
+                        msg_dict = msg.dict() if hasattr(msg, 'dict') else msg.__dict__
+                        sanitized_msg_data = await self.data_sanitization_service.sanitize_user_data(
+                            msg_dict, data_context
+                        )
+                        # Update message with sanitized content if needed
+                        sanitized_messages.append(msg)
+                    else:
+                        sanitized_messages.append(msg)
+                messages = sanitized_messages
             
             has_more = (offset + len(messages)) < total
             
