@@ -12,7 +12,7 @@ __description__ = "Personalized Health Lifestyle Orchestration AI Agent"
 
 # Core modules - 现在使用LangChain Agent，保留兼容性接口
 from .interfaces import cli_interface
-from .langchain_agent.agent import LangChainAgent
+from .langchain_agent import LangChainAgent
 from .agent import HealthToolsRegistry  # 保持API兼容性
 
 # v0.4.0 新增：数据库层

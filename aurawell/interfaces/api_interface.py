@@ -64,6 +64,49 @@ from ..services.chat_service import ChatService
 
 logger = logging.getLogger(__name__)
 
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for startup and shutdown events"""
+    # Startup
+    logger.info("AuraWell API starting up...")
+
+    # Initialize database
+    try:
+        db_manager = await get_db_manager()
+        await db_manager.initialize()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+
+    # Initialize tools registry
+    try:
+        await get_tools_registry()
+        logger.info("Health tools registry initialized")
+    except Exception as e:
+        logger.error(f"Tools registry initialization failed: {e}")
+
+    logger.info("AuraWell API startup completed")
+
+    yield
+
+    # Shutdown
+    logger.info("AuraWell API shutting down...")
+
+    # Close database connections
+    try:
+        global _db_manager
+        if _db_manager:
+            await _db_manager.close()
+            logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error during database cleanup: {e}")
+
+    logger.info("AuraWell API shutdown completed")
+
+
 # FastAPI application instance
 app = FastAPI(
     title="AuraWell Health Assistant API",
@@ -72,6 +115,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
     openapi_tags=[
         {"name": "Authentication", "description": "User authentication and authorization"},
         {"name": "Chat", "description": "AI conversation interface"},
@@ -2552,9 +2596,13 @@ async def root():
 # STARTUP AND SHUTDOWN EVENTS
 # ============================================================================
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup"""
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for startup and shutdown events"""
+    # Startup
     logger.info("AuraWell API starting up...")
 
     # Initialize database
@@ -2574,10 +2622,9 @@ async def startup_event():
 
     logger.info("AuraWell API startup completed")
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on application shutdown"""
+    # Shutdown
     logger.info("AuraWell API shutting down...")
 
     # Close database connections
