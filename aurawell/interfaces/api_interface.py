@@ -153,6 +153,7 @@ _db_manager = None
 _user_repo = None
 _health_repo = None
 _achievement_repo = None
+_health_plan_repo = None
 _tools_registry = None
 _chat_service = None
 _health_advice_service = None
@@ -167,9 +168,76 @@ async def get_db_manager():
 
 
 async def get_user_repository():
-    """Get user repository instance - simplified for API compatibility"""
-    # 返回一个模拟的repository，确保API正常工作
-    class MockUserRepository:
+    """Get user repository instance - with fallback to mock if database unavailable"""
+    global _user_repo
+    if _user_repo is None:
+        try:
+            # 尝试使用真实的数据库Repository
+            db_manager = await get_db_manager()
+            from ..repositories.user_repository import UserRepository
+
+            # 创建一个包装器来管理session
+            class UserRepositoryWrapper:
+                def __init__(self, db_manager):
+                    self.db_manager = db_manager
+
+                async def get_user_profile(self, user_id: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = UserRepository(session)
+                        user = await repo.get_user_by_id(user_id)
+                        return repo.to_pydantic(user) if user else None
+
+                async def get_user_by_id(self, user_id: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = UserRepository(session)
+                        return await repo.get_user_by_id(user_id)
+
+                async def get_user_by_username(self, username: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = UserRepository(session)
+                        return await repo.get_user_by_username(username)
+
+                async def get_user_by_email(self, email: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = UserRepository(session)
+                        return await repo.get_user_by_email(email)
+
+                async def create_user(self, user_profile):
+                    async with self.db_manager.get_session() as session:
+                        repo = UserRepository(session)
+                        result = await repo.create_user(user_profile)
+                        await session.commit()
+                        return result
+
+                async def update_user_profile(self, user_id: str, **update_data):
+                    async with self.db_manager.get_session() as session:
+                        repo = UserRepository(session)
+                        result = await repo.update_user_profile(user_id, **update_data)
+                        await session.commit()
+                        return result
+
+                def to_pydantic(self, db_model):
+                    if db_model is None:
+                        return None
+                    # 如果已经是Pydantic模型，直接返回
+                    if hasattr(db_model, 'model_dump'):
+                        return db_model
+                    # 否则转换为Pydantic模型
+                    from ..repositories.user_repository import UserRepository
+                    return UserRepository.to_pydantic(db_model)
+
+            _user_repo = UserRepositoryWrapper(db_manager)
+            logger.info("Successfully created real user repository")
+
+        except Exception as e:
+            logger.warning(f"Failed to create real user repository: {e}, using mock")
+            # 如果数据库不可用，使用模拟Repository
+            _user_repo = MockUserRepository()
+
+    return _user_repo
+
+
+class MockUserRepository:
         async def get_user_profile(self, user_id: str):
             return {
                 "user_id": user_id,
@@ -219,6 +287,9 @@ async def get_user_repository():
                     activity_level_enum = ActivityLevel(activity_str)
                 except ValueError:
                     activity_level_enum = ActivityLevel.MODERATELY_ACTIVE
+            elif 'activity_level' in update_data and update_data['activity_level'] is None:
+                # 如果明确传入了None，使用默认值
+                activity_level_enum = ActivityLevel.MODERATELY_ACTIVE
 
             return UserProfile(
                 user_id=user_id,
@@ -234,8 +305,6 @@ async def get_user_repository():
         def to_pydantic(self, db_model):
             # 直接返回传入的模型，因为它已经是Pydantic模型
             return db_model
-
-    return MockUserRepository()
 
 
 async def get_health_repository():
@@ -265,40 +334,164 @@ async def get_achievement_repository():
 
 
 async def get_health_plan_repository():
-    """Get health plan repository instance - simplified for API compatibility"""
-    # 返回一个模拟的repository，确保API正常工作
-    class MockHealthPlanRepository:
-        async def get_user_health_plans(self, user_id: str, status=None, limit=None, offset=None):
-            return []
+    """Get health plan repository instance"""
+    global _health_plan_repo
+    if _health_plan_repo is None:
+        try:
+            # 尝试使用真实的数据库Repository
+            db_manager = await get_db_manager()
+            from ..repositories.health_plan_repository import HealthPlanRepository
 
-        async def get_health_plan_by_id(self, plan_id: str, user_id: str):
-            return None
+            # 创建一个包装器来管理session
+            class HealthPlanRepositoryWrapper:
+                def __init__(self, db_manager):
+                    self.db_manager = db_manager
 
-        async def create_health_plan(self, user_id: str, plan_data: dict):
-            return {"id": f"plan_{user_id}_{int(datetime.now().timestamp())}", **plan_data}
+                async def get_user_health_plans(self, user_id: str, status=None, limit=None, offset=None):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        return await repo.get_user_health_plans(user_id, status, limit, offset)
 
-        async def update_health_plan(self, plan_id: str, user_id: str, update_data: dict):
-            return {"id": plan_id, **update_data}
+                async def get_health_plan_by_id(self, plan_id: str, user_id: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        return await repo.get_health_plan_by_id(plan_id, user_id)
 
-        async def delete_health_plan(self, plan_id: str, user_id: str):
-            return True
+                async def create_health_plan(self, user_id: str, plan_data: dict):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        result = await repo.create_health_plan(user_id, plan_data)
+                        await session.commit()  # 确保提交事务
+                        return result
 
-        async def get_plan_progress(self, plan_id: str, start_date=None, end_date=None, module_type=None):
-            return []
+                async def create_plan_module(self, plan_id: str, module_data: dict):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        result = await repo.create_plan_module(plan_id, module_data)
+                        await session.commit()  # 确保提交事务
+                        return result
 
-        async def create_progress_record(self, plan_id: str, progress_data: dict):
-            return {"id": f"progress_{plan_id}_{int(datetime.now().timestamp())}", **progress_data}
+                async def get_plan_modules(self, plan_id: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        return await repo.get_plan_modules(plan_id)
 
-        async def create_feedback(self, plan_id: str, feedback_data: dict):
-            return {"id": f"feedback_{plan_id}_{int(datetime.now().timestamp())}", **feedback_data}
+                async def update_health_plan(self, plan_id: str, user_id: str, update_data: dict):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        result = await repo.update_health_plan(plan_id, update_data)
+                        await session.commit()
+                        return result
 
-        async def get_plan_templates(self, category=None, difficulty_level=None, is_active=True):
-            return []
+                async def delete_health_plan(self, plan_id: str, user_id: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        result = await repo.delete_health_plan(plan_id)
+                        await session.commit()
+                        return result
 
-        async def get_template_by_id(self, template_id: str):
-            return None
+                async def get_plan_progress(self, plan_id: str, start_date=None, end_date=None, module_type=None):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        return await repo.get_plan_progress(plan_id, start_date, end_date, module_type)
 
-    return MockHealthPlanRepository()
+                async def create_progress_record(self, plan_id: str, progress_data: dict):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        result = await repo.create_progress_record(plan_id, progress_data)
+                        await session.commit()
+                        return result
+
+                async def create_feedback(self, plan_id: str, feedback_data: dict):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        result = await repo.create_feedback(plan_id, feedback_data)
+                        await session.commit()
+                        return result
+
+                async def get_plan_templates(self, category=None, difficulty_level=None, is_active=True):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        return await repo.get_plan_templates(category, difficulty_level, is_active)
+
+                async def get_template_by_id(self, template_id: str):
+                    async with self.db_manager.get_session() as session:
+                        repo = HealthPlanRepository(session)
+                        return await repo.get_template_by_id(template_id)
+
+            _health_plan_repo = HealthPlanRepositoryWrapper(db_manager)
+            logger.info("Successfully created real health plan repository")
+
+        except Exception as e:
+            logger.warning(f"Failed to create real health plan repository: {e}, using mock")
+            # 如果数据库不可用，使用模拟Repository
+            _health_plan_repo = MockHealthPlanRepository()
+
+    return _health_plan_repo
+
+
+class MockHealthPlanRepository:
+    async def get_user_health_plans(self, user_id: str, status=None, limit=None, offset=None):
+        return []
+
+    async def get_health_plan_by_id(self, plan_id: str, user_id: str):
+        return None
+
+    async def create_health_plan(self, user_id: str, plan_data: dict):
+        # 模拟数据库对象
+        class MockPlan:
+            def __init__(self, data):
+                self.id = f"plan_{user_id}_{int(datetime.now().timestamp())}"
+                self.title = data.get('title', '')
+                self.description = data.get('description', '')
+                self.duration_days = data.get('duration_days', 30)
+                self.status = data.get('status', 'active')
+                self.progress = data.get('progress', 0.0)
+                self.created_at = datetime.now()
+                self.updated_at = datetime.now()
+                self.user_id = user_id
+
+        return MockPlan(plan_data)
+
+    async def update_health_plan(self, plan_id: str, user_id: str, update_data: dict):
+        return {"id": plan_id, **update_data}
+
+    async def delete_health_plan(self, plan_id: str, user_id: str):
+        return True
+
+    async def get_plan_modules(self, plan_id: str):
+        return []
+
+    async def create_plan_module(self, plan_id: str, module_data: dict):
+        # 模拟数据库对象
+        class MockModule:
+            def __init__(self, data):
+                self.id = f"module_{plan_id}_{int(datetime.now().timestamp())}"
+                self.module_type = data.get('module_type', 'general')
+                self.title = data.get('title', '')
+                self.description = data.get('description', '')
+                self.content = data.get('content', {})
+                self.duration_days = data.get('duration_days', 30)
+                self.created_at = datetime.now()
+                self.updated_at = datetime.now()
+                self.plan_id = plan_id
+
+        return MockModule(module_data)
+
+    async def get_plan_progress(self, plan_id: str, start_date=None, end_date=None, module_type=None):
+        return []
+
+    async def create_progress_record(self, plan_id: str, progress_data: dict):
+        return {"id": f"progress_{plan_id}_{int(datetime.now().timestamp())}", **progress_data}
+
+    async def create_feedback(self, plan_id: str, feedback_data: dict):
+        return {"id": f"feedback_{plan_id}_{int(datetime.now().timestamp())}", **feedback_data}
+
+    async def get_plan_templates(self, category=None, difficulty_level=None, is_active=True):
+        return []
+
+    async def get_template_by_id(self, template_id: str):
+        return None
 
 
 async def get_tools_registry():
@@ -1731,28 +1924,28 @@ async def get_health_plans(
             from ..models.api_models import HealthPlan, HealthPlanModule
 
             # Get modules for this plan
-            modules_db = await health_plan_repo.get_plan_modules(plan_db.get("id", ""))
+            modules_db = await health_plan_repo.get_plan_modules(plan_db.id)
             modules = []
             for module_db in modules_db:
                 module = HealthPlanModule(
-                    module_type=module_db.get("module_type", "general"),
-                    title=module_db.get("title", ""),
-                    description=module_db.get("description", ""),
-                    content=module_db.get("content", {}),
-                    duration_days=module_db.get("duration_days", 30)
+                    module_type=module_db.module_type,
+                    title=module_db.title,
+                    description=module_db.description,
+                    content=module_db.content,
+                    duration_days=module_db.duration_days
                 )
                 modules.append(module)
 
             plan = HealthPlan(
-                plan_id=plan_db.get("id", ""),
-                title=plan_db.get("title", ""),
-                description=plan_db.get("description", ""),
+                plan_id=plan_db.id,
+                title=plan_db.title,
+                description=plan_db.description,
                 modules=modules,
-                duration_days=plan_db.get("duration_days", 30),
-                status=plan_db.get("status", "active"),
-                progress=plan_db.get("progress", 0.0),
-                created_at=plan_db.get("created_at", datetime.now()),
-                updated_at=plan_db.get("updated_at", datetime.now())
+                duration_days=plan_db.duration_days,
+                status=plan_db.status,
+                progress=plan_db.progress,
+                created_at=plan_db.created_at,
+                updated_at=plan_db.updated_at
             )
             plans.append(plan)
 
@@ -1807,8 +2000,14 @@ async def generate_health_plan(
             "preferences": plan_request.user_preferences or {}
         }
 
-        # TODO: Create plan in database when database is properly configured
-        # created_plan = await health_plan_repo.create_health_plan(current_user_id, plan_data)
+        # Create plan in database
+        try:
+            created_plan_db = await health_plan_repo.create_health_plan(current_user_id, plan_data)
+            plan_id = created_plan_db.id  # Use database-generated ID
+            logger.info(f"Successfully created health plan {plan_id} in database")
+        except Exception as db_error:
+            logger.warning(f"Failed to save plan to database: {db_error}, continuing with in-memory plan")
+            created_plan_db = None
 
         # Create modules for the plan
         modules = []
@@ -1898,8 +2097,13 @@ async def generate_health_plan(
                     }
                 })
 
-            # TODO: Create module in database when database is properly configured
-            # created_module = await health_plan_repo.create_plan_module(plan_id, module_data)
+            # Create module in database
+            try:
+                created_module_db = await health_plan_repo.create_plan_module(plan_id, module_data)
+                logger.info(f"Successfully created module {module_data['module_type']} for plan {plan_id}")
+            except Exception as db_error:
+                logger.warning(f"Failed to save module to database: {db_error}, continuing with in-memory module")
+                created_module_db = None
 
             # Create API model for response
             module = HealthPlanModule(

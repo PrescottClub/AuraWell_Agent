@@ -66,7 +66,7 @@ export function normalizeProgress(progress) {
  */
 export function normalizeModules(modules) {
   if (!Array.isArray(modules)) return []
-  
+
   return modules.map(module => {
     if (typeof module === 'string') {
       // 如果是字符串，转换为对象格式
@@ -74,25 +74,25 @@ export function normalizeModules(modules) {
         module_type: module,
         type: module,
         title: getModuleTitle(module),
-        description: '',
+        description: `${getModuleTitle(module)}的详细内容`,
         content: {},
         duration_days: 30
       }
     }
-    
-    if (typeof module === 'object') {
+
+    if (typeof module === 'object' && module !== null) {
       // 如果是对象，确保包含所有必要字段
       return {
         module_type: module.module_type || module.type,
         type: module.module_type || module.type,
         title: module.title || getModuleTitle(module.module_type || module.type),
-        description: module.description || '',
+        description: module.description || `${getModuleTitle(module.module_type || module.type)}的详细内容`,
         content: module.content || {},
         duration_days: module.duration_days || 30,
         ...module
       }
     }
-    
+
     return module
   })
 }
@@ -144,8 +144,20 @@ export function normalizePlanList(plans) {
  * @returns {Object} 标准化后的响应数据
  */
 export function normalizeApiResponse(response) {
-  if (!response || !response.data) return response
-  
+  if (!response) return response
+
+  // 处理新的API响应格式：plan字段在根级别
+  if (response.plan) {
+    return {
+      ...response,
+      plan: normalizePlan(response.plan),
+      data: response.data || response.plan
+    }
+  }
+
+  // 如果没有data字段，直接返回
+  if (!response.data) return response
+
   // 处理单个计划响应
   if (response.data.plan) {
     return {
@@ -156,7 +168,7 @@ export function normalizeApiResponse(response) {
       }
     }
   }
-  
+
   // 处理计划列表响应
   if (response.data.plans) {
     return {
@@ -167,7 +179,7 @@ export function normalizeApiResponse(response) {
       }
     }
   }
-  
+
   // 处理直接的计划数据
   if (response.data.plan_id || response.data.id) {
     return {
@@ -175,16 +187,16 @@ export function normalizeApiResponse(response) {
       data: normalizePlan(response.data)
     }
   }
-  
+
   // 处理计划数组
-  if (Array.isArray(response.data) && response.data.length > 0 && 
+  if (Array.isArray(response.data) && response.data.length > 0 &&
       (response.data[0].plan_id || response.data[0].id)) {
     return {
       ...response,
       data: normalizePlanList(response.data)
     }
   }
-  
+
   return response
 }
 

@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, desc, asc, update, delete
 from sqlalchemy.orm import selectinload
+import uuid
 
 from .base import BaseRepository
 from ..database.models import (
@@ -17,11 +18,11 @@ from ..database.models import (
 )
 
 
-class HealthPlanRepository(BaseRepository):
+class HealthPlanRepository(BaseRepository[HealthPlanDB]):
     """Repository for health plan operations"""
-    
+
     def __init__(self, session: AsyncSession):
-        super().__init__(session)
+        super().__init__(session, HealthPlanDB)
         self.plan_repo = BaseRepository[HealthPlanDB](session, HealthPlanDB)
         self.module_repo = BaseRepository[HealthPlanModuleDB](session, HealthPlanModuleDB)
         self.progress_repo = BaseRepository[HealthPlanProgressDB](session, HealthPlanProgressDB)
@@ -31,6 +32,10 @@ class HealthPlanRepository(BaseRepository):
     # Health Plan CRUD Operations
     async def create_health_plan(self, user_id: str, plan_data: Dict[str, Any]) -> HealthPlanDB:
         """Create a new health plan"""
+        # Generate unique ID if not provided
+        if "id" not in plan_data:
+            plan_data["id"] = f"plan_{user_id}_{uuid.uuid4().hex[:8]}"
+
         plan_data["user_id"] = user_id
         plan_data["created_at"] = datetime.utcnow()
         plan_data["updated_at"] = datetime.utcnow()
@@ -105,6 +110,10 @@ class HealthPlanRepository(BaseRepository):
     # Health Plan Module Operations
     async def create_plan_module(self, plan_id: str, module_data: Dict[str, Any]) -> HealthPlanModuleDB:
         """Create a plan module"""
+        # Generate unique ID if not provided
+        if "id" not in module_data:
+            module_data["id"] = f"module_{plan_id}_{uuid.uuid4().hex[:8]}"
+
         module_data["plan_id"] = plan_id
         module_data["created_at"] = datetime.utcnow()
         module_data["updated_at"] = datetime.utcnow()
@@ -134,6 +143,10 @@ class HealthPlanRepository(BaseRepository):
     # Progress Tracking Operations
     async def create_progress_record(self, plan_id: str, progress_data: Dict[str, Any]) -> HealthPlanProgressDB:
         """Create a progress record"""
+        # Generate unique ID if not provided
+        if "id" not in progress_data:
+            progress_data["id"] = f"progress_{plan_id}_{uuid.uuid4().hex[:8]}"
+
         progress_data["plan_id"] = plan_id
         progress_data["created_at"] = datetime.utcnow()
         return await self.progress_repo.create(**progress_data)
@@ -175,6 +188,10 @@ class HealthPlanRepository(BaseRepository):
     # Feedback Operations
     async def create_feedback(self, plan_id: str, feedback_data: Dict[str, Any]) -> HealthPlanFeedbackDB:
         """Create feedback record"""
+        # Generate unique ID if not provided
+        if "id" not in feedback_data:
+            feedback_data["id"] = f"feedback_{plan_id}_{uuid.uuid4().hex[:8]}"
+
         feedback_data["plan_id"] = plan_id
         feedback_data["created_at"] = datetime.utcnow()
         feedback_data["updated_at"] = datetime.utcnow()
