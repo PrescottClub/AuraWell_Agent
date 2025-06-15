@@ -69,7 +69,7 @@ from ..agent import HealthToolsRegistry  # 保持API兼容性
 from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 from ..services.chat_service import ChatService
-from ..services.family_service import FamilyService, get_family_service
+from ..services.family_service import FamilyService
 
 # Import LangChain Agent components
 from ..langchain_agent.services.health_advice_service import HealthAdviceService
@@ -533,18 +533,9 @@ async def get_family_service() -> FamilyService:
     """Get family service instance"""
     global _family_service
     if _family_service is None:
-        db_manager = await get_db_manager()
-        # Create a simple session wrapper for family service
-        # In production, this should use proper session management
-        class SessionWrapper:
-            def __init__(self, db_manager):
-                self.db_manager = db_manager
-            async def rollback(self):
-                # Mock rollback for now
-                pass
-        
-        session = SessionWrapper(db_manager)
-        _family_service = FamilyService(session)
+        # Create family service with mock session
+        # In production, this should use proper database session
+        _family_service = FamilyService(db_session=None)
     return _family_service
 
 
