@@ -7,10 +7,8 @@ specifically for family management features.
 
 from functools import wraps
 from typing import List, Optional, Set
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from ..models.api_models import FamilyRole
-from ..services.family_service import FamilyService
-from ..interfaces.api_interface import get_family_service, get_current_user_id
 import logging
 
 logger = logging.getLogger(__name__)
