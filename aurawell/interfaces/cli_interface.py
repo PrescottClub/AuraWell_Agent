@@ -1,6 +1,6 @@
 import asyncio
 import sys
-from aurawell.langchain_agent.agent import LangChainAgent
+from aurawell.langchain_agent import LangChainAgent
 
 def main():
     """

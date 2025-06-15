@@ -10,7 +10,7 @@ from datetime import datetime, date, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Any, Generic, TypeVar
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class ResponseStatus(str, Enum):
@@ -33,11 +33,10 @@ class BaseResponse(BaseModel, Generic[T]):
     timestamp: datetime = Field(default_factory=datetime.now)
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
-    class Config:
-        """Pydantic configuration"""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        # json_encoders deprecated in Pydantic v2
+        # Using default datetime serialization which handles ISO format
+    )
 
 
 class ErrorResponse(BaseResponse[None]):
@@ -818,11 +817,10 @@ class PaginatedResponse(BaseModel, Generic[T]):
     timestamp: datetime = Field(default_factory=datetime.now)
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
-    class Config:
-        """Pydantic configuration"""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        # json_encoders deprecated in Pydantic v2
+        # Using default datetime serialization which handles ISO format
+    )
 
 
 # New Paginated Response Models
@@ -856,8 +854,8 @@ class BatchHealthGoalRequest(BaseModel):
     )
     goals: List[HealthGoalRequest] = Field(
         ...,
-        min_items=1,
-        max_items=50,
+        min_length=1,
+        max_length=50,
         description="List of health goals (1-50 items)"
     )
 
@@ -967,8 +965,8 @@ class HealthPlansListResponse(BaseResponse):
 
 class HealthPlanGenerateRequest(BaseModel):
     """Health plan generation request"""
-    goals: List[str] = Field(..., min_items=1, description="Health goals")
-    modules: List[str] = Field(..., min_items=1, description="Plan modules")
+    goals: List[str] = Field(..., min_length=1, description="Health goals")
+    modules: List[str] = Field(..., min_length=1, description="Plan modules")
     duration_days: int = Field(default=30, ge=7, le=365, description="Plan duration")
     user_preferences: Optional[Dict[str, Any]] = Field(None, description="User preferences")
 

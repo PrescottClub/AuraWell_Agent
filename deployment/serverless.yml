@@ -1,0 +1,112 @@
+service: aurawell-health-agent
+
+provider:
+  name: aliyun
+  region: cn-hangzhou
+  runtime: python3.10
+  memorySize: 1024
+  timeout: 15
+  environment:
+    DASHSCOPE_API_KEY: ${env:DASHSCOPE_API_KEY}
+    ALIYUN_ACCESS_KEY_ID: ${env:ALIYUN_ACCESS_KEY_ID}
+    ALIYUN_ACCESS_KEY_SECRET: ${env:ALIYUN_ACCESS_KEY_SECRET}
+    ENABLE_RAG: ${env:ENABLE_RAG, 'true'}
+    DATABASE_URL: ${env:DATABASE_URL}
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+
+functions:
+  # 主要AI Agent处理函数
+  health-agent:
+    handler: aurawell.main.handler
+    events:
+      - http:
+          path: /api/v1/chat
+          method: POST
+      - http:
+          path: /api/v1/chat
+          method: GET
+          cors: true
+    role: arn:acs:ram::${self:provider.accountId}:role/AliyunFCDefaultRole
+    
+  # WebSocket连接处理
+  websocket-handler:
+    handler: aurawell.interfaces.websocket_handler.handler
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: chat
+
+  # 健康数据同步函数
+  health-sync:
+    handler: aurawell.integrations.sync_handler.handler
+    events:
+      - schedule:
+          rate: rate(1 hour)
+          enabled: true
+    environment:
+      APPLE_HEALTH_TOKEN: ${env:APPLE_HEALTH_TOKEN}
+      XIAOMI_HEALTH_TOKEN: ${env:XIAOMI_HEALTH_TOKEN}
+      HUAWEI_HEALTH_TOKEN: ${env:HUAWEI_HEALTH_TOKEN}
+
+  # 异常告警处理函数
+  alert-handler:
+    handler: aurawell.services.alert_handler.handler
+    events:
+      - schedule:
+          rate: rate(5 minutes)
+          enabled: true
+    environment:
+      WECHAT_WEBHOOK: ${env:WECHAT_WEBHOOK}
+      SMS_ENDPOINT: ${env:SMS_ENDPOINT}
+
+resources:
+  Resources:
+    # API Gateway配置
+    ApiGateway:
+      Type: ALIYUN::APIGATEWAY::Api
+      Properties:
+        GroupId: !Ref ApiGroup
+        ApiName: aurawell-api
+        Visibility: PUBLIC
+        AuthType: JWT
+        RequestConfig:
+          RequestHttpMethod: ANY
+          RequestPath: /api/v1/*
+          RequestMode: PASSTHROUGH
+
+    # RDS MySQL实例
+    Database:
+      Type: ALIYUN::RDS::DBInstance
+      Properties:
+        Engine: MySQL
+        EngineVersion: '8.0'
+        DBInstanceClass: mysql.n2.serverless.1c
+        DBInstanceStorage: 20
+        PayType: Serverless
+        ServerlessConfig:
+          MinCapacity: 0.5
+          MaxCapacity: 1
+          AutoPause: true
+          SwitchForce: false
+
+    # OpenSearch Vector检索实例
+    VectorSearch:
+      Type: ALIYUN::OpenSearch::Instance
+      Properties:
+        InstanceName: aurawell-vector
+        Edition: vector
+        PaymentType: PostPaid
+
+    # OSS存储桶
+    Storage:
+      Type: ALIYUN::OSS::Bucket
+      Properties:
+        BucketName: aurawell-health-data
+        AccessControl: private
+        StorageClass: Standard
+
+plugins:
+  - serverless-aliyun-function-compute 
