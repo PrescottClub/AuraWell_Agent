@@ -35,7 +35,8 @@ from ..models.api_models import (
     HealthPlanRequest, HealthPlanResponse, HealthPlansListResponse,
     HealthPlanGenerateRequest, HealthPlanGenerateResponse, HealthPlan, HealthPlanModule,
     UserHealthDataRequest, UserHealthDataResponse,
-    UserHealthGoalRequest, UserHealthGoalResponse, UserHealthGoalsListResponse
+    UserHealthGoalRequest, UserHealthGoalResponse, UserHealthGoalsListResponse,
+    HealthAdviceRequest, HealthAdviceResponse as APIHealthAdviceResponse
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -61,6 +62,10 @@ from ..agent import HealthToolsRegistry  # 保持API兼容性
 from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 from ..services.chat_service import ChatService
+
+# Import LangChain Agent components
+from ..langchain_agent.services.health_advice_service import HealthAdviceService
+from ..langchain_agent.tools.health_advice_tool import HealthAdviceTool
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +128,8 @@ app = FastAPI(
         {"name": "Health Data", "description": "Health data retrieval and analysis"},
         {"name": "Health Goals", "description": "Health goal setting and tracking"},
         {"name": "Achievements", "description": "Achievement system and gamification"},
-        {"name": "System", "description": "System health and monitoring"}
+        {"name": "System", "description": "System health and monitoring"},
+        {"name": "Health Advice", "description": "Health advice generation"}
     ]
 )
 
@@ -149,6 +155,7 @@ _health_repo = None
 _achievement_repo = None
 _tools_registry = None
 _chat_service = None
+_health_advice_service = None
 
 
 async def get_db_manager():
@@ -309,6 +316,151 @@ async def get_chat_service():
     if _chat_service is None:
         _chat_service = ChatService()
     return _chat_service
+
+
+async def get_health_advice_service():
+    """Get health advice service instance"""
+    global _health_advice_service
+    if '_health_advice_service' not in globals():
+        _health_advice_service = HealthAdviceService()
+    return _health_advice_service
+
+
+@app.post("/api/v1/health/advice/comprehensive", response_model=APIHealthAdviceResponse, tags=["Health Advice"])
+async def generate_comprehensive_health_advice(
+    advice_request: HealthAdviceRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    health_advice_service: HealthAdviceService = Depends(get_health_advice_service)
+):
+    """
+    生成包含五个模块的综合健康建议
+    
+    生成个性化的健康建议，包括：
+    - 饮食建议 (Diet)
+    - 运动计划 (Exercise) 
+    - 体重管理 (Weight)
+    - 睡眠优化 (Sleep)
+    - 心理健康 (Mental Health)
+    
+    基于用户画像、健康指标计算和AI知识检索生成。
+    """
+    try:
+        logger.info(f"Generating comprehensive health advice for user: {current_user_id}")
+        
+        # 生成综合健康建议
+        advice_response = await health_advice_service.generate_comprehensive_advice(
+            user_id=current_user_id,
+            goal_type=advice_request.goal_type,
+            duration_weeks=advice_request.duration_weeks or 4,
+            special_requirements=advice_request.special_requirements
+        )
+        
+        # 转换为API响应格式
+        api_response = APIHealthAdviceResponse(
+            status=ResponseStatus.SUCCESS,
+            message="健康建议生成成功",
+            data={
+                "advice": {
+                    "diet": {
+                        "title": advice_response.diet.title,
+                        "content": advice_response.diet.content,
+                        "recommendations": advice_response.diet.recommendations,
+                        "metrics": advice_response.diet.metrics
+                    },
+                    "exercise": {
+                        "title": advice_response.exercise.title,
+                        "content": advice_response.exercise.content,
+                        "recommendations": advice_response.exercise.recommendations,
+                        "metrics": advice_response.exercise.metrics
+                    },
+                    "weight": {
+                        "title": advice_response.weight.title,
+                        "content": advice_response.weight.content,
+                        "recommendations": advice_response.weight.recommendations,
+                        "metrics": advice_response.weight.metrics
+                    },
+                    "sleep": {
+                        "title": advice_response.sleep.title,
+                        "content": advice_response.sleep.content,
+                        "recommendations": advice_response.sleep.recommendations,
+                        "metrics": advice_response.sleep.metrics
+                    },
+                    "mental_health": {
+                        "title": advice_response.mental_health.title,
+                        "content": advice_response.mental_health.content,
+                        "recommendations": advice_response.mental_health.recommendations,
+                        "metrics": advice_response.mental_health.metrics
+                    }
+                },
+                "summary": advice_response.summary,
+                "generated_at": advice_response.generated_at,
+                "user_id": advice_response.user_id
+            }
+        )
+        
+        logger.info(f"Successfully generated comprehensive health advice for user: {current_user_id}")
+        return api_response
+        
+    except Exception as e:
+        logger.error(f"Error generating comprehensive health advice: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"生成健康建议时发生错误: {str(e)}"
+        )
+
+
+@app.post("/api/v1/health/advice/quick", response_model=BaseResponse, tags=["Health Advice"])
+async def generate_quick_health_advice(
+    topic: str,
+    current_user_id: str = Depends(get_current_user_id),
+    health_advice_service: HealthAdviceService = Depends(get_health_advice_service)
+):
+    """
+    生成特定主题的快速健康建议
+    
+    支持的主题：
+    - diet: 饮食建议
+    - exercise: 运动建议
+    - weight: 体重管理
+    - sleep: 睡眠优化
+    - mental: 心理健康
+    """
+    try:
+        logger.info(f"Generating quick health advice for topic: {topic}, user: {current_user_id}")
+        
+        # 验证主题
+        valid_topics = ["diet", "exercise", "weight", "sleep", "mental"]
+        if topic not in valid_topics:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"无效的主题。支持的主题: {', '.join(valid_topics)}"
+            )
+        
+        # 生成快速建议
+        advice_text = await health_advice_service.generate_quick_advice(
+            user_id=current_user_id,
+            topic=topic
+        )
+        
+        return BaseResponse(
+            status=ResponseStatus.SUCCESS,
+            message=f"成功生成{topic}建议",
+            data={
+                "topic": topic,
+                "advice": advice_text,
+                "generated_at": datetime.now().isoformat(),
+                "user_id": current_user_id
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating quick health advice: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"生成快速建议时发生错误: {str(e)}"
+        )
 
 
 # Middleware for request timing and performance monitoring

@@ -1033,3 +1033,33 @@ class UserHealthGoalsListResponse(BaseResponse):
     """User health goals list response"""
     goals: List[UserHealthGoalResponse]
     total_count: int
+
+
+# Health Advice Models
+class HealthAdviceRequest(BaseModel):
+    """健康建议生成请求"""
+    goal_type: Optional[str] = Field(None, description="健康目标类型 (weight_loss, muscle_gain, general_wellness)")
+    duration_weeks: Optional[int] = Field(4, description="计划周期（周）", ge=1, le=52)
+    special_requirements: Optional[List[str]] = Field(None, description="特殊要求列表")
+
+
+class HealthAdviceSection(BaseModel):
+    """健康建议单个模块"""
+    title: str = Field(..., description="模块标题")
+    content: str = Field(..., description="建议内容")
+    recommendations: List[str] = Field(default_factory=list, description="核心推荐")
+    metrics: Dict[str, Any] = Field(default_factory=dict, description="相关指标")
+
+
+class HealthAdviceData(BaseModel):
+    """健康建议数据"""
+    diet: HealthAdviceSection = Field(..., description="饮食建议")
+    exercise: HealthAdviceSection = Field(..., description="运动计划")
+    weight: HealthAdviceSection = Field(..., description="体重管理")
+    sleep: HealthAdviceSection = Field(..., description="睡眠优化")
+    mental_health: HealthAdviceSection = Field(..., description="心理健康")
+
+
+class HealthAdviceResponse(BaseResponse):
+    """健康建议响应"""
+    data: Optional[Dict[str, Any]] = Field(None, description="健康建议数据")
