@@ -8,7 +8,7 @@ specifically optimized for health lifestyle orchestration tasks.
 import os
 import json
 import logging
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, AsyncGenerator
 from dataclasses import dataclass
 from openai import OpenAI
 from pydantic import BaseModel
@@ -151,6 +151,67 @@ class DeepSeekClient:
         except Exception as e:
             logger.error(f"DeepSeek API call failed: {str(e)}")
             raise Exception(f"DeepSeek API error: {str(e)}")
+
+    async def get_streaming_response(
+        self,
+        messages: List[Dict[str, str]],
+        model_name: str = "deepseek-reasoner",
+        tools: Optional[List[Dict[str, Any]]] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 1024,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Get streaming response from DeepSeek API
+
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            model_name: DeepSeek model name (default: deepseek-reasoner for reasoning)
+            tools: Optional list of function tool definitions for function calling
+            temperature: Sampling temperature (0.0 to 1.0)
+            max_tokens: Maximum tokens in response
+
+        Yields:
+            str: Token chunks from the streaming response
+
+        Raises:
+            Exception: For API errors, network issues, or authentication failures
+        """
+        try:
+            # Prepare API call parameters
+            api_params = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": True,  # Enable streaming
+            }
+
+            # Add tools if provided
+            if tools:
+                api_params["tools"] = tools
+                api_params["tool_choice"] = "auto"
+
+            logger.info(f"Making streaming API call to DeepSeek with model: {model_name}")
+            logger.debug(f"Messages: {json.dumps(messages, ensure_ascii=False)}")
+
+            # Make streaming API call
+            stream = self.client.chat.completions.create(**api_params)
+
+            # Process streaming response
+            full_content = ""
+            for chunk in stream:
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    if hasattr(delta, 'content') and delta.content:
+                        token = delta.content
+                        full_content += token
+                        yield token
+
+            logger.info(f"Streaming response completed. Total length: {len(full_content)}")
+
+        except Exception as e:
+            logger.error(f"DeepSeek streaming API call failed: {str(e)}")
+            raise Exception(f"DeepSeek streaming API error: {str(e)}")
 
 
 def create_health_tools() -> List[Dict[str, Any]]:

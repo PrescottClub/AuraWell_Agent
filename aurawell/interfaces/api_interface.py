@@ -8,11 +8,11 @@ Includes chat interface, health data management, user profiles, and achievements
 import logging
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi import FastAPI, HTTPException, Depends, status, Request, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.openapi.utils import get_openapi
-from pydantic import ValidationError
+from pydantic import ValidationError, Field
 import time
 
 # Import models and authentication
@@ -37,6 +37,10 @@ from ..models.api_models import (
     UserHealthDataRequest, UserHealthDataResponse,
     UserHealthGoalRequest, UserHealthGoalResponse, UserHealthGoalsListResponse,
     HealthAdviceRequest, HealthAdviceResponse as APIHealthAdviceResponse,
+    # Phase III models
+    HealthReportRequest, HealthReportResponse,
+    LeaderboardRequest, LeaderboardResponse,
+    FamilyChallengesResponse, CreateChallengeRequest, CreateChallengeResponse,
     # Family Management Models
     FamilyCreateRequest, FamilyInfoResponse, FamilyListResponse,
     InviteMemberRequest, InviteMemberResponse, AcceptInviteRequest, DeclineInviteRequest,
@@ -72,10 +76,15 @@ from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 from ..services.chat_service import ChatService
 from ..services.family_service import FamilyService
+from ..services.report_service import HealthReportService
+from ..services.dashboard_service import FamilyDashboardService
 
 # Import LangChain Agent components
 from ..langchain_agent.services.health_advice_service import HealthAdviceService
 from ..langchain_agent.tools.health_advice_tool import HealthAdviceTool
+
+# Import WebSocket interface
+from .websocket_interface import websocket_router
 
 logger = logging.getLogger(__name__)
 
@@ -139,8 +148,11 @@ app = FastAPI(
         {"name": "Health Goals", "description": "Health goal setting and tracking"},
         {"name": "Achievements", "description": "Achievement system and gamification"},
         {"name": "Family Management", "description": "Family creation and member management"},
+        {"name": "Family Dashboard", "description": "Family leaderboards and challenges"},
+        {"name": "Health Reports", "description": "Family health report generation"},
         {"name": "System", "description": "System health and monitoring"},
-        {"name": "Health Advice", "description": "Health advice generation"}
+        {"name": "Health Advice", "description": "Health advice generation"},
+        {"name": "WebSocket", "description": "Real-time streaming chat interface"}
     ]
 )
 
@@ -169,6 +181,8 @@ _tools_registry = None
 _chat_service = None
 _health_advice_service = None
 _family_service = None
+_report_service = None
+_dashboard_service = None
 
 
 async def get_db_manager():
@@ -539,6 +553,22 @@ async def get_family_service() -> FamilyService:
         # In production, this should use proper database session
         _family_service = FamilyService(db_session=None)
     return _family_service
+
+
+async def get_report_service() -> HealthReportService:
+    """Get health report service instance"""
+    global _report_service
+    if _report_service is None:
+        _report_service = HealthReportService()
+    return _report_service
+
+
+async def get_dashboard_service() -> FamilyDashboardService:
+    """Get family dashboard service instance"""
+    global _dashboard_service
+    if _dashboard_service is None:
+        _dashboard_service = FamilyDashboardService()
+    return _dashboard_service
 
 
 @app.post("/api/v1/health/advice/comprehensive", response_model=APIHealthAdviceResponse, tags=["Health Advice"])
@@ -3314,6 +3344,229 @@ async def get_sleep_data(
 
 
 # ============================================================================
+# PHASE III: FAMILY DASHBOARD & REPORTING ENDPOINTS  
+# ============================================================================
+
+@app.get("/api/v1/family/{family_id}/report", response_model=HealthReportResponse, tags=["Health Reports"])
+async def generate_family_health_report(
+    family_id: str,
+    members: str = Query(..., description="Comma-separated list of member IDs"),
+    start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service),
+    report_service: HealthReportService = Depends(get_report_service)
+):
+    """
+    Generate comprehensive family health report
+    
+    Args:
+        family_id: Family ID
+        members: Comma-separated member IDs  
+        start_date: Report start date
+        end_date: Report end date
+        current_user_id: Authenticated user ID
+        family_service: Family service instance
+        report_service: Report service instance
+        
+    Returns:
+        HealthReportResponse: Generated health report
+        
+    Raises:
+        HTTPException: If generation fails or permission denied
+    """
+    try:
+        # Check family permissions
+        permissions = await family_service.get_user_family_permissions(family_id, current_user_id)
+        if not permissions.can_view_all_data:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to generate family report"
+            )
+        
+        # Parse member list
+        member_list = [m.strip() for m in members.split(',') if m.strip()]
+        if not member_list:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one member ID required"
+            )
+        
+        # Generate report
+        report_data = await report_service.generate_report(member_list, start_date, end_date)
+        
+        return HealthReportResponse(
+            data=report_data,
+            message="Family health report generated successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate family health report: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate health report"
+        )
+
+
+@app.get("/api/v1/family/{family_id}/leaderboard", response_model=LeaderboardResponse, tags=["Family Dashboard"])
+async def get_family_leaderboard(
+    family_id: str,
+    metric: str = Query(..., description="Leaderboard metric (steps, calories, sleep_quality, weight_loss)"),
+    period: str = Query(..., description="Time period (daily, weekly, monthly)"),
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service),
+    dashboard_service: FamilyDashboardService = Depends(get_dashboard_service)
+):
+    """
+    Get family leaderboard for specified metric and period
+    
+    Args:
+        family_id: Family ID
+        metric: Metric for ranking 
+        period: Time period for comparison
+        current_user_id: Authenticated user ID
+        family_service: Family service instance
+        dashboard_service: Dashboard service instance
+        
+    Returns:
+        LeaderboardResponse: Family leaderboard data
+        
+    Raises:
+        HTTPException: If retrieval fails or permission denied
+    """
+    try:
+        # Check family membership
+        permissions = await family_service.get_user_family_permissions(family_id, current_user_id)
+        if not permissions.can_view_all_data:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to view family leaderboard"
+            )
+        
+        # Get leaderboard data
+        leaderboard_data = await dashboard_service.get_leaderboard(metric, period, family_id)
+        
+        return LeaderboardResponse(
+            data=leaderboard_data,
+            message="Leaderboard retrieved successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get family leaderboard: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve leaderboard"
+        )
+
+
+@app.get("/api/v1/family/{family_id}/challenges", response_model=FamilyChallengesResponse, tags=["Family Dashboard"])
+async def get_family_challenges(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service),
+    dashboard_service: FamilyDashboardService = Depends(get_dashboard_service)
+):
+    """
+    Get all family challenges (active, completed, and upcoming)
+    
+    Args:
+        family_id: Family ID
+        current_user_id: Authenticated user ID
+        family_service: Family service instance
+        dashboard_service: Dashboard service instance
+        
+    Returns:
+        FamilyChallengesResponse: Family challenges data
+        
+    Raises:
+        HTTPException: If retrieval fails or permission denied
+    """
+    try:
+        # Check family membership
+        permissions = await family_service.get_user_family_permissions(family_id, current_user_id)
+        if not permissions.can_view_all_data:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to view family challenges"
+            )
+        
+        # Get challenges data
+        challenges_data = await dashboard_service.get_challenges(family_id)
+        
+        return FamilyChallengesResponse(
+            data=challenges_data,
+            message="Family challenges retrieved successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get family challenges: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve family challenges"
+        )
+
+
+@app.post("/api/v1/family/{family_id}/challenges", response_model=CreateChallengeResponse, tags=["Family Dashboard"])
+async def create_family_challenge(
+    family_id: str,
+    challenge_request: CreateChallengeRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service),
+    dashboard_service: FamilyDashboardService = Depends(get_dashboard_service)
+):
+    """
+    Create a new family challenge
+    
+    Args:
+        family_id: Family ID
+        challenge_request: Challenge creation request
+        current_user_id: Authenticated user ID
+        family_service: Family service instance
+        dashboard_service: Dashboard service instance
+        
+    Returns:
+        CreateChallengeResponse: Created challenge data
+        
+    Raises:
+        HTTPException: If creation fails or permission denied
+    """
+    try:
+        # Check family permissions (manager or owner required)
+        permissions = await family_service.get_user_family_permissions(family_id, current_user_id)
+        if not permissions.can_modify_family_data:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to create family challenges"
+            )
+        
+        # Create challenge
+        challenge_data = challenge_request.model_dump()
+        challenge_data['created_by'] = current_user_id
+        
+        created_challenge = await dashboard_service.create_challenge(family_id, challenge_data)
+        
+        return CreateChallengeResponse(
+            data=created_challenge,
+            message="Family challenge created successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create family challenge: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create family challenge"
+        )
+
+
+# ============================================================================
 # SYSTEM ENDPOINTS
 # ============================================================================
 
@@ -3487,6 +3740,12 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# ============================================================================
+# WEBSOCKET ROUTES
+# ============================================================================
+
+# Include WebSocket router
+app.include_router(websocket_router, tags=["WebSocket"])
 
 # ============================================================================
 # EXPORT FOR EXTERNAL USE

@@ -1,24 +1,25 @@
 """
 LangChain Agent Services Module
 
-Contains specialized services for health advice generation and AI-powered analysis.
+This module provides health advice services and parsers
+for the LangChain-based health assistant.
 """
 
 try:
-    from .health_advice_service import HealthAdviceService
-    from .parsers import FiveSectionParser, HealthAdviceResponse, HealthAdviceSection
-    
+    # Import health advice services for module access
+    # from .health_advice_service import HealthAdviceService
+    # from .parsers import FiveSectionParser, HealthAdviceResponse, HealthAdviceSection
+
     __all__ = [
-        "HealthAdviceService", 
-        "FiveSectionParser",
-        "HealthAdviceResponse",
-        "HealthAdviceSection"
+        # "HealthAdviceService",
+        # "FiveSectionParser",
+        # "HealthAdviceResponse",
+        # "HealthAdviceSection"
     ]
-    
+
 except ImportError as e:
-    # 如果导入失败，提供基本的错误处理
+    # Handle import errors gracefully
     import logging
     logger = logging.getLogger(__name__)
-    logger.warning(f"导入健康建议服务模块时出现问题: {e}")
-    
-    __all__ = [] 
+    logger.warning(f"Import error in services module: {e}")
+    __all__ = []
