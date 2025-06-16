@@ -21,7 +21,7 @@ try:
         invalidate_user_cache,
         invalidate_health_cache,
         PerformanceMonitor,
-        get_performance_monitor
+        get_performance_monitor,
     )
     from .async_tasks import (
         TaskManager,
@@ -33,7 +33,7 @@ try:
         generate_health_report,
         sync_external_health_data,
         QueryOptimizer,
-        ConnectionPool
+        ConnectionPool,
     )
 
     PERFORMANCE_UTILS_AVAILABLE = True

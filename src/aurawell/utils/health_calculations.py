@@ -60,7 +60,9 @@ def get_bmi_category(bmi: float) -> BMICategory:
         return BMICategory.OBESE_CLASS_3
 
 
-def calculate_bmr(weight_kg: float, height_cm: float, age_years: int, gender: Gender) -> float:
+def calculate_bmr(
+    weight_kg: float, height_cm: float, age_years: int, gender: Gender
+) -> float:
     """
     Calculate Basal Metabolic Rate (BMR) using Mifflin-St Jeor equation
 
@@ -110,7 +112,9 @@ def calculate_tdee(bmr: float, activity_level: ActivityLevel) -> float:
     return round(bmr * multiplier, 1)
 
 
-def calculate_calorie_goal(tdee: float, health_goal: HealthGoal, goal_rate: float = 0.5) -> float:
+def calculate_calorie_goal(
+    tdee: float, health_goal: HealthGoal, goal_rate: float = 0.5
+) -> float:
     """
     Calculate daily calorie goal based on health objective
 
@@ -136,7 +140,9 @@ def calculate_calorie_goal(tdee: float, health_goal: HealthGoal, goal_rate: floa
         return round(tdee, 0)
 
 
-def calculate_ideal_weight_range(height_cm: float, gender: Gender) -> Tuple[float, float]:
+def calculate_ideal_weight_range(
+    height_cm: float, gender: Gender
+) -> Tuple[float, float]:
     """
     Calculate ideal weight range based on BMI 18.5-25
 
@@ -217,7 +223,9 @@ def calculate_steps_to_calories(steps: int, weight_kg: float) -> float:
     return round(steps * weight_kg * calories_per_step_per_kg, 1)
 
 
-def calculate_sleep_efficiency(time_in_bed_minutes: int, actual_sleep_minutes: int) -> float:
+def calculate_sleep_efficiency(
+    time_in_bed_minutes: int, actual_sleep_minutes: int
+) -> float:
     """
     Calculate sleep efficiency percentage
 
@@ -301,12 +309,18 @@ def calculate_body_fat_percentage(
     if waist_cm and neck_cm:
         if gender == Gender.MALE:
             # Male formula
-            body_fat = (86.010 * math.log10(waist_cm - neck_cm)) - (70.041 * math.log10(height_cm)) + 36.76
+            body_fat = (
+                (86.010 * math.log10(waist_cm - neck_cm))
+                - (70.041 * math.log10(height_cm))
+                + 36.76
+            )
         else:  # FEMALE
             if hip_cm:
                 # Female formula
                 body_fat = (
-                    (163.205 * math.log10(waist_cm + hip_cm - neck_cm)) - (97.684 * math.log10(height_cm)) - 78.387
+                    (163.205 * math.log10(waist_cm + hip_cm - neck_cm))
+                    - (97.684 * math.log10(height_cm))
+                    - 78.387
                 )
             else:
                 body_fat = None
@@ -325,7 +339,9 @@ def calculate_body_fat_percentage(
     return round(max(0, min(100, body_fat)), 1)
 
 
-def calculate_protein_goal(weight_kg: float, activity_level: ActivityLevel, health_goal: HealthGoal) -> float:
+def calculate_protein_goal(
+    weight_kg: float, activity_level: ActivityLevel, health_goal: HealthGoal
+) -> float:
     """
     Calculate daily protein goal in grams
 
@@ -358,7 +374,9 @@ def calculate_protein_goal(weight_kg: float, activity_level: ActivityLevel, heal
     return round(base_protein, 1)
 
 
-def calculate_training_load_score(duration_minutes: int, average_heart_rate: int, max_heart_rate: int) -> int:
+def calculate_training_load_score(
+    duration_minutes: int, average_heart_rate: int, max_heart_rate: int
+) -> int:
     """
     Calculate training load score for a workout session
 
@@ -408,7 +426,9 @@ def calculate_recovery_time(training_load: int, fitness_level: float = 1.0) -> i
     return round(max(1, adjusted_recovery))
 
 
-def calculate_vo2_max_estimate(running_speed_kmh: float, heart_rate: int, age: int) -> Optional[float]:
+def calculate_vo2_max_estimate(
+    running_speed_kmh: float, heart_rate: int, age: int
+) -> Optional[float]:
     """
     Estimate VO2 max from running data (simplified method)
 

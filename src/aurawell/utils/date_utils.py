@@ -76,7 +76,9 @@ def convert_from_utc(dt: datetime, to_timezone: str) -> datetime:
     return dt.astimezone(tz)
 
 
-def get_date_range(start_date: Union[date, datetime], end_date: Union[date, datetime]) -> List[date]:
+def get_date_range(
+    start_date: Union[date, datetime], end_date: Union[date, datetime]
+) -> List[date]:
     """
     Get list of dates between start and end dates (inclusive)
 
@@ -251,7 +253,9 @@ def format_duration(total_seconds: int) -> str:
     return "".join(parts) if parts else "0分钟"
 
 
-def format_time_period(start_time: datetime, end_time: datetime, timezone_str: str = "UTC") -> str:
+def format_time_period(
+    start_time: datetime, end_time: datetime, timezone_str: str = "UTC"
+) -> str:
     """
     Format time period for display
 
@@ -272,7 +276,9 @@ def format_time_period(start_time: datetime, end_time: datetime, timezone_str: s
         return f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
     else:
         # Different days
-        return f"{start_time.strftime('%m-%d %H:%M')} - {end_time.strftime('%m-%d %H:%M')}"
+        return (
+            f"{start_time.strftime('%m-%d %H:%M')} - {end_time.strftime('%m-%d %H:%M')}"
+        )
 
 
 def get_age_in_years(birth_date: date, reference_date: Optional[date] = None) -> int:
@@ -300,7 +306,9 @@ def get_age_in_years(birth_date: date, reference_date: Optional[date] = None) ->
     return age
 
 
-def get_days_between(start_date: Union[date, datetime], end_date: Union[date, datetime]) -> int:
+def get_days_between(
+    start_date: Union[date, datetime], end_date: Union[date, datetime]
+) -> int:
     """
     Get number of days between two dates
 
@@ -336,7 +344,9 @@ def is_same_week(date1: Union[date, datetime], date2: Union[date, datetime]) -> 
     return week1_start == week2_start
 
 
-def get_relative_time_description(target_time: datetime, reference_time: Optional[datetime] = None) -> str:
+def get_relative_time_description(
+    target_time: datetime, reference_time: Optional[datetime] = None
+) -> str:
     """
     Get relative time description in Chinese
 
@@ -424,7 +434,9 @@ def create_sleep_schedule_boundaries(
         return time(23, 0), time(7, 0)
 
 
-def get_recommended_sleep_window(target_wake_time: time, target_sleep_duration_hours: float) -> time:
+def get_recommended_sleep_window(
+    target_wake_time: time, target_sleep_duration_hours: float
+) -> time:
     """
     Calculate recommended bedtime based on wake time and desired sleep duration
 
@@ -481,6 +493,8 @@ def parse_date_range(date_range: str) -> Tuple[date, date]:
 
     except ValueError as e:
         if "time data" in str(e):
-            raise ValueError(f"Invalid date format in range: {date_range}. Expected format: YYYY-MM-DD_to_YYYY-MM-DD")
+            raise ValueError(
+                f"Invalid date format in range: {date_range}. Expected format: YYYY-MM-DD_to_YYYY-MM-DD"
+            )
         else:
             raise
