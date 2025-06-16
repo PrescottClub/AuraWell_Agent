@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from aurawell.services.report_service import HealthReportService
 from aurawell.services.dashboard_service import FamilyDashboardService
+from aurawell.core.exceptions import ValidationError
 
 
 class TestHealthReportService:
@@ -50,9 +51,9 @@ class TestHealthReportService:
         start_date = "2024-01-07"  # 开始日期晚于结束日期
         end_date = "2024-01-01"
         
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await self.service.generate_report(members, start_date, end_date)
-        
+
         assert "Invalid date range" in str(excinfo.value)
     
     @pytest.mark.asyncio
@@ -62,9 +63,9 @@ class TestHealthReportService:
         start_date = "2024-01-01"
         end_date = "2024-01-07"
         
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await self.service.generate_report(members, start_date, end_date)
-        
+
         assert "At least one member required" in str(excinfo.value)
     
     @pytest.mark.asyncio
@@ -74,9 +75,9 @@ class TestHealthReportService:
         start_date = "2024-01-01"
         end_date = "2024-01-07"
         
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValidationError) as excinfo:
             await self.service.generate_report(members, start_date, end_date)
-        
+
         assert "Maximum 10 members allowed" in str(excinfo.value)
 
 
