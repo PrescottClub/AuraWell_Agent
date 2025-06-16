@@ -11,16 +11,19 @@ from datetime import datetime, date
 from enum import Enum
 import uuid
 # Import base response models from the same package
-from typing import Union
+from typing import Union, Any
 
 # Define base response classes for now to avoid circular imports
-class BaseResponse:
+class BaseResponse(BaseModel):
     """Base response model"""
-    pass
+    success: bool = True
+    status: str = "success"
+    message: str = "Operation completed successfully"
+    timestamp: datetime = Field(default_factory=datetime.now)
 
-class SuccessResponse:
+class SuccessResponse(BaseResponse):
     """Success response model"""
-    pass
+    data: Any = None
 
 T = TypeVar('T')
 
@@ -409,51 +412,51 @@ class SanitizedUserData(BaseModel):
 # Response Models
 # ================================
 
-class FamilyInfoResponse(SuccessResponse[FamilyInfo]):
+class FamilyInfoResponse(SuccessResponse):
     """Family information response"""
-    pass
+    data: Optional[FamilyInfo] = None
 
 
-class FamilyListResponse(SuccessResponse[List[FamilyInfo]]):
+class FamilyListResponse(SuccessResponse):
     """Family list response"""
-    pass
+    data: Optional[List[FamilyInfo]] = None
 
 
-class FamilyMembersResponse(SuccessResponse[List[FamilyMember]]):
+class FamilyMembersResponse(SuccessResponse):
     """Family members list response"""
-    pass
+    data: Optional[List[FamilyMember]] = None
 
 
-class InviteMemberResponse(SuccessResponse[InviteInfo]):
+class InviteMemberResponse(SuccessResponse):
     """Invite member response"""
-    pass
+    data: Optional[InviteInfo] = None
 
 
-class PendingInviteResponse(SuccessResponse[List[InviteInfo]]):
+class PendingInviteResponse(SuccessResponse):
     """Pending invitations response"""
-    pass
+    data: Optional[List[InviteInfo]] = None
 
 
-class FamilyPermissionResponse(SuccessResponse[FamilyPermissionInfo]):
+class FamilyPermissionResponse(SuccessResponse):
     """Family permission check response"""
-    pass
+    data: Optional[FamilyPermissionInfo] = None
 
 
-class FamilyActivityLogResponse(SuccessResponse[List[FamilyActivityLog]]):
+class FamilyActivityLogResponse(SuccessResponse):
     """Family activity log response"""
-    pass
+    data: Optional[List[FamilyActivityLog]] = None
 
 
-class FamilySettingsResponse(SuccessResponse[FamilySettings]):
+class FamilySettingsResponse(SuccessResponse):
     """Family settings response"""
-    pass
+    data: Optional[FamilySettings] = None
 
 
-class SwitchMemberResponse(SuccessResponse[ActiveMemberInfo]):
+class SwitchMemberResponse(SuccessResponse):
     """Switch member response"""
-    pass
+    data: Optional[ActiveMemberInfo] = None
 
 
-class FamilyDataAccessResponse(SuccessResponse[SanitizedUserData]):
+class FamilyDataAccessResponse(SuccessResponse):
     """Family data access response"""
-    pass 
+    data: Optional[SanitizedUserData] = None 

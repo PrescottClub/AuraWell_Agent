@@ -9,13 +9,16 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 # Define base response classes for now to avoid circular imports
-class BaseResponse:
+class BaseResponse(BaseModel):
     """Base response model"""
-    pass
+    success: bool = True
+    status: str = "success"
+    message: str = "Operation completed successfully"
+    timestamp: datetime = Field(default_factory=datetime.now)
 
-class SuccessResponse:
+class SuccessResponse(BaseResponse):
     """Success response model"""
-    pass
+    data: Any = None
 
 
 # ================================

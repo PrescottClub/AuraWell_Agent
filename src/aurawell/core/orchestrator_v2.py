@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 # Import the unified HealthPlan model from API models
 try:
-    from ..models.api_models import HealthPlan, HealthPlanModule
+    from ..models import HealthPlan, HealthPlanModule
 except ImportError:
     # Fallback for development/testing
-    logger.warning("Could not import HealthPlan from api_models, using local definition")
+    logger.warning("Could not import HealthPlan from models, using local definition")
 
     @dataclass
     class HealthPlan:
