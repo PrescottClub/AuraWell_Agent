@@ -10,8 +10,8 @@ import sys
 import os
 import json
 
-# Add the project root to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Add the src directory to Python path for new structure
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from aurawell.interfaces.api_interface import app
 
