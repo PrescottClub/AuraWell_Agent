@@ -142,15 +142,44 @@ def get_health_constant(category: str, key: str, default: Any = None) -> Any:
     """
     获取健康常量值
 
+    支持大小写不敏感的键名查找，自动处理键名格式转换
+
     Args:
         category: 常量类别 (steps, sleep, calories等)
-        key: 常量键名
+        key: 常量键名 (支持大小写，如 'daily_target' 或 'DAILY_TARGET')
         default: 默认值
 
     Returns:
         常量值或默认值
     """
-    return HEALTH_CONSTANTS.get(category, {}).get(key, default)
+    # 处理None或空值
+    if not category or not key:
+        return default
+
+    category_constants = HEALTH_CONSTANTS.get(category, {})
+
+    # 首先尝试直接匹配
+    if key in category_constants:
+        return category_constants[key]
+
+    # 尝试大写匹配
+    upper_key = key.upper()
+    if upper_key in category_constants:
+        return category_constants[upper_key]
+
+    # 尝试将下划线格式转换为大写格式
+    if "_" in key:
+        formatted_key = key.upper()
+        if formatted_key in category_constants:
+            return category_constants[formatted_key]
+
+    # 尝试将驼峰格式转换为大写下划线格式
+    import re
+    snake_case_key = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', key).upper()
+    if snake_case_key in category_constants:
+        return category_constants[snake_case_key]
+
+    return default
 
 
 def get_category_constants(category: str) -> Dict[str, Any]:
@@ -161,6 +190,8 @@ def get_category_constants(category: str) -> Dict[str, Any]:
         category: 常量类别
 
     Returns:
-        该类别的所有常量字典
+        该类别的所有常量字典（副本，防止意外修改）
     """
-    return HEALTH_CONSTANTS.get(category, {})
+    if not category:
+        return {}
+    return HEALTH_CONSTANTS.get(category, {}).copy()
