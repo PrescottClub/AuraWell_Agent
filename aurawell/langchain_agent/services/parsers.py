@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class SectionType(Enum):
     """Health advice section types"""
     DIET = "饮食"
-    EXERCISE = "运动" 
+    EXERCISE = "运动"
     WEIGHT = "体重"
     SLEEP = "睡眠"
     MENTAL = "心理"
@@ -58,25 +58,25 @@ class FiveSectionParser:
     """
     Enhanced parser to ensure health advice contains all five required sections:
     1. 饮食 (Diet)
-    2. 运动 (Exercise) 
+    2. 运动 (Exercise)
     3. 体重 (Weight)
     4. 睡眠 (Sleep)
     5. 心理 (Mental Health)
-    
+
     Features:
     - Robust validation with completeness scoring
     - Enhanced recommendation extraction
     - Quality assessment for each section
     """
-    
+
     REQUIRED_SECTIONS = [
         "### 饮食",
-        "### 运动", 
+        "### 运动",
         "### 体重",
         "### 睡眠",
         "### 心理"
     ]
-    
+
     SECTION_PATTERNS = {
         "diet": r"### 饮食\n(.*?)(?=### |$)",
         "exercise": r"### 运动\n(.*?)(?=### |$)",
@@ -84,7 +84,7 @@ class FiveSectionParser:
         "sleep": r"### 睡眠\n(.*?)(?=### |$)",
         "mental_health": r"### 心理\n(.*?)(?=### |$)"
     }
-    
+
     def __init__(self):
         self.logger = logger
         self.required_sections = [s.value for s in SectionType]
@@ -92,48 +92,48 @@ class FiveSectionParser:
             section.value: rf"###\s*{section.value}\s*\n(.*?)(?=###|\Z)"
             for section in SectionType
         }
-    
+
     def validate_sections(self, response: str) -> Dict[str, bool]:
         """
         Validate that all required sections are present
-        
+
         Args:
             response: Raw health advice response
-            
+
         Returns:
             Dict mapping section names to presence status
         """
         validation_result = {}
-        
+
         for section in self.REQUIRED_SECTIONS:
             validation_result[section] = section in response
-            
+
         self.logger.info(f"Section validation: {validation_result}")
         return validation_result
-    
+
     def parse_sections(self, response: str) -> Dict[str, HealthAdviceSection]:
         """
         Parse response into structured sections (legacy method for compatibility)
-        
+
         Args:
             response: Raw health advice response
-            
+
         Returns:
             Dict mapping section names to HealthAdviceSection objects
         """
         sections = {}
-        
+
         for section_key, pattern in self.SECTION_PATTERNS.items():
             match = re.search(pattern, response, re.DOTALL | re.MULTILINE)
             if match:
                 content = match.group(1).strip()
-                
+
                 # Extract recommendations (lines starting with -)
                 recommendations = []
                 for line in content.split('\n'):
                     if line.strip().startswith('-') or line.strip().startswith('•'):
                         recommendations.append(line.strip()[1:].strip())
-                
+
                 sections[section_key] = HealthAdviceSection(
                     title=self._get_section_title(section_key),
                     content=content,
@@ -146,54 +146,54 @@ class FiveSectionParser:
                     content="内容生成中，请稍后重试...",
                     recommendations=[]
                 )
-        
+
         return sections
-    
+
     def parse_and_validate(self, content: str) -> Tuple[Dict[str, HealthSection], List[str]]:
         """
         Enhanced parsing with validation and completeness scoring
-        
+
         Args:
             content: Raw health advice response
-            
+
         Returns:
             Tuple of (parsed_sections, validation_errors)
         """
         sections = {}
         errors = []
-        
+
         for section_type in SectionType:
             section_name = section_type.value
             pattern = self.enhanced_patterns[section_name]
-            
+
             match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
             if not match:
                 errors.append(f"缺失模块：{section_name}")
                 continue
-                
+
             section_content = match.group(1).strip()
-            
+
             # Validate content quality
             if len(section_content) < 50:
                 errors.append(f"{section_name}模块内容过少（<50字符）")
-                
+
             # Extract recommendations (bullet points)
             recommendations = self._extract_recommendations(section_content)
             if len(recommendations) < 2:
                 errors.append(f"{section_name}模块建议不足（<2条）")
-                
+
             # Calculate completeness score
             completeness = self._calculate_completeness(section_content, section_type)
-            
+
             sections[section_name] = HealthSection(
                 section_type=section_type,
                 content=section_content,
                 recommendations=recommendations,
                 completeness_score=completeness
             )
-            
+
         return sections, errors
-    
+
     def _extract_recommendations(self, content: str) -> List[str]:
         """Extract bullet point recommendations with enhanced patterns"""
         patterns = [
@@ -201,17 +201,17 @@ class FiveSectionParser:
             r'^\d+\.\s*(.+)',  # Numbered lists
             r'^\*\s*(.+)',     # Asterisk bullets
         ]
-        
+
         recommendations = []
         for pattern in patterns:
             matches = re.findall(pattern, content, re.MULTILINE)
             recommendations.extend([match.strip() for match in matches])
-            
+
         return list(set(recommendations))  # Remove duplicates
-    
+
     def _calculate_completeness(self, content: str, section_type: SectionType) -> float:
         """Calculate section completeness score based on expected elements"""
-        
+
         expected_elements = {
             SectionType.DIET: ["热量", "营养", "食材", "时间", "蛋白质", "碳水", "脂肪"],
             SectionType.EXERCISE: ["有氧", "力量", "频次", "强度", "运动", "训练"],
@@ -219,58 +219,58 @@ class FiveSectionParser:
             SectionType.SLEEP: ["时长", "作息", "环境", "质量", "睡眠", "小时"],
             SectionType.MENTAL: ["压力", "情绪", "激励", "支持", "心理", "心态"]
         }
-        
+
         elements = expected_elements.get(section_type, [])
         if not elements:
             return 1.0
-            
+
         found_count = sum(1 for element in elements if element in content)
         base_score = found_count / len(elements)
-        
+
         # Bonus for content length
         length_bonus = min(0.2, len(content) / 500)
-        
+
         return min(1.0, base_score + length_bonus)
-    
+
     def should_retry_parse(self, errors: List[str]) -> bool:
         """Determine if parsing should be retried"""
         critical_errors = [error for error in errors if "缺失模块" in error]
         return len(critical_errors) > 0 and len(critical_errors) <= 3  # Retry if 1-3 modules missing
-    
+
     def is_complete(self, response: str) -> bool:
         """
         Check if response contains all required sections
-        
+
         Args:
             response: Raw health advice response
-            
+
         Returns:
             True if all sections are present
         """
         validation = self.validate_sections(response)
         return all(validation.values())
-    
+
     def get_missing_sections(self, response: str) -> List[str]:
         """
         Get list of missing sections
-        
+
         Args:
             response: Raw health advice response
-            
+
         Returns:
             List of missing section names
         """
         validation = self.validate_sections(response)
         return [section for section, present in validation.items() if not present]
-    
+
     def generate_completion_prompt(self, missing_sections: List[str], user_context: Dict[str, Any]) -> str:
         """
         Generate enhanced prompt to complete missing sections
-        
+
         Args:
             missing_sections: List of missing section names
             user_context: User context information
-            
+
         Returns:
             Completion prompt for missing sections
         """
@@ -289,7 +289,7 @@ class FiveSectionParser:
 请按照以下格式生成缺失的模块，每个模块至少包含3条具体建议：
 
 """
-        
+
         section_templates = {
             "### 饮食": "基于用户BMI和健康目标，提供个性化的饮食建议，包括热量控制、营养配比、推荐食材等。",
             "### 运动": "根据用户体质和目标，制定合适的运动计划，包括运动类型、强度、频次等。",
@@ -297,18 +297,18 @@ class FiveSectionParser:
             "### 睡眠": "针对用户睡眠质量，提供改善睡眠的具体方法和作息建议。",
             "### 心理": "从心理健康角度提供情绪管理、压力缓解的实用建议。"
         }
-        
+
         for section in missing_sections:
             if section in section_templates:
                 prompt += f"\n{section}\n{section_templates[section]}\n"
-        
+
         return prompt
-    
+
     def _get_section_title(self, section_key: str) -> str:
         """Get Chinese title for section key"""
         titles = {
             "diet": "饮食建议",
-            "exercise": "运动计划", 
+            "exercise": "运动计划",
             "weight": "体重管理",
             "sleep": "睡眠优化",
             "mental_health": "心理健康"
@@ -318,11 +318,11 @@ class FiveSectionParser:
     def format_structured_response(self, sections: Dict[str, HealthAdviceSection], user_id: str) -> HealthAdviceResponse:
         """
         Format parsed sections into structured response
-        
+
         Args:
             sections: Parsed health advice sections
             user_id: User identifier
-            
+
         Returns:
             Structured HealthAdviceResponse
         """
@@ -334,4 +334,4 @@ class FiveSectionParser:
             mental_health=sections.get("mental_health", HealthAdviceSection(title="心理健康", content="暂无建议")),
             generated_at=datetime.now().isoformat(),
             user_id=user_id
-        ) 
+        )

@@ -19,24 +19,24 @@ logger = logging.getLogger(__name__)
 class HealthAdviceTool:
     """
     LangChain tool for generating comprehensive health advice
-    
+
     Integrates the three main tool chains through HealthAdviceService:
     - UserProfileLookup (via UserRepository)
     - CalcMetrics (via health calculations)
     - SearchKnowledge (via DeepSeek AI)
     """
-    
+
     def __init__(self, user_id: str):
         """
         Initialize health advice tool
-        
+
         Args:
             user_id: User identifier for personalized advice
         """
         self.user_id = user_id
         self.service = HealthAdviceService()
         self.logger = logger
-        
+
     async def generate_five_section_advice(
         self,
         goal_type: Optional[str] = None,
@@ -45,23 +45,23 @@ class HealthAdviceTool:
     ) -> Dict[str, Any]:
         """
         Generate comprehensive health advice with five required sections
-        
+
         Args:
             goal_type: Health goal (weight_loss, muscle_gain, general_wellness)
             duration_weeks: Planning duration in weeks
             special_requirements: Special health requirements (comma-separated)
-            
+
         Returns:
             Structured health advice with all five modules
         """
         try:
             self.logger.info(f"Generating five-section health advice for user: {self.user_id}")
-            
+
             # Parse special requirements
             requirements_list = []
             if special_requirements:
                 requirements_list = [req.strip() for req in special_requirements.split(',')]
-            
+
             # Generate comprehensive advice
             advice_response = await self.service.generate_comprehensive_advice(
                 user_id=self.user_id,
@@ -69,7 +69,7 @@ class HealthAdviceTool:
                 duration_weeks=duration_weeks,
                 special_requirements=requirements_list
             )
-            
+
             # Format response for LangChain consumption
             return {
                 "success": True,
@@ -105,7 +105,7 @@ class HealthAdviceTool:
                 "user_id": advice_response.user_id,
                 "formatted_text": self._format_advice_text(advice_response)
             }
-            
+
         except Exception as e:
             self.logger.error(f"Error generating five-section advice: {e}")
             return {
@@ -113,25 +113,25 @@ class HealthAdviceTool:
                 "error": str(e),
                 "message": "生成健康建议时遇到问题，请稍后重试"
             }
-    
+
     async def generate_quick_topic_advice(self, topic: str) -> Dict[str, Any]:
         """
         Generate quick advice for specific health topic
-        
+
         Args:
             topic: Health topic (diet, exercise, weight, sleep, mental)
-            
+
         Returns:
             Quick advice for the specified topic
         """
         try:
             self.logger.info(f"Generating quick advice for topic: {topic}")
-            
+
             advice_text = await self.service.generate_quick_advice(
                 user_id=self.user_id,
                 topic=topic
             )
-            
+
             return {
                 "success": True,
                 "topic": topic,
@@ -139,7 +139,7 @@ class HealthAdviceTool:
                 "user_id": self.user_id,
                 "generated_at": datetime.now().isoformat()
             }
-            
+
         except Exception as e:
             self.logger.error(f"Error generating quick advice for topic {topic}: {e}")
             return {
@@ -148,14 +148,14 @@ class HealthAdviceTool:
                 "topic": topic,
                 "message": f"生成{topic}建议时遇到问题，请稍后重试"
             }
-    
+
     def _format_advice_text(self, advice_response: HealthAdviceResponse) -> str:
         """
         Format advice response as readable text
-        
+
         Args:
             advice_response: Structured health advice response
-            
+
         Returns:
             Formatted text suitable for display
         """
@@ -209,17 +209,17 @@ class HealthAdviceTool:
 **重要提醒：** 以上建议仅供参考，如有具体健康问题请咨询专业医生。
 """
         return formatted_text
-    
+
     def _format_recommendations(self, recommendations: List[str]) -> str:
         """Format recommendations list as bullet points"""
         if not recommendations:
             return "• 暂无具体推荐"
         return "\n".join([f"• {rec}" for rec in recommendations])
-    
+
     def get_tool_schema(self) -> Dict[str, Any]:
         """
         Get LangChain tool schema for this health advice tool
-        
+
         Returns:
             Tool schema compatible with LangChain
         """
@@ -242,17 +242,17 @@ class HealthAdviceTool:
                         "default": 4
                     },
                     "special_requirements": {
-                        "type": "string", 
+                        "type": "string",
                         "description": "特殊健康要求或限制，用逗号分隔"
                     }
                 }
             }
         }
-    
+
     def get_quick_advice_schema(self) -> Dict[str, Any]:
         """
         Get schema for quick topic advice tool
-        
+
         Returns:
             Quick advice tool schema
         """
@@ -277,31 +277,31 @@ class HealthAdviceToolAdapter(HealthToolAdapter):
     """
     Adapter to integrate HealthAdviceTool into LangChain Agent toolkit
     """
-    
+
     def __init__(self, user_id: str):
         """
         Initialize the adapter
-        
+
         Args:
             user_id: User identifier
         """
         self.user_id = user_id
         self.health_advice_tool = HealthAdviceTool(user_id)
-        
+
         # Initialize base adapter
         super().__init__(
             name="health_advice_generator",
             description="Comprehensive health advice generator with five modules",
             original_tool=self.health_advice_tool.generate_five_section_advice
         )
-    
+
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """
         Execute health advice generation
-        
+
         Args:
             **kwargs: Tool parameters
-            
+
         Returns:
             Execution result
         """
@@ -310,16 +310,16 @@ class HealthAdviceToolAdapter(HealthToolAdapter):
             goal_type = kwargs.get("goal_type")
             duration_weeks = kwargs.get("duration_weeks", 4)
             special_requirements = kwargs.get("special_requirements")
-            
+
             # Generate advice
             result = await self.health_advice_tool.generate_five_section_advice(
                 goal_type=goal_type,
                 duration_weeks=duration_weeks,
                 special_requirements=special_requirements
             )
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"HealthAdviceToolAdapter execution failed: {e}")
             return {
@@ -327,7 +327,7 @@ class HealthAdviceToolAdapter(HealthToolAdapter):
                 "error": str(e),
                 "tool": self.name
             }
-    
+
     def get_schema(self) -> Dict[str, Any]:
         """Get tool schema for LangChain"""
         return self.health_advice_tool.get_tool_schema()
@@ -337,7 +337,7 @@ class HealthAdviceToolAdapter(HealthToolAdapter):
 def register_health_advice_tools(user_id: str, tool_registry) -> None:
     """
     Register health advice tools with the tool registry
-    
+
     Args:
         user_id: User identifier
         tool_registry: LangChain tool registry
@@ -346,7 +346,7 @@ def register_health_advice_tools(user_id: str, tool_registry) -> None:
         # Register comprehensive health advice tool
         advice_adapter = HealthAdviceToolAdapter(user_id)
         tool_registry.register_tool(advice_adapter)
-        
+
         # Register quick advice tool
         health_tool = HealthAdviceTool(user_id)
         quick_adapter = HealthToolAdapter(
@@ -355,9 +355,9 @@ def register_health_advice_tools(user_id: str, tool_registry) -> None:
             original_tool=health_tool.generate_quick_topic_advice
         )
         tool_registry.register_tool(quick_adapter)
-        
+
         logger.info(f"Registered health advice tools for user: {user_id}")
-        
+
     except Exception as e:
         logger.error(f"Failed to register health advice tools: {e}")
-        raise 
+        raise

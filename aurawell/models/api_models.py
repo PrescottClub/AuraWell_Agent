@@ -1508,3 +1508,263 @@ class SanitizedUserData(BaseModel):
 class FamilyDataAccessResponse(SuccessResponse[SanitizedUserData]):
     """Response for family data access"""
     pass
+
+
+# ============================================================================
+# PHASE III: FAMILY DASHBOARD & REPORTING MODELS
+# ============================================================================
+
+class HealthReportRequest(BaseModel):
+    """Request to generate family health report"""
+    members: List[str] = Field(..., min_length=1, description="List of family member IDs")
+    start_date: str = Field(
+        ..., 
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Start date in YYYY-MM-DD format"
+    )
+    end_date: str = Field(
+        ..., 
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="End date in YYYY-MM-DD format"
+    )
+    
+    @field_validator('members')
+    @classmethod
+    def validate_members(cls, v):
+        if len(v) > 10:  # Limit to 10 members for performance
+            raise ValueError('Maximum 10 members allowed per report')
+        return v
+
+
+class TrendData(BaseModel):
+    """Trend analysis data"""
+    trend_direction: str = Field(..., description="Trend direction: increasing, decreasing, stable")
+    change_percent: float = Field(..., description="Percentage change")
+    trend_description: str = Field(..., description="Human-readable trend description")
+
+
+class HealthMetricSummary(BaseModel):
+    """Health metric summary"""
+    current_value: float
+    previous_value: Optional[float] = None
+    trend: TrendData
+    unit: str
+    rank_in_family: Optional[int] = None
+
+
+class MemberHealthData(BaseModel):
+    """Individual member health data in report"""
+    member_id: str
+    activity_metrics: Dict[str, HealthMetricSummary]
+    sleep_metrics: Dict[str, HealthMetricSummary] 
+    weight_metrics: Dict[str, HealthMetricSummary]
+    nutrition_metrics: Dict[str, HealthMetricSummary]
+    heart_rate_metrics: Dict[str, HealthMetricSummary]
+
+
+class HealthAlert(BaseModel):
+    """Health alert information"""
+    alert_type: str = Field(..., description="Alert type")
+    severity: str = Field(..., description="Alert severity: low, medium, high")
+    member_id: str = Field(..., description="Member ID")
+    message: str = Field(..., description="Alert message")
+    recommendation: str = Field(..., description="Recommended action")
+
+
+class HealthReportData(BaseModel):
+    """Health report data structure"""
+    report_id: str
+    generation_time: str
+    period: Dict[str, Any]
+    members: List[str]
+    member_count: int
+    summary: Dict[str, Any]
+    trends: Dict[str, Any]
+    alerts: List[HealthAlert]
+    aggregated_data: Dict[str, Any]
+    metadata: Dict[str, Any]
+
+
+class HealthReportResponse(SuccessResponse[HealthReportData]):
+    """Health report response"""
+    pass
+
+
+class LeaderboardRequest(BaseModel):
+    """Request for family leaderboard"""
+    metric: str = Field(
+        ..., 
+        pattern="^(steps|calories|sleep_quality|weight_loss)$",
+        description="Leaderboard metric"
+    )
+    period: str = Field(
+        ...,
+        pattern="^(daily|weekly|monthly)$", 
+        description="Time period"
+    )
+
+
+class LeaderboardEntry(BaseModel):
+    """Leaderboard entry for a family member"""
+    rank: int
+    user_id: str
+    name: str
+    avatar: Optional[str] = None
+    value: float
+    percentage: float
+    change_from_last_period: float
+    streak_days: int
+    badges: List[str] = Field(default_factory=list)
+
+
+class LeaderboardStats(BaseModel):
+    """Leaderboard statistics"""
+    average_value: float
+    highest_value: float
+    lowest_value: float
+    total_participants: int
+    period_start: str
+    period_end: str
+
+
+class LeaderboardData(BaseModel):
+    """Leaderboard data structure"""
+    leaderboard_id: str
+    metric: str
+    period: str
+    family_id: Optional[str] = None
+    generated_at: str
+    rankings: List[LeaderboardEntry]
+    statistics: LeaderboardStats
+    metadata: Dict[str, Any]
+
+
+class LeaderboardResponse(SuccessResponse[LeaderboardData]):
+    """Leaderboard response"""
+    pass
+
+
+class ChallengeParticipant(BaseModel):
+    """Challenge participant information"""
+    user_id: str
+    progress: float = Field(..., ge=0, le=100, description="Progress percentage")
+    completed: bool = False
+
+
+class ChallengeProgress(BaseModel):
+    """Challenge progress information"""
+    completion_percentage: float
+    participants_completed: int
+    total_participants: int
+    current_leader: Optional[str] = None
+    days_remaining: Optional[int] = None
+
+
+class FamilyChallenge(BaseModel):
+    """Family challenge information"""
+    challenge_id: str
+    title: str
+    description: str
+    challenge_type: str = Field(..., description="Challenge type: activity, nutrition, sleep, etc.")
+    target_metric: str
+    target_value: float
+    start_date: str
+    end_date: str
+    progress: ChallengeProgress
+    participants: List[ChallengeParticipant]
+    status: str = Field(default="active", description="Challenge status")
+
+
+class CompletedChallenge(BaseModel):
+    """Completed challenge information"""
+    challenge_id: str
+    title: str
+    description: str
+    challenge_type: str
+    target_metric: str
+    target_value: float
+    completed_date: str
+    results: Dict[str, Any]
+
+
+class UpcomingChallenge(BaseModel):
+    """Upcoming challenge information"""
+    challenge_id: str
+    title: str
+    description: str
+    challenge_type: str
+    target_metric: str
+    target_value: float
+    start_date: str
+    end_date: str
+    participants_registered: int
+
+
+class ChallengeSummary(BaseModel):
+    """Challenge summary statistics"""
+    total_active: int
+    total_completed: int
+    total_upcoming: int
+    family_points: int
+    family_rank: int
+
+
+class FamilyChallengesData(BaseModel):
+    """Family challenges data structure"""
+    family_id: str
+    retrieved_at: str
+    active_challenges: List[FamilyChallenge]
+    completed_challenges: List[CompletedChallenge]
+    upcoming_challenges: List[UpcomingChallenge]
+    challenge_summary: ChallengeSummary
+
+
+class FamilyChallengesResponse(SuccessResponse[FamilyChallengesData]):
+    """Family challenges response"""
+    pass
+
+
+class CreateChallengeRequest(BaseModel):
+    """Request to create a new family challenge"""
+    title: str = Field(..., min_length=1, max_length=100, description="Challenge title")
+    description: str = Field(..., min_length=1, max_length=500, description="Challenge description")
+    challenge_type: str = Field(
+        ..., 
+        pattern="^(activity|nutrition|sleep|weight_management)$",
+        description="Challenge type"
+    )
+    target_metric: str = Field(..., description="Target metric to track")
+    target_value: float = Field(..., gt=0, description="Target value to achieve")
+    duration_days: int = Field(default=7, ge=1, le=90, description="Challenge duration in days")
+    start_date: Optional[str] = Field(
+        None,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Start date in YYYY-MM-DD format (defaults to today)"
+    )
+    participants: List[str] = Field(default_factory=list, description="Initial participant IDs")
+    rewards: List[str] = Field(default_factory=list, description="Challenge rewards")
+
+
+class CreateChallengeData(BaseModel):
+    """Created challenge data"""
+    challenge_id: str
+    family_id: str
+    title: str
+    description: str
+    challenge_type: str
+    target_metric: str
+    target_value: float
+    duration_days: int
+    start_date: str
+    end_date: str
+    participants: List[str]
+    rewards: List[str]
+    status: str
+    created_at: str
+    created_by: str
+    progress: Dict[str, Any]
+
+
+class CreateChallengeResponse(SuccessResponse[CreateChallengeData]):
+    """Create challenge response"""
+    pass

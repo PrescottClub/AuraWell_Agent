@@ -96,7 +96,9 @@ def require_family_permission(
                     logger.info(f"Permission check passed for user {current_user_id} in family {family_id} with role {user_role.value}")
                     
                 except Exception as e:
-                    if hasattr(e, 'error_code') and e.error_code == "NOT_FOUND":
+                    # Check if this is a specific "NOT_FOUND" error from the service
+                    error_msg = str(e).lower()
+                    if "not found" in error_msg or "not a member" in error_msg:
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
                             detail="You are not a member of this family"
@@ -166,7 +168,9 @@ def require_family_membership(family_id_param: str = "family_id"):
                     logger.info(f"Membership check passed for user {current_user_id} in family {family_id}")
                     
                 except Exception as e:
-                    if hasattr(e, 'error_code') and e.error_code == "NOT_FOUND":
+                    # Check if this is a specific "NOT_FOUND" error from the service
+                    error_msg = str(e).lower()
+                    if "not found" in error_msg or "not a member" in error_msg:
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
                             detail="You are not a member of this family"
