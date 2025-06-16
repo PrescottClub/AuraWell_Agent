@@ -1,95 +1,228 @@
-# AuraWell 🌟 - 超个性化健康生活方式编排AI Agent
+# AuraWell 🌟 - 智能家庭健康管理AI助手
 
 <div align="center">
 
-![AuraWell](https://img.shields.io/badge/AuraWell-AI%20Health%20Assistant-4A90E2?style=for-the-badge&logo=heart&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![DeepSeek](https://img.shields.io/badge/DeepSeek-R1/V3-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
-![Vue.js](https://img.shields.io/badge/Vue.js-3.0+-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
-![Alibaba Cloud](https://img.shields.io/badge/Alibaba%20Cloud-FC-FF6A00?style=for-the-badge&logo=alibabacloud&logoColor=white)
+![AuraWell](https://img.shields.io/badge/AuraWell-Family%20Health%20AI-4A90E2?style=for-the-badge&logo=heart&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![DeepSeek](https://img.shields.io/badge/DeepSeek-Reasoner-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-Framework-00D4AA?style=for-the-badge&logo=chainlink&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-WebSocket-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 
-**基于阿里云Serverless的家庭健康管理AI Agent**
+**让每个家庭都拥有专属的AI健康顾问**
 
-*整合健身目标、日常作息、饮食偏好、工作日程及社交活动，提供情境化建议与习惯养成支持*
+*基于LangChain框架，为家庭提供个性化健康建议、成员管理和智能报告生成*
 
-[🚀 快速开始](#快速开始) • [🏠 家庭健康](#家庭健康管理) • [🤖 AI Agent](#ai-agent架构) • [☁️ 云架构](#阿里云架构)
+[🚀 立即体验](#快速开始) • [💡 功能演示](#功能演示) • [🏠 家庭管理](#家庭健康管理) • [🤖 AI对话](#ai健康对话)
 
 </div>
 
 ---
 
-## 🎯 项目简介
+## 🎯 AuraWell能为您做什么？
 
-AuraWell是一个基于**阿里云Serverless架构**的超个性化健康生活方式编排AI Agent，专注为**家庭用户群体**提供智能健康管理服务。通过集成**DeepSeek R1推理模型**、**LangChain工具链**和**RAG知识检索**，为每个家庭成员提供个性化的健康建议与习惯养成支持。
+### 👨‍👩‍👧‍👦 **一个账号，管理全家健康**
+- 邀请家庭成员加入，设置不同权限角色
+- 父母可以查看孩子的健康数据，配偶互相关心
+- 长辈健康异常时，及时通知子女
 
-### 🌟 核心创新
+### 🤖 **24/7 专业AI健康顾问**
+- 基于DeepSeek推理模型，提供科学的健康建议
+- 结合家庭成员的具体情况，给出个性化方案
+- 支持营养、运动、睡眠、心理健康等全方位咨询
 
-- 🏠 **家庭多用户管理** - 主账号+家庭成员架构，支持多角色权限控制
-- 🤖 **智能Agent编排** - DeepSeek R1 + LangChain + RAG，科学可信的健康建议
-- ☁️ **Serverless架构** - 阿里云FC + API Gateway，弹性扩缩容，按需付费
-- 🔄 **实时数据同步** - 对接Apple Health、华为健康、小米运动等主流平台
-- 📊 **智能健康报告** - AI生成周/月报告，图文结合，深度解读
-- 💬 **流式对话体验** - WebSocket + Token流式输出，打字机式交互体验
+### 📊 **智能健康报告生成**
+- AI自动分析家庭成员健康趋势
+- 生成易懂的图表和专业解读
+- 发现潜在健康风险，提前预警
+
+### 🏆 **家庭健康互动**
+- 家庭成员健康数据排行榜
+- 设置健康挑战，全家一起参与
+- 健康目标达成庆祝和鼓励
+
+---
+
+## 💡 功能演示
+
+### 🗣️ **AI健康对话示例**
+
+```
+👤 用户: "我最近总是失眠，而且工作压力很大，该怎么办？"
+
+🤖 AuraWell:
+📋 **问题分析**
+根据您描述的失眠和工作压力问题，这是现代人常见的健康困扰。让我为您制定一个综合改善方案。
+
+🍎 **饮食建议**
+• 睡前2小时避免咖啡因摄入
+• 晚餐增加富含色氨酸的食物：牛奶、香蕉、燕麦
+• 减少精制糖分，稳定血糖波动
+
+🏃‍♂️ **运动建议**
+• 每天下午进行30分钟中等强度运动
+• 睡前1小时做10分钟瑜伽或拉伸
+• 避免睡前3小时剧烈运动
+
+😴 **睡眠优化**
+• 建立固定作息：每晚10:30上床，早上6:30起床
+• 卧室温度保持18-22°C，使用遮光窗帘
+• 睡前30分钟放下电子设备，可以听轻音乐
+
+🧘‍♀️ **压力管理**
+• 学习4-7-8呼吸法：吸气4秒，憋气7秒，呼气8秒
+• 每天记录3件感恩的事情
+• 工作间隙每2小时休息10分钟
+
+⚖️ **体重管理**
+• 压力会影响皮质醇分泌，建议监测体重变化
+• 保持规律饮食，避免压力性暴饮暴食
+
+需要我为您制定详细的7天改善计划吗？
+```
+
+### 📊 **家庭健康报告示例**
+
+```
+📈 张家健康周报 (2025年6月9日-15日)
+
+👨‍👩‍👧‍👦 家庭成员概况
+• 爸爸张先生：体重稳定，运动量达标 ✅
+• 妈妈李女士：睡眠质量改善，需增加运动 ⚠️
+• 女儿小张：成长发育正常，营养均衡 ✅
+• 儿子小李：运动时间不足，建议增加户外活动 ⚠️
+
+🏆 本周亮点
+• 全家平均步数比上周增加15%
+• 李女士连续7天达到8小时睡眠目标
+• 小张的身高增长了0.5cm
+
+⚠️ 需要关注
+• 张先生血压略有升高，建议减少盐分摄入
+• 小李的屏幕时间超标，影响户外运动时间
+
+📋 下周建议
+• 全家周末安排2小时户外活动
+• 李女士可以尝试瑜伽课程
+• 张先生预约体检，监测血压变化
+```
 
 ---
 
 ## 🏠 家庭健康管理
 
-### 👨‍👩‍👧‍👦 多用户架构
+### 👨‍👩‍👧‍👦 **如何创建和管理家庭**
 
-```
-主账号 (Owner)
-├── 配偶 (Manager)
-├── 父母 (Viewer)
-└── 孩子 (Viewer)
-
-权限体系
-├── Owner: 全部成员数据，创建邀请，接收告警
-├── Manager: 指定成员数据，设置目标，相关告警
-└── Viewer: 个人数据，生成个人计划
+**第一步：创建家庭**
+```bash
+# 使用API创建家庭
+POST /api/v1/families
+{
+  "name": "张家大院",
+  "description": "我们是相亲相爱的一家人"
+}
 ```
 
-### 🔐 权限控制体系
+**第二步：邀请家庭成员**
+```bash
+# 邀请配偶
+POST /api/v1/families/{family_id}/invite
+{
+  "email": "wife@example.com",
+  "role": "MANAGER",
+  "message": "亲爱的，加入我们的健康管理吧！"
+}
 
-| 角色 | 权限范围 | 功能访问 |
+# 邀请孩子
+POST /api/v1/families/{family_id}/invite
+{
+  "email": "child@example.com",
+  "role": "VIEWER",
+  "message": "宝贝，让我们一起变得更健康！"
+}
+```
+
+### 🔐 **家庭权限说明**
+
+| 角色 | 能做什么 | 典型场景 |
 |------|----------|----------|
-| **Owner** | 全部成员数据 | 创建/邀请成员、设置权限、接收所有告警 |
-| **Manager** | 指定成员数据 | 查看数据、设置目标、接收相关告警 |
-| **Viewer** | 自己数据 | 查看个人数据、生成个人计划 |
+| **👑 Owner (家长)** | • 查看所有成员数据<br>• 邀请/移除成员<br>• 设置权限<br>• 接收所有健康告警 | 父母管理整个家庭健康 |
+| **👥 Manager (配偶)** | • 查看指定成员数据<br>• 设置健康目标<br>• 接收相关告警 | 夫妻互相关心，共同照顾孩子 |
+| **👤 Viewer (成员)** | • 查看自己的数据<br>• 获取个人健康建议<br>• 参与家庭挑战 | 孩子或长辈使用个人功能 |
 
-### 🚨 智能告警机制
+### 🎯 **家庭互动功能**
 
-- **健康异常监测** - 体重骤变、心率异常、睡眠不达标
-- **多渠道推送** - 微信、短信、App内通知
-- **触发机制** - 火山引擎函数 + 消息队列
-- **权限过滤** - 仅推送给有权限的家庭成员
+**健康排行榜**
+- 步数排行：看看谁是今天的"步数王"
+- 睡眠质量：比比谁的睡眠最规律
+- 运动时长：全家一起动起来
+
+**健康挑战赛**
+- 设置家庭目标：比如"全家每天走8000步"
+- 进度追踪：实时查看每个人的完成情况
+- 达成庆祝：目标完成后的家庭奖励
 
 ---
 
-## 🤖 AI Agent架构
+## 🤖 AI健康对话
 
-### 🧠 核心智能引擎
+### 💬 **如何与AI对话**
 
-**DeepSeek R1/V3** - 阿里云DashScope托管
-- **深度推理能力** - 复杂健康场景的逻辑分析
-- **流式输出** - Token级别的实时响应
-- **工具调用** - Function Calling支持复杂工具链
+**WebSocket实时对话**
+```javascript
+// 连接WebSocket
+const ws = new WebSocket('ws://localhost:8000/ws/chat');
 
-**LangChain工具链** - 可插拔智能决策
-```python
-tools = [
-    UserProfileLookup(),    # 用户档案查询
-    CalcMetrics(),         # BMI/BMR/TDEE计算
-    SearchKnowledge(),     # RAG知识检索
-    HealthDataSync(),      # 健康数据同步
-    FamilyPermission()     # 家庭权限控制
-]
+// 发送健康咨询
+ws.send(JSON.stringify({
+  "type": "health_chat",
+  "text": "我想减肥，但是工作很忙，有什么简单有效的方法吗？",
+  "member_id": "user123"
+}));
+
+// 接收AI回复（流式输出）
+ws.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  if (data.type === 'token') {
+    // 实时显示AI回复的每个字符
+    displayToken(data.content);
+  }
+};
 ```
 
-**RAG知识检索** - OpenSearch Vector
-- **权威医学文献** - 中国居民膳食指南、WHO健康标准
-- **实时更新** - 最新健康科学研究
-- **个性化检索** - 基于用户画像的精准匹配
+### 🧠 **AI的专业能力**
+
+**🍎 营养饮食**
+- 根据身高体重计算每日热量需求
+- 推荐适合的饮食搭配和食谱
+- 分析营养摄入是否均衡
+
+**🏃‍♂️ 运动健身**
+- 基于体质和目标制定运动计划
+- 推荐适合的运动类型和强度
+- 监测运动效果和进度
+
+**😴 睡眠管理**
+- 分析睡眠质量和作息规律
+- 提供改善睡眠的具体建议
+- 制定个性化的睡眠计划
+
+**🧘‍♀️ 心理健康**
+- 识别压力和情绪问题
+- 提供放松和减压的方法
+- 建议心理调节技巧
+
+**⚖️ 体重管理**
+- 科学的减重/增重策略
+- 监测体重变化趋势
+- 调整饮食和运动计划
+
+### 🔍 **AI如何给出专业建议**
+
+1. **用户画像分析** - 综合年龄、性别、身高体重、活动水平等信息
+2. **健康数据解读** - 分析历史数据，发现健康趋势和问题
+3. **知识库检索** - 从权威医学文献中查找相关建议
+4. **个性化定制** - 结合个人情况，生成专属的健康方案
+5. **持续优化** - 根据执行效果，动态调整建议内容
 
 ### 💬 五模块结构化输出
 
@@ -101,29 +234,50 @@ tools = [
 
 ---
 
-## ☁️ 阿里云架构
+## 🔧 技术特色
 
-### 🏗️ Serverless技术栈
+### 🚀 **为什么选择AuraWell？**
 
-| 服务 | 用途 | 特性 |
-|------|------|------|
-| **Function Compute** | 后端运行时 | 按请求计费，弹性扩缩容，150,000 CU·s免费额度 |
-| **API Gateway** | 统一入口 | WebSocket支持，JWT认证，流控限流 |
-| **DashScope** | AI推理 | DeepSeek R1/V3，OpenAI兼容，100万Token免费 |
-| **OpenSearch Vector** | 知识检索 | RAG向量检索，自动运维，ANN查询 |
-| **RDS MySQL** | 数据存储 | 用户档案、健康数据、权限管理 |
-| **OSS** | 文件存储 | 健康报告、用户头像、数据备份 |
-| **SLS** | 日志监控 | 函数日志、错误告警、性能监控 |
+**🤖 真正智能的AI对话**
+- 基于DeepSeek Reasoner，具备复杂推理能力
+- 不是简单的问答，而是能理解上下文的深度对话
+- 结合医学知识库，给出科学可信的建议
 
-### 🔄 系统整体流程
+**⚡ 极致的用户体验**
+- WebSocket实时对话，像聊天一样自然
+- 流式输出，AI回复逐字显示，无需等待
+- 自动重连，网络断开也不影响使用
+
+**🏠 专为家庭设计**
+- 一个账号管理全家健康
+- 灵活的权限控制，保护隐私
+- 家庭互动功能，让健康管理更有趣
+
+**🛡️ 企业级稳定性**
+- 完善的错误处理和重试机制
+- 详细的操作日志和审计追踪
+- API限流保护，防止滥用
+
+### 🏗️ **核心技术架构**
 
 ```
-用户输入 → API Gateway → Function Compute → LangChain Agent
-                                    ↓
-DeepSeek R1 ← Vector Search ← RDS MySQL
-    ↓              ↓              ↓
-Token流式输出 → WebSocket → 前端实时显示
+🌐 用户界面
+    ↓
+📡 WebSocket实时通信
+    ↓
+🤖 LangChain AI Agent
+    ↓
+🧠 DeepSeek推理引擎 + 📚 医学知识库
+    ↓
+🗄️ 数据库 (用户数据 + 健康记录)
 ```
+
+**技术亮点**
+- **LangChain框架** - 业界领先的AI Agent开发框架
+- **DeepSeek Reasoner** - 国产顶级推理模型
+- **FastAPI** - 高性能Python Web框架
+- **WebSocket** - 实时双向通信
+- **SQLAlchemy** - 企业级数据库ORM
 
 ---
 
@@ -131,32 +285,46 @@ Token流式输出 → WebSocket → 前端实时显示
 
 ### 📋 环境要求
 
-- Python 3.10+
-- Node.js 18+
-- 阿里云账号 (开通FC、API Gateway、DashScope等服务)
+- Python 3.11+
+- 数据库 (PostgreSQL/MySQL)
+- DeepSeek API Key
 
-### ⚡ 本地开发
+### ⚡ 5分钟快速体验
 
 ```bash
 # 1. 克隆项目
 git clone https://github.com/your-org/aurawell.git
 cd aurawell
 
-# 2. 后端环境设置
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# 2. 安装依赖
 pip install -r requirements.txt
 
-# 3. 环境变量配置
-cp env.example .env
-# 编辑.env文件，配置以下密钥：
-# - DASHSCOPE_API_KEY: 阿里云DashScope API密钥
-# - ALIYUN_ACCESS_KEY_ID: 阿里云访问密钥ID
-# - ALIYUN_ACCESS_KEY_SECRET: 阿里云访问密钥Secret
-# - ENABLE_RAG: true/false (开启/关闭RAG检索)
+# 3. 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，添加你的 DeepSeek API Key
 
-# 4. 启动本地开发服务
-python run_api_server.py
+# 4. 启动服务
+python -m uvicorn src.aurawell.main:app --reload
+
+# 5. 打开浏览器访问
+# http://localhost:8000/docs - API文档
+# ws://localhost:8000/ws/chat - WebSocket对话
+```
+
+### 🌐 在线体验
+
+如果你想直接体验功能，可以使用我们的在线演示：
+
+```bash
+# 创建家庭
+curl -X POST "http://demo.aurawell.com/api/v1/families" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "我的家庭", "description": "健康生活从今天开始"}'
+
+# 获取健康建议
+curl -X POST "http://demo.aurawell.com/api/v1/health/advice" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "demo_user", "question": "如何改善睡眠质量？"}'
 ```
 
 ### 🌐 前端开发
@@ -228,209 +396,183 @@ s deploy
 
 ## 🔧 开发指南
 
-### 📁 项目结构
+### 📁 **项目结构一览**
 
 ```
 aurawell/
-├── 🏗️ core/                     # 核心组件
-│   ├── agent_router.py          # Agent统一路由
-│   └── deepseek_client.py       # DeepSeek客户端
-├── ⭐ langchain_agent/          # LangChain智能体
-│   ├── agent.py                 # 核心Agent实现
-│   ├── tools/                   # 工具链
-│   │   ├── user_profile_tool.py # 用户档案工具
-│   │   ├── calc_metrics_tool.py # 计算工具
-│   │   └── search_knowledge_tool.py # 检索工具
-│   └── services/                # Agent服务
-│       ├── health_advice_service.py # 健康建议服务
-│       └── parsers.py           # 输出解析器
-├── 🔌 interfaces/               # API接口层
-│   └── api_interface.py         # FastAPI接口
-├── 📊 models/                   # 数据模型
-│   ├── database_models.py       # 数据库模型
-│   └── api_models.py            # API模型
-├── 🔐 auth/                     # 认证系统
-│   └── jwt_auth.py              # JWT认证
-├── 🏠 repositories/             # 数据访问层
-│   ├── user_repository.py       # 用户数据访问
-│   └── family_repository.py     # 家庭数据访问
-├── 🩺 integrations/             # 健康平台集成
-│   ├── apple_health/            # Apple HealthKit
-│   ├── xiaomi_health/           # 小米健康
-│   └── huawei_health/           # 华为健康
-└── ☁️ deployment/               # 部署配置
-    ├── serverless.yml           # Serverless配置
-    └── template.yml             # 阿里云资源模板
-
-frontend/                        # Vue.js前端
-├── src/
-│   ├── components/              # 组件库
-│   │   ├── family/              # 家庭管理组件
-│   │   ├── health/              # 健康组件
-│   │   └── chat/                # 对话组件
-│   ├── views/                   # 页面视图
-│   │   ├── FamilyDashboard.vue  # 家庭仪表盘
-│   │   ├── HealthChat.vue       # AI健康对话
-│   │   └── HealthReport.vue     # 健康报告
-│   └── stores/                  # Pinia状态管理
-│       ├── auth.js              # 认证状态
-│       ├── family.js            # 家庭状态
-│       └── health.js            # 健康数据状态
+├── 🤖 langchain_agent/          # AI智能体核心
+│   ├── agent.py                 # 主要的AI对话逻辑
+│   ├── tools/                   # AI可以使用的工具
+│   └── services/                # 健康建议生成服务
+├── 🏠 services/                 # 业务功能
+│   ├── family_service.py        # 家庭管理
+│   ├── dashboard_service.py     # 健康仪表盘
+│   └── report_service.py        # 报告生成
+├── 🔌 interfaces/               # 对外接口
+│   ├── api_interface.py         # REST API
+│   └── websocket_interface.py   # 实时对话
+└── 📊 models/                   # 数据模型
+    ├── family_models.py         # 家庭相关数据
+    └── health_models.py         # 健康相关数据
 ```
 
-### 🚀 开发工作流
+### 👥 **开发团队**
 
-**团队角色分工**
-
-| 角色 | 职责 | 技术栈 |
-|------|------|--------|
-| **FE** | 前端开发 | Vue 3 + TypeScript + Pinia |
-| **CLOUD** | 云基础设施 | 阿里云FC + API Gateway + RDS |
-| **AI** | Agent开发 | LangChain + DeepSeek + RAG |
-| **AI+DX** | 数据内容 | 健康知识库 + 测试数据 |
-
-**开发里程碑**
-
-| 阶段 | 周期 | 交付目标 |
+| 成员 | 角色 | 主要贡献 |
 |------|------|----------|
-| **Phase I** | Week 1-2 | 基础通路打通，WebSocket连接，Mock数据 |
-| **Phase II** | Week 3-4 | 核心功能实现，RAG检索，家庭权限 |
-| **Phase III** | Week 5-6 | 完善优化，监控告警，性能调优 |
+| **Terence** | 项目负责人 | 架构设计、核心功能开发 |
+| **wizardG7777777** | 后端开发 | 用户意图识别、对话管理、测试 |
+| **Young** | 前端开发 | 用户界面、交互体验 |
+
+### 🎯 **开发进展**
+
+- ✅ **核心AI对话** - 基于LangChain的智能健康顾问
+- ✅ **家庭管理** - 多用户权限控制和成员管理
+- ✅ **实时通信** - WebSocket流式对话体验
+- ✅ **健康报告** - AI生成个性化健康分析
+- ✅ **数据安全** - 企业级权限控制和审计日志
+- 🔄 **前端界面** - 用户友好的Web界面开发中
 
 ---
 
-## 📋 API接口规范
+## 📋 如何集成AuraWell
 
-### 📡 核心端点
+### 🔌 **主要API接口**
 
-| 分类 | 端点 | 方法 | 描述 |
-|------|------|------|------|
-| **认证** | `/api/v1/auth/login` | POST | 用户登录 |
-| **家庭** | `/api/v1/family/members` | GET/POST | 家庭成员管理 |
-| **权限** | `/api/v1/family/permissions` | PUT | 权限设置 |
-| **对话** | `/api/v1/chat` | WebSocket | AI健康对话 |
-| **数据** | `/api/v1/health/sync` | POST | 健康数据同步 |
-| **报告** | `/api/v1/reports/generate` | POST | 生成健康报告 |
-| **告警** | `/api/v1/alerts/settings` | GET/PUT | 告警设置 |
+**创建家庭**
+```bash
+POST /api/v1/families
+{
+  "name": "我的家庭",
+  "description": "健康生活从今天开始"
+}
+```
 
-### 💬 WebSocket消息格式
+**邀请家庭成员**
+```bash
+POST /api/v1/families/{family_id}/invite
+{
+  "email": "family@example.com",
+  "role": "MANAGER"
+}
+```
+
+**获取健康建议**
+```bash
+POST /api/v1/health/advice
+{
+  "user_id": "user123",
+  "question": "如何改善睡眠质量？"
+}
+```
+
+**生成健康报告**
+```bash
+POST /api/v1/reports/generate
+{
+  "family_id": "family123",
+  "members": ["user1", "user2"],
+  "start_date": "2025-06-01",
+  "end_date": "2025-06-15"
+}
+```
+
+### 💬 **WebSocket实时对话**
 
 ```javascript
-// 发送消息
-{
-  "text": "帮我制定减重计划",
-  "member_id": "user123",
-  "history": [
-    {"role": "user", "content": "之前的对话"},
-    {"role": "assistant", "content": "AI回复"}
-  ]
-}
+// 连接WebSocket
+const ws = new WebSocket('ws://localhost:8000/ws/chat');
 
-// 接收消息
-{
-  "type": "token",
-  "content": "建议您",
+// 发送健康咨询
+ws.send(JSON.stringify({
+  "type": "health_chat",
+  "text": "我想减肥，有什么建议吗？",
   "member_id": "user123"
-}
+}));
+
+// 接收AI回复
+ws.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  console.log('AI回复:', data.content);
+};
 ```
 
----
+### 📖 **完整API文档**
 
-## 🔍 监控与运维
-
-### 📊 关键监控指标
-
-**性能指标**
-- API响应时间P99 < 3s
-- WebSocket连接成功率 > 99%
-- 函数冷启动时间 < 300ms
-- AI推理准确率 > 95%
-
-**业务指标**
-- 日活用户数 (DAU)
-- 对话完成率
-- 健康建议采纳率
-- 家庭互动参与度
-
-### 💰 成本优化策略
-
-**免费额度充分利用**
-- Function Compute: 150,000 CU·s/月
-- DashScope: 100万Token/月
-- API Gateway: 100万次调用/月
-
-**按需付费模式**
-- 无需预留资源，真正按使用付费
-- 自动扩缩容，应对流量高峰
-- 冷启动优化，平均300ms启动时间
-
----
-
-## 🎉 创新特色
-
-### 🔬 技术创新
-
-1. **RAG增强的医学AI** - 权威健康知识 + 深度推理能力
-2. **可插拔工具链** - LangChain ReAct模式，自主决策调用工具
-3. **流式WebSocket体验** - Token级实时响应，沉浸式交互
-4. **Serverless极简架构** - 按需扩容，真正零运维
-
-### 🏠 场景创新
-
-1. **家庭健康协作** - 多用户权限管理，家庭健康互动
-2. **主动关怀机制** - AI识别异常，智能推送告警
-3. **年轻化社交** - 点赞挑战，游戏化健康管理
-4. **跨平台数据融合** - 统一健康数据标准，全场景覆盖
-
----
-
-## 📚 相关资源
-
-### 📖 文档链接
-
-- [阿里云Function Compute文档](https://help.aliyun.com/product/50980.html)
-- [DashScope API文档](https://help.aliyun.com/zh/dashscope/)
-- [LangChain官方文档](https://python.langchain.com/)
-- [Vue 3官方文档](https://vuejs.org/)
-
-### 🔗 API参考
-
+启动服务后，访问以下地址查看完整的API文档：
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
-- **WebSocket测试**: ws://localhost:8000/chat
 
 ---
 
-## 🤝 贡献指南
+## 🛡️ 安全与稳定性
 
-### 🔄 提交规范
+### 🔒 **数据安全保障**
+- **权限控制** - 基于角色的细粒度权限管理
+- **数据加密** - 敏感信息加密存储和传输
+- **审计日志** - 完整的操作记录和追踪
+- **API限流** - 防止恶意请求和系统过载
 
+### 📊 **系统稳定性**
+- **错误重试** - 自动重试机制，提高成功率
+- **健康检查** - 实时监控系统状态
+- **优雅降级** - 部分功能异常时保证核心功能可用
+- **负载均衡** - 支持水平扩展，应对高并发
+
+---
+
+## 🌟 为什么选择AuraWell？
+
+### 💡 **解决真实痛点**
+- **家庭健康管理难** - 一个平台管理全家健康，不再各自为战
+- **专业建议获取难** - 24/7 AI健康顾问，随时获得专业建议
+- **健康数据分散** - 统一的健康数据管理和分析
+- **缺乏互动激励** - 家庭成员互相鼓励，让健康管理更有趣
+
+### 🚀 **技术优势**
+- **国产AI模型** - 基于DeepSeek，理解中文语境和中国人健康习惯
+- **企业级架构** - 稳定可靠，支持大规模用户使用
+- **开源透明** - 代码开源，可自由定制和部署
+- **持续更新** - 活跃的开发团队，持续优化和新功能开发
+
+---
+
+## 🤝 加入我们
+
+### 🔄 **贡献代码**
 ```bash
-# 功能开发
-git commit -m "feat: 添加家庭权限管理功能"
-
-# 问题修复
-git commit -m "fix: 修复WebSocket连接断开问题"
-
-# 文档更新
-git commit -m "docs: 更新API接口文档"
-
-# 性能优化
-git commit -m "perf: 优化RAG检索响应时间"
+# Fork项目 → 创建分支 → 提交代码 → 发起PR
+git checkout -b feature/your-feature
+git commit -m "feat: 添加新功能"
+git push origin feature/your-feature
 ```
 
+### 💬 **反馈建议**
+- 🐛 [报告Bug](https://github.com/your-org/aurawell/issues)
+- 💡 [功能建议](https://github.com/your-org/aurawell/discussions)
+- 📧 [联系我们](mailto:team@aurawell.com)
+
+### 📖 **学习资源**
+- [LangChain官方文档](https://python.langchain.com/)
+- [DeepSeek API文档](https://platform.deepseek.com/docs)
+- [FastAPI官方文档](https://fastapi.tiangolo.com/)
+
 ---
 
-## 📄 许可证
+## 📄 开源协议
 
-本项目采用 [MIT License](LICENSE) 开源协议。
+本项目采用 [MIT License](LICENSE) 开源协议，欢迎自由使用和修改。
 
 ---
 
 <div align="center">
 
-**AuraWell** - *让每个家庭都拥有智能健康管家* 💙
+### 🎯 **让健康管理变得简单有趣**
 
-[![Star on GitHub](https://img.shields.io/github/stars/your-org/aurawell?style=social)](https://github.com/your-org/aurawell)
+**AuraWell** - *每个家庭都值得拥有的AI健康助手* 💙
 
-</div> 
+[⭐ 给我们一个Star](https://github.com/your-org/aurawell) • [🚀 立即体验](http://demo.aurawell.com) • [📖 查看文档](https://docs.aurawell.com)
+
+*"健康是1，其他都是0。让AuraWell守护您和家人的健康。"*
+
+</div>
