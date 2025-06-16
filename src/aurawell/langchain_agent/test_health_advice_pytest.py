@@ -10,9 +10,9 @@ import logging
 import sys
 import os
 
-from aurawell.langchain_agent.agent import HealthAdviceAgent
-from aurawell.langchain_agent.services.health_advice_service import HealthAdviceService
-from aurawell.langchain_agent.services.parsers import FiveSectionParser
+from .agent import HealthAdviceAgent
+from .services.health_advice_service import HealthAdviceService
+from .services.parsers import FiveSectionParser
 
 # 添加src目录到Python路径以支持新的项目结构
 src_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))

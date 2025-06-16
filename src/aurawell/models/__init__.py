@@ -45,12 +45,13 @@ from .chat_models import (
 
 # Import dashboard-related models
 from .dashboard_models import (
-    HealthReportRequest, TrendData, HealthMetricSummary, MemberHealthData,
-    HealthAlert, HealthReportData, HealthReportResponse,
-    LeaderboardRequest, LeaderboardEntry, LeaderboardStats, LeaderboardData,
-    LeaderboardResponse,
-    ChallengeParticipant, ChallengeProgress, FamilyChallenge, CompletedChallenge,
-    UpcomingChallenge, ChallengeSummary, FamilyChallengesData, FamilyChallengesResponse,
-    CreateChallengeRequest, CreateChallengeData, CreateChallengeResponse,
-    DashboardMetric, FamilyDashboardData, DashboardResponse,
+    DashboardMetric, DashboardData, DashboardResponse,
+    ReportData, ReportResponse,
+    LeaderboardEntry, LeaderboardData, LeaderboardResponse,
+)
+
+# Import API models for health plans and other core functionality
+from .api_models import (
+    HealthPlan, HealthPlanModule, HealthPlanRequest, HealthPlanResponse,
+    HealthPlansListResponse, HealthPlanGenerateRequest, HealthPlanGenerateResponse,
 )
