@@ -37,7 +37,13 @@ class FamilyService:
     def __init__(self, db_session: Any = None):
         """Initialize family service with database session"""
         self.db = db_session
-        self.invite_expiry_hours = 72  # 3 days default expiry
+        
+        # Import constants locally to avoid circular imports
+        try:
+            from ..config.health_constants import get_health_constant
+            self.invite_expiry_hours = get_health_constant("family", "INVITATION_EXPIRY_HOURS", 72)
+        except ImportError:
+            self.invite_expiry_hours = 72  # Fallback
         
         # Mock data storage for testing (in production, use real database)
         self._families = {}  # family_id -> family_data
@@ -68,10 +74,16 @@ class FamilyService:
             ConflictError: If user already owns maximum families
         """
         try:
-            # Check if user already has maximum families (e.g., 3)
+            # Check if user already has maximum families
+            try:
+                from ..config.health_constants import get_health_constant
+                max_families = get_health_constant("family", "MAX_FAMILIES_PER_USER", 3)
+            except ImportError:
+                max_families = 3  # Fallback
+                
             current_families = await self._get_user_owned_families_count(user_id)
-            if current_families >= 3:
-                raise ConflictError("Maximum number of families reached. Please delete an existing family first.")
+            if current_families >= max_families:
+                raise ConflictError(f"Maximum number of families ({max_families}) reached. Please delete an existing family first.")
             
             # Generate unique family ID
             family_id = str(uuid.uuid4())
