@@ -12,11 +12,12 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 from ..repositories.chat_repository import ChatRepository
-from ..models.api_models import (
+from ..models.chat_models import (
     HealthChatResponse, ConversationResponse, ConversationListResponse,
     ChatHistoryResponse, HealthSuggestionsResponse, HealthSuggestion, QuickReply,
-    MemberDataContext, ConversationHistoryKey
+    ConversationHistoryKey
 )
+from ..models.family_models import MemberDataContext
 from ..core.agent_router import agent_router
 from ..conversation.memory_manager import MemoryManager
 from ..services.data_sanitization_service import DataSanitizationService

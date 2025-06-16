@@ -17,7 +17,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
-from ..models.api_models import (
+from ..models.family_models import (
     FamilyRole, InviteStatus,
     FamilyCreateRequest, InviteMemberRequest, AcceptInviteRequest,
     DeclineInviteRequest, UpdateMemberRoleRequest, RemoveMemberRequest,
