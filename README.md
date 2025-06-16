@@ -115,7 +115,7 @@
 **第一步：创建家庭**
 ```bash
 # 使用API创建家庭
-POST /api/v1/families
+POST /api/v1/family
 {
   "name": "张家大院",
   "description": "我们是相亲相爱的一家人"
@@ -125,19 +125,19 @@ POST /api/v1/families
 **第二步：邀请家庭成员**
 ```bash
 # 邀请配偶
-POST /api/v1/families/{family_id}/invite
+POST /api/v1/family/{family_id}/invite
 {
   "email": "wife@example.com",
   "role": "MANAGER",
-  "message": "亲爱的，加入我们的健康管理吧！"
+  "custom_message": "亲爱的，加入我们的健康管理吧！"
 }
 
 # 邀请孩子
-POST /api/v1/families/{family_id}/invite
+POST /api/v1/family/{family_id}/invite
 {
   "email": "child@example.com",
   "role": "VIEWER",
-  "message": "宝贝，让我们一起变得更健康！"
+  "custom_message": "宝贝，让我们一起变得更健康！"
 }
 ```
 
@@ -170,21 +170,23 @@ POST /api/v1/families/{family_id}/invite
 **WebSocket实时对话**
 ```javascript
 // 连接WebSocket
-const ws = new WebSocket('ws://localhost:8000/ws/chat');
+const ws = new WebSocket('ws://localhost:8000/ws/chat/user123?token=demo-test-token');
 
 // 发送健康咨询
 ws.send(JSON.stringify({
   "type": "health_chat",
-  "text": "我想减肥，但是工作很忙，有什么简单有效的方法吗？",
-  "member_id": "user123"
+  "data": {
+    "message": "我想减肥，但是工作很忙，有什么简单有效的方法吗？"
+  },
+  "active_member_id": "user123"
 }));
 
 // 接收AI回复（流式输出）
 ws.onmessage = function(event) {
   const data = JSON.parse(event.data);
-  if (data.type === 'token') {
+  if (data.type === 'chat_stream') {
     // 实时显示AI回复的每个字符
-    displayToken(data.content);
+    displayToken(data.delta);
   }
 };
 ```
@@ -304,11 +306,11 @@ cp .env.example .env
 # 编辑 .env 文件，添加你的 DeepSeek API Key
 
 # 4. 启动服务
-python -m uvicorn src.aurawell.main:app --reload
+python run_api_server.py
 
 # 5. 打开浏览器访问
 # http://localhost:8000/docs - API文档
-# ws://localhost:8000/ws/chat - WebSocket对话
+# ws://localhost:8000/ws/chat/{user_id} - WebSocket对话
 ```
 
 ### 🌐 在线体验
@@ -317,14 +319,16 @@ python -m uvicorn src.aurawell.main:app --reload
 
 ```bash
 # 创建家庭
-curl -X POST "http://demo.aurawell.com/api/v1/families" \
+curl -X POST "http://localhost:8000/api/v1/family" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer demo-test-token" \
   -d '{"name": "我的家庭", "description": "健康生活从今天开始"}'
 
 # 获取健康建议
-curl -X POST "http://demo.aurawell.com/api/v1/health/advice" \
+curl -X POST "http://localhost:8000/api/v1/health/advice/comprehensive" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "demo_user", "question": "如何改善睡眠质量？"}'
+  -H "Authorization: Bearer demo-test-token" \
+  -d '{"goal_type": "general_health", "duration_weeks": 4, "special_requirements": "如何改善睡眠质量？"}'
 ```
 
 ### 🌐 前端开发
@@ -399,7 +403,7 @@ s deploy
 ### 📁 **项目结构一览**
 
 ```
-aurawell/
+src/aurawell/
 ├── 🤖 langchain_agent/          # AI智能体核心
 │   ├── agent.py                 # 主要的AI对话逻辑
 │   ├── tools/                   # AI可以使用的工具
@@ -411,9 +415,15 @@ aurawell/
 ├── 🔌 interfaces/               # 对外接口
 │   ├── api_interface.py         # REST API
 │   └── websocket_interface.py   # 实时对话
-└── 📊 models/                   # 数据模型
-    ├── family_models.py         # 家庭相关数据
-    └── health_models.py         # 健康相关数据
+├── 📊 models/                   # 数据模型
+│   ├── family_models.py         # 家庭相关数据
+│   └── health_models.py         # 健康相关数据
+├── ⚙️ config/                   # 配置管理
+│   ├── settings.py              # 应用配置
+│   └── health_constants.py      # 健康常量
+└── 🔧 core/                     # 核心组件
+    ├── agent_router.py          # 智能路由
+    └── deepseek_client.py       # AI客户端
 ```
 
 ### 👥 **开发团队**
@@ -441,7 +451,7 @@ aurawell/
 
 **创建家庭**
 ```bash
-POST /api/v1/families
+POST /api/v1/family
 {
   "name": "我的家庭",
   "description": "健康生活从今天开始"
@@ -450,7 +460,7 @@ POST /api/v1/families
 
 **邀请家庭成员**
 ```bash
-POST /api/v1/families/{family_id}/invite
+POST /api/v1/family/{family_id}/invite
 {
   "email": "family@example.com",
   "role": "MANAGER"
@@ -459,41 +469,40 @@ POST /api/v1/families/{family_id}/invite
 
 **获取健康建议**
 ```bash
-POST /api/v1/health/advice
+POST /api/v1/health/advice/comprehensive
 {
-  "user_id": "user123",
-  "question": "如何改善睡眠质量？"
+  "goal_type": "weight_loss",
+  "duration_weeks": 4,
+  "special_requirements": "如何改善睡眠质量？"
 }
 ```
 
 **生成健康报告**
 ```bash
-POST /api/v1/reports/generate
-{
-  "family_id": "family123",
-  "members": ["user1", "user2"],
-  "start_date": "2025-06-01",
-  "end_date": "2025-06-15"
-}
+GET /api/v1/family/{family_id}/report?members=user1,user2&start_date=2025-06-01&end_date=2025-06-15
 ```
 
 ### 💬 **WebSocket实时对话**
 
 ```javascript
 // 连接WebSocket
-const ws = new WebSocket('ws://localhost:8000/ws/chat');
+const ws = new WebSocket('ws://localhost:8000/ws/chat/user123?token=demo-test-token');
 
 // 发送健康咨询
 ws.send(JSON.stringify({
   "type": "health_chat",
-  "text": "我想减肥，有什么建议吗？",
-  "member_id": "user123"
+  "data": {
+    "message": "我想减肥，有什么建议吗？"
+  },
+  "active_member_id": "user123"
 }));
 
 // 接收AI回复
 ws.onmessage = function(event) {
   const data = JSON.parse(event.data);
-  console.log('AI回复:', data.content);
+  if (data.type === 'chat_stream') {
+    console.log('AI回复:', data.delta);
+  }
 };
 ```
 

@@ -21,9 +21,10 @@ from ..models.api_models import (
     HealthAdviceRequest,
     SwitchMemberRequest,
 )
-from ..services.chat_service import ChatService
+# ChatService已移除，使用agent_router替代
 from ..langchain_agent.services.health_advice_service import HealthAdviceService
 from ..services.family_service import FamilyService
+from ..core.agent_router import agent_router
 
 logger = logging.getLogger(__name__)
 
@@ -293,7 +294,7 @@ async def websocket_chat_endpoint(
         )
 
         # Initialize services
-        chat_service = ChatService()
+        # chat_service = ChatService()  # 已移除，使用agent_router替代
         health_advice_service = HealthAdviceService()
         family_service = FamilyService()
 
@@ -320,7 +321,7 @@ async def websocket_chat_endpoint(
                     await handle_health_chat(user_id, message, health_advice_service)
 
                 elif message.type == "general_chat":
-                    await handle_general_chat(user_id, message, chat_service)
+                    await handle_general_chat(user_id, message)
 
                 elif message.type == "switch_member":
                     await handle_member_switch(user_id, message, family_service)
@@ -428,9 +429,9 @@ async def handle_health_chat(
 
 
 async def handle_general_chat(
-    user_id: str, message: WebSocketMessage, chat_service: ChatService
+    user_id: str, message: WebSocketMessage
 ):
-    """Handle general chat messages"""
+    """Handle general chat messages using agent_router"""
     try:
         query = message.data.get("message", "")
         conversation_id = message.conversation_id
@@ -441,11 +442,20 @@ async def handle_general_chat(
             )
             return
 
-        # For general chat, we don't have streaming yet, so send the full response
+        # Use agent_router to process the message
         await websocket_manager.send_status_update(user_id, "streaming", "正在处理...")
 
-        # Simulate streaming by sending the response in chunks
-        response = f"这是对您消息的回复：{query}"
+        # Process message with agent_router
+        response_data = await agent_router.process_message(
+            user_id=user_id,
+            message=query,
+            context={
+                "conversation_id": conversation_id,
+                "request_type": "general_chat",
+            },
+        )
+
+        response = response_data.get("message", "抱歉，我现在无法处理您的请求。")
 
         # Send response in chunks to simulate streaming
         chunk_size = 10
