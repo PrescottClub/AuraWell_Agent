@@ -86,7 +86,9 @@ class AppleHealthClient(GenericHealthAPIClient):
                 self.credentials.access_token = response["access_token"]
                 if "expires_in" in response:
                     expires_in = int(response["expires_in"])
-                    self.credentials.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    self.credentials.token_expires_at = datetime.now() + timedelta(
+                        seconds=expires_in
+                    )
 
                 logger.info("Apple Health authentication successful")
                 return True
@@ -123,7 +125,9 @@ class AppleHealthClient(GenericHealthAPIClient):
                 self.credentials.access_token = response["access_token"]
                 if "expires_in" in response:
                     expires_in = int(response["expires_in"])
-                    self.credentials.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    self.credentials.token_expires_at = datetime.now() + timedelta(
+                        seconds=expires_in
+                    )
 
                 logger.info("Apple Health token refresh successful")
                 return True
@@ -159,7 +163,11 @@ class AppleHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve user profile: {e}")
 
     def get_activity_data(
-        self, user_id: str, start_date: str, end_date: str, data_types: Optional[List[str]] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        data_types: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Get activity data from Apple Health
@@ -185,7 +193,9 @@ class AppleHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/activities"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved activity data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved activity data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -193,7 +203,12 @@ class AppleHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve activity data: {e}")
 
     def get_health_samples(
-        self, user_id: str, sample_type: str, start_date: str, end_date: str, limit: Optional[int] = None
+        self,
+        user_id: str,
+        sample_type: str,
+        start_date: str,
+        end_date: str,
+        limit: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get health samples from HealthKit
@@ -212,7 +227,11 @@ class AppleHealthClient(GenericHealthAPIClient):
             raise HealthAPIError("Authentication required for health samples access")
 
         try:
-            params = {"sample_type": sample_type, "start_date": start_date, "end_date": end_date}
+            params = {
+                "sample_type": sample_type,
+                "start_date": start_date,
+                "end_date": end_date,
+            }
 
             if limit:
                 params["limit"] = limit
@@ -220,7 +239,9 @@ class AppleHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/samples"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved {sample_type} samples for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved {sample_type} samples for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -228,7 +249,11 @@ class AppleHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve health samples: {e}")
 
     def get_workouts(
-        self, user_id: str, start_date: str, end_date: str, workout_type: Optional[str] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        workout_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get workout data from HealthKit
@@ -254,14 +279,18 @@ class AppleHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/workouts"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved workout data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved workout data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
             logger.error(f"Failed to get workout data: {e}")
             raise HealthAPIError(f"Failed to retrieve workout data: {e}")
 
-    def get_sleep_analysis(self, user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
+    def get_sleep_analysis(
+        self, user_id: str, start_date: str, end_date: str
+    ) -> Dict[str, Any]:
         """
         Get sleep analysis data from HealthKit
 
@@ -282,7 +311,9 @@ class AppleHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/sleep"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved sleep data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved sleep data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -290,7 +321,12 @@ class AppleHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve sleep data: {e}")
 
     def save_health_sample(
-        self, user_id: str, sample_type: str, value: Union[int, float], unit: str, timestamp: Optional[datetime] = None
+        self,
+        user_id: str,
+        sample_type: str,
+        value: Union[int, float],
+        unit: str,
+        timestamp: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """
         Save a health sample to HealthKit
@@ -312,12 +348,19 @@ class AppleHealthClient(GenericHealthAPIClient):
             timestamp = datetime.now()
 
         try:
-            data = {"sample_type": sample_type, "value": value, "unit": unit, "timestamp": timestamp.isoformat()}
+            data = {
+                "sample_type": sample_type,
+                "value": value,
+                "unit": unit,
+                "timestamp": timestamp.isoformat(),
+            }
 
             endpoint = f"/users/{user_id}/samples"
             response = self.post(endpoint, data=data)
 
-            logger.info(f"Saved health sample for {user_id}: {sample_type} = {value} {unit}")
+            logger.info(
+                f"Saved health sample for {user_id}: {sample_type} = {value} {unit}"
+            )
             return response
 
         except Exception as e:
@@ -390,7 +433,9 @@ class HealthKitNativeInterface:
         # In a real iOS app, this would check HKHealthStore.isHealthDataAvailable()
         return True
 
-    def request_authorization(self, read_types: List[str], write_types: Optional[List[str]] = None) -> bool:
+    def request_authorization(
+        self, read_types: List[str], write_types: Optional[List[str]] = None
+    ) -> bool:
         """
         Request HealthKit authorization for specified data types
 
@@ -402,14 +447,20 @@ class HealthKitNativeInterface:
             True if authorization granted
         """
         # Placeholder implementation
-        logger.info(f"Requesting HealthKit authorization for read: {read_types}, write: {write_types}")
+        logger.info(
+            f"Requesting HealthKit authorization for read: {read_types}, write: {write_types}"
+        )
 
         # In a real iOS app, this would call:
         # HKHealthStore.requestAuthorization(toShare:read:completion:)
         return True
 
     def get_samples(
-        self, sample_type: str, start_date: datetime, end_date: datetime, limit: Optional[int] = None
+        self,
+        sample_type: str,
+        start_date: datetime,
+        end_date: datetime,
+        limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get health samples from HealthKit
@@ -424,12 +475,16 @@ class HealthKitNativeInterface:
             List of health samples
         """
         # Placeholder implementation
-        logger.info(f"Fetching HealthKit samples: {sample_type} from {start_date} to {end_date}")
+        logger.info(
+            f"Fetching HealthKit samples: {sample_type} from {start_date} to {end_date}"
+        )
 
         # In a real iOS app, this would use HKSampleQuery or HKStatisticsQuery
         return []
 
-    def save_sample(self, sample_type: str, value: Union[int, float], unit: str, timestamp: datetime) -> bool:
+    def save_sample(
+        self, sample_type: str, value: Union[int, float], unit: str, timestamp: datetime
+    ) -> bool:
         """
         Save a health sample to HealthKit
 
@@ -443,7 +498,9 @@ class HealthKitNativeInterface:
             True if save successful
         """
         # Placeholder implementation
-        logger.info(f"Saving HealthKit sample: {sample_type} = {value} {unit} at {timestamp}")
+        logger.info(
+            f"Saving HealthKit sample: {sample_type} = {value} {unit} at {timestamp}"
+        )
 
         # In a real iOS app, this would create and save HKQuantitySample
         return True
@@ -481,7 +538,9 @@ def parse_healthkit_samples(raw_samples: List[Dict[str, Any]]) -> List[Dict[str,
     return standardized_samples
 
 
-def parse_healthkit_workouts(raw_workouts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def parse_healthkit_workouts(
+    raw_workouts: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     """
     Parse raw HealthKit workout data into standardized format
 
@@ -499,7 +558,9 @@ def parse_healthkit_workouts(raw_workouts: List[Dict[str, Any]]) -> List[Dict[st
             "end_time": workout.get("endDate"),
             "workout_type": workout.get("workoutActivityType"),
             "duration_seconds": workout.get("duration"),
-            "total_energy_burned": workout.get("totalEnergyBurned", {}).get("doubleValue"),
+            "total_energy_burned": workout.get("totalEnergyBurned", {}).get(
+                "doubleValue"
+            ),
             "total_distance": workout.get("totalDistance", {}).get("doubleValue"),
             "source": "apple_health",
             "metadata": workout.get("metadata", {}),

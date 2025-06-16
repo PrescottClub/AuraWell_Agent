@@ -18,14 +18,19 @@ logger = logging.getLogger(__name__)
 
 class UserSession(Base):
     """用户会话数据模型"""
+
     __tablename__ = "user_sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(String(100), unique=True, nullable=False, index=True)
     user_id = Column(String(50), nullable=False, index=True)
     context_data = Column(Text, nullable=True)  # JSON格式的上下文数据
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    last_activity = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    last_activity = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
     expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
@@ -37,9 +42,11 @@ class UserSession(Base):
             "user_id": self.user_id,
             "context_data": self.context_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_activity": self.last_activity.isoformat() if self.last_activity else None,
+            "last_activity": (
+                self.last_activity.isoformat() if self.last_activity else None
+            ),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "is_active": self.is_active
+            "is_active": self.is_active,
         }
 
 
@@ -60,7 +67,9 @@ class SessionManager:
         self.db_manager = get_database_manager()
         self.session_timeout_hours = session_timeout_hours
 
-    async def create_session(self, user_id: str, context_data: Optional[Dict[str, Any]] = None) -> str:
+    async def create_session(
+        self, user_id: str, context_data: Optional[Dict[str, Any]] = None
+    ) -> str:
         """
         创建新会话
 
@@ -76,7 +85,9 @@ class SessionManager:
             session_id = f"session_{user_id}_{uuid.uuid4().hex[:8]}"
 
             # 计算过期时间
-            expires_at = datetime.now(timezone.utc) + timedelta(hours=self.session_timeout_hours)
+            expires_at = datetime.now(timezone.utc) + timedelta(
+                hours=self.session_timeout_hours
+            )
 
             async with self.db_manager.get_session() as session:
                 # 创建会话记录
@@ -87,13 +98,15 @@ class SessionManager:
                     created_at=datetime.now(timezone.utc),
                     last_activity=datetime.now(timezone.utc),
                     expires_at=expires_at,
-                    is_active=True
+                    is_active=True,
                 )
 
                 session.add(user_session)
                 await session.commit()
 
-                logger.info("Session created successfully: %s for user: %s", session_id, user_id)
+                logger.info(
+                    "Session created successfully: %s for user: %s", session_id, user_id
+                )
                 return session_id
 
         except Exception as e:
@@ -115,8 +128,7 @@ class SessionManager:
             async with self.db_manager.get_session() as session:
                 # 查询会话
                 query = select(UserSession).filter(
-                    UserSession.session_id == session_id,
-                    UserSession.is_active == True
+                    UserSession.session_id == session_id, UserSession.is_active == True
                 )
                 result = await session.execute(query)
                 user_session = result.scalar_one_or_none()
@@ -126,12 +138,16 @@ class SessionManager:
                     return {
                         "session_id": session_id,
                         "exists": False,
-                        "error": "Session not found or inactive"
+                        "error": "Session not found or inactive",
                     }
 
                 # 检查会话是否过期
                 current_time = datetime.now(timezone.utc)
-                if user_session.expires_at and current_time > user_session.expires_at.replace(tzinfo=timezone.utc):
+                if (
+                    user_session.expires_at
+                    and current_time
+                    > user_session.expires_at.replace(tzinfo=timezone.utc)
+                ):
                     # 标记会话为过期
                     user_session.is_active = False
                     await session.commit()
@@ -140,7 +156,7 @@ class SessionManager:
                     return {
                         "session_id": session_id,
                         "exists": False,
-                        "error": "Session expired"
+                        "error": "Session expired",
                     }
 
                 # 更新最后活动时间
@@ -153,23 +169,29 @@ class SessionManager:
                     "user_id": user_session.user_id,
                     "exists": True,
                     "context_data": user_session.context_data,
-                    "created_at": user_session.created_at.isoformat() if user_session.created_at else None,
-                    "last_activity": user_session.last_activity.isoformat() if user_session.last_activity else None,
-                    "expires_at": user_session.expires_at.isoformat() if user_session.expires_at else None
+                    "created_at": (
+                        user_session.created_at.isoformat()
+                        if user_session.created_at
+                        else None
+                    ),
+                    "last_activity": (
+                        user_session.last_activity.isoformat()
+                        if user_session.last_activity
+                        else None
+                    ),
+                    "expires_at": (
+                        user_session.expires_at.isoformat()
+                        if user_session.expires_at
+                        else None
+                    ),
                 }
 
         except Exception as e:
             logger.error("Failed to get session context for %s: %s", session_id, str(e))
-            return {
-                "session_id": session_id,
-                "exists": False,
-                "error": str(e)
-            }
+            return {"session_id": session_id, "exists": False, "error": str(e)}
 
     async def update_session_context(
-        self,
-        session_id: str,
-        context_data: Dict[str, Any]
+        self, session_id: str, context_data: Dict[str, Any]
     ) -> bool:
         """
         更新会话上下文
@@ -184,8 +206,7 @@ class SessionManager:
         try:
             async with self.db_manager.get_session() as session:
                 query = select(UserSession).filter(
-                    UserSession.session_id == session_id,
-                    UserSession.is_active == True
+                    UserSession.session_id == session_id, UserSession.is_active == True
                 )
                 result = await session.execute(query)
                 user_session = result.scalar_one_or_none()
@@ -204,7 +225,9 @@ class SessionManager:
                 return True
 
         except Exception as e:
-            logger.error("Failed to update session context for %s: %s", session_id, str(e))
+            logger.error(
+                "Failed to update session context for %s: %s", session_id, str(e)
+            )
             return False
 
     async def cleanup_expired_sessions(self) -> int:
@@ -220,8 +243,7 @@ class SessionManager:
 
                 # 查找过期的会话
                 query = select(UserSession).filter(
-                    UserSession.expires_at < current_time,
-                    UserSession.is_active == True
+                    UserSession.expires_at < current_time, UserSession.is_active == True
                 )
                 result = await session.execute(query)
                 expired_sessions = result.scalars().all()

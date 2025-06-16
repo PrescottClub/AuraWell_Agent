@@ -79,7 +79,9 @@ class XiaomiHealthClient(GenericHealthAPIClient):
                 self.credentials.access_token = response["access_token"]
                 if "expires_in" in response:
                     expires_in = int(response["expires_in"])
-                    self.credentials.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    self.credentials.token_expires_at = datetime.now() + timedelta(
+                        seconds=expires_in
+                    )
 
                 logger.info("Xiaomi Health authentication successful")
                 return True
@@ -116,7 +118,9 @@ class XiaomiHealthClient(GenericHealthAPIClient):
                 self.credentials.access_token = response["access_token"]
                 if "expires_in" in response:
                     expires_in = int(response["expires_in"])
-                    self.credentials.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    self.credentials.token_expires_at = datetime.now() + timedelta(
+                        seconds=expires_in
+                    )
 
                 logger.info("Xiaomi Health token refresh successful")
                 return True
@@ -152,7 +156,11 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve user profile: {e}")
 
     def get_activity_data(
-        self, user_id: str, start_date: str, end_date: str, data_types: Optional[List[str]] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        data_types: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Get activity data from Xiaomi Health
@@ -178,14 +186,18 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/activities"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved activity data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved activity data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
             logger.error(f"Failed to get activity data: {e}")
             raise HealthAPIError(f"Failed to retrieve activity data: {e}")
 
-    def get_sleep_data(self, user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
+    def get_sleep_data(
+        self, user_id: str, start_date: str, end_date: str
+    ) -> Dict[str, Any]:
         """
         Get sleep data from Xiaomi Health
 
@@ -206,7 +218,9 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/sleep"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved sleep data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved sleep data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -214,7 +228,11 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve sleep data: {e}")
 
     def get_heart_rate_data(
-        self, user_id: str, start_date: str, end_date: str, measurement_type: Optional[str] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        measurement_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get heart rate data from Xiaomi Health
@@ -240,7 +258,9 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/heart_rate"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved heart rate data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved heart rate data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -248,7 +268,11 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve heart rate data: {e}")
 
     def get_workout_sessions(
-        self, user_id: str, start_date: str, end_date: str, workout_type: Optional[str] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        workout_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get workout session data from Xiaomi Health
@@ -274,7 +298,9 @@ class XiaomiHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/workouts"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved workout data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved workout data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:

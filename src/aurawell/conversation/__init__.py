@@ -7,9 +7,4 @@
 from .memory_manager import MemoryManager, ConversationHistory
 from .session_manager import SessionManager, UserSession
 
-__all__ = [
-    "MemoryManager",
-    "ConversationHistory",
-    "SessionManager",
-    "UserSession"
-]
+__all__ = ["MemoryManager", "ConversationHistory", "SessionManager", "UserSession"]

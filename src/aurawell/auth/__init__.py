@@ -12,16 +12,16 @@ from .jwt_auth import (
     authenticate_user,
     create_user_token,
     get_security_schemes,
-    get_security_requirements
+    get_security_requirements,
 )
 
 __all__ = [
     "JWTAuthenticator",
-    "authenticator", 
+    "authenticator",
     "get_current_user_id",
     "get_optional_user_id",
     "authenticate_user",
     "create_user_token",
     "get_security_schemes",
-    "get_security_requirements"
+    "get_security_requirements",
 ]

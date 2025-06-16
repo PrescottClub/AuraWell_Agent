@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ConversationHistory(Base):
     """对话历史数据模型 - 支持家庭成员数据隔离"""
+
     __tablename__ = "conversation_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -28,7 +29,9 @@ class ConversationHistory(Base):
     ai_response = Column(Text, nullable=False)
     intent_type = Column(String(50), nullable=True)
     confidence = Column(String(10), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式"""
@@ -42,7 +45,7 @@ class ConversationHistory(Base):
             "ai_response": self.ai_response,
             "intent_type": self.intent_type,
             "confidence": self.confidence,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -66,7 +69,7 @@ class MemoryManager:
         session_id: Optional[str] = None,
         member_id: Optional[str] = None,
         intent_type: Optional[str] = None,
-        confidence: Optional[float] = None
+        confidence: Optional[float] = None,
     ) -> bool:
         """
         存储对话历史
@@ -87,12 +90,10 @@ class MemoryManager:
             async with self.db_manager.get_session() as session:
                 # 生成隔离键
                 history_key = ConversationHistoryKey(
-                    user_id=user_id,
-                    member_id=member_id,
-                    session_id=session_id
+                    user_id=user_id, member_id=member_id, session_id=session_id
                 )
                 isolation_key = history_key.composite_key
-                
+
                 # 创建对话记录
                 conversation = ConversationHistory(
                     user_id=user_id,
@@ -103,7 +104,7 @@ class MemoryManager:
                     ai_response=ai_response,
                     intent_type=intent_type,
                     confidence=str(confidence) if confidence else None,
-                    created_at=datetime.now(timezone.utc)
+                    created_at=datetime.now(timezone.utc),
                 )
 
                 session.add(conversation)
@@ -112,11 +113,16 @@ class MemoryManager:
                 # 清理旧的对话历史（保持最新的max_history_rounds轮）
                 await self._cleanup_old_conversations(isolation_key)
 
-                logger.info("Conversation stored successfully for isolation_key: %s", isolation_key)
+                logger.info(
+                    "Conversation stored successfully for isolation_key: %s",
+                    isolation_key,
+                )
                 return True
 
         except Exception as e:
-            logger.error("Failed to store conversation for user %s: %s", user_id, str(e))
+            logger.error(
+                "Failed to store conversation for user %s: %s", user_id, str(e)
+            )
             return False
 
     async def get_conversation_history(
@@ -124,7 +130,7 @@ class MemoryManager:
         user_id: str,
         limit: int = 10,
         session_id: Optional[str] = None,
-        member_id: Optional[str] = None
+        member_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         获取对话历史
@@ -142,12 +148,10 @@ class MemoryManager:
             async with self.db_manager.get_session() as session:
                 # 生成隔离键进行查询
                 history_key = ConversationHistoryKey(
-                    user_id=user_id,
-                    member_id=member_id,
-                    session_id=session_id
+                    user_id=user_id, member_id=member_id, session_id=session_id
                 )
                 isolation_key = history_key.composite_key
-                
+
                 # 构建查询 - 使用隔离键进行精确匹配
                 if session_id:
                     # 如果指定了session_id，使用完整的隔离键
@@ -162,9 +166,9 @@ class MemoryManager:
                     )
 
                 # 按时间倒序排列，取最新的limit条记录
-                query = query.order_by(
-                    desc(ConversationHistory.created_at)
-                ).limit(limit)
+                query = query.order_by(desc(ConversationHistory.created_at)).limit(
+                    limit
+                )
 
                 result = await session.execute(query)
                 conversations = result.scalars().all()
@@ -172,8 +176,11 @@ class MemoryManager:
                 # 转换为字典格式并按时间正序排列（最早的在前）
                 history_list = [conv.to_dict() for conv in reversed(conversations)]
 
-                logger.info("Retrieved %d conversation records for isolation_key: %s",
-                           len(history_list), isolation_key)
+                logger.info(
+                    "Retrieved %d conversation records for isolation_key: %s",
+                    len(history_list),
+                    isolation_key,
+                )
 
                 return {
                     "user_id": user_id,
@@ -182,19 +189,20 @@ class MemoryManager:
                     "isolation_key": isolation_key,
                     "total_conversations": len(history_list),
                     "conversations": history_list,
-                    "retrieved_at": datetime.now(timezone.utc).isoformat()
+                    "retrieved_at": datetime.now(timezone.utc).isoformat(),
                 }
 
         except Exception as e:
-            logger.error("Failed to get conversation history for user %s: %s",
-                        user_id, str(e))
+            logger.error(
+                "Failed to get conversation history for user %s: %s", user_id, str(e)
+            )
             return {
                 "user_id": user_id,
                 "member_id": member_id,
                 "session_id": session_id,
                 "total_conversations": 0,
                 "conversations": [],
-                "error": str(e)
+                "error": str(e),
             }
 
     async def _cleanup_old_conversations(self, isolation_key: str) -> None:
@@ -207,25 +215,39 @@ class MemoryManager:
         try:
             async with self.db_manager.get_session() as session:
                 # 获取该隔离键的所有对话，按时间倒序
-                base_key = isolation_key.split(':')[0] + ':' + isolation_key.split(':')[1] if ':' in isolation_key else isolation_key
-                query = select(ConversationHistory).filter(
-                    ConversationHistory.isolation_key.like(f"{base_key}%")
-                ).order_by(desc(ConversationHistory.created_at))
+                base_key = (
+                    isolation_key.split(":")[0] + ":" + isolation_key.split(":")[1]
+                    if ":" in isolation_key
+                    else isolation_key
+                )
+                query = (
+                    select(ConversationHistory)
+                    .filter(ConversationHistory.isolation_key.like(f"{base_key}%"))
+                    .order_by(desc(ConversationHistory.created_at))
+                )
 
                 result = await session.execute(query)
                 all_conversations = result.scalars().all()
 
                 # 如果超过限制，删除旧的对话
                 if len(all_conversations) > self.max_history_rounds:
-                    conversations_to_delete = all_conversations[self.max_history_rounds:]
+                    conversations_to_delete = all_conversations[
+                        self.max_history_rounds :
+                    ]
 
                     for conv in conversations_to_delete:
                         await session.delete(conv)
 
                     await session.commit()
-                    logger.info("Cleaned up %d old conversations for isolation_key: %s",
-                               len(conversations_to_delete), isolation_key)
+                    logger.info(
+                        "Cleaned up %d old conversations for isolation_key: %s",
+                        len(conversations_to_delete),
+                        isolation_key,
+                    )
 
         except Exception as e:
-            logger.error("Failed to cleanup conversations for isolation_key %s: %s",
-                        isolation_key, str(e))
+            logger.error(
+                "Failed to cleanup conversations for isolation_key %s: %s",
+                isolation_key,
+                str(e),
+            )

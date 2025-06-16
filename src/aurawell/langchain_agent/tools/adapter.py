@@ -2,6 +2,7 @@
 工具适配器
 将现有的健康工具适配到LangChain框架
 """
+
 import asyncio
 import logging
 from typing import Dict, Any, List, Callable, Optional
@@ -63,7 +64,7 @@ class ToolAdapter(ABC):
             "name": self.name,
             "description": self.description,
             "schema": self.get_schema(),
-            "execute": self.execute
+            "execute": self.execute,
         }
 
 
@@ -112,15 +113,15 @@ class HealthToolAdapter(ToolAdapter):
                     "tool_name": self.name,
                     "error": result.get("error", "Unknown error"),
                     "message": result.get("message", f"工具 {self.name} 执行失败"),
-                    "result": result  # 保留原始结果以供调试
+                    "result": result,  # 保留原始结果以供调试
                 }
-            
+
             # 标准化成功返回格式
             return {
                 "success": True,
                 "tool_name": self.name,
                 "result": result,
-                "message": f"工具 {self.name} 执行成功"
+                "message": f"工具 {self.name} 执行成功",
             }
 
         except Exception as e:
@@ -129,7 +130,7 @@ class HealthToolAdapter(ToolAdapter):
                 "success": False,
                 "tool_name": self.name,
                 "error": str(e),
-                "message": f"工具 {self.name} 执行失败"
+                "message": f"工具 {self.name} 执行失败",
             }
 
     def get_schema(self) -> Dict[str, Any]:
@@ -148,7 +149,7 @@ class HealthToolAdapter(ToolAdapter):
             required = []
 
             for param_name, param in sig.parameters.items():
-                if param_name in ['self', 'args', 'kwargs']:
+                if param_name in ["self", "args", "kwargs"]:
                     continue
 
                 param_type = "string"  # Default type
@@ -162,24 +163,16 @@ class HealthToolAdapter(ToolAdapter):
 
                 properties[param_name] = {
                     "type": param_type,
-                    "description": f"Parameter {param_name} for {self.name}"
+                    "description": f"Parameter {param_name} for {self.name}",
                 }
 
                 if param.default == inspect.Parameter.empty:
                     required.append(param_name)
 
-            return {
-                "type": "object",
-                "properties": properties,
-                "required": required
-            }
+            return {"type": "object", "properties": properties, "required": required}
         except Exception as e:
             logger.warning(f"Could not extract schema for {self.name}: {e}")
-            return {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+            return {"type": "object", "properties": {}, "required": []}
 
 
 class ToolRegistry:
@@ -247,7 +240,7 @@ class ToolRegistry:
             return {
                 "success": False,
                 "error": f"工具 {name} 不存在",
-                "message": f"未找到工具 {name}"
+                "message": f"未找到工具 {name}",
             }
 
         return await tool.execute(**kwargs)

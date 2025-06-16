@@ -7,7 +7,4 @@ AuraWell Agent 模块 - 健康工具
 from . import health_tools
 from .tools_registry import HealthToolsRegistry
 
-__all__ = [
-    'health_tools',
-    'HealthToolsRegistry'
-]
+__all__ = ["health_tools", "HealthToolsRegistry"]

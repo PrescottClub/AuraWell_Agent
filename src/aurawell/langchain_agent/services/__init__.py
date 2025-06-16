@@ -20,6 +20,7 @@ try:
 except ImportError as e:
     # Handle import errors gracefully
     import logging
+
     logger = logging.getLogger(__name__)
     logger.warning(f"Import error in services module: {e}")
     __all__ = []

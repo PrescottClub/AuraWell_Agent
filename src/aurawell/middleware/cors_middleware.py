@@ -13,7 +13,7 @@ from typing import List
 def configure_cors(app: FastAPI) -> None:
     """
     Configure CORS middleware for the FastAPI application
-    
+
     Args:
         app: FastAPI application instance
     """
@@ -36,12 +36,12 @@ def configure_cors(app: FastAPI) -> None:
             "http://127.0.0.1:5174",
             "http://127.0.0.1:5175",
         ]
-    
+
     # Add production origins if specified
     production_origin = os.getenv("PRODUCTION_ORIGIN")
     if production_origin:
         allowed_origins.append(production_origin)
-    
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
@@ -72,7 +72,7 @@ def configure_cors(app: FastAPI) -> None:
 def get_cors_config() -> dict:
     """
     Get CORS configuration for documentation
-    
+
     Returns:
         CORS configuration dictionary
     """
@@ -80,10 +80,10 @@ def get_cors_config() -> dict:
         "description": "CORS is configured to allow requests from frontend applications",
         "allowed_origins": [
             "http://localhost:3000",
-            "http://localhost:8080", 
+            "http://localhost:8080",
             "http://localhost:5173",
-            "Production frontend domain (configurable)"
+            "Production frontend domain (configurable)",
         ],
         "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "credentials_supported": True
+        "credentials_supported": True,
     }

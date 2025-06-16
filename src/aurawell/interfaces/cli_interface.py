@@ -2,12 +2,13 @@ import asyncio
 import sys
 from ..langchain_agent.agent import HealthAdviceAgent
 
+
 def main():
     """
     命令行界面的主入口点。
     """
     # 简单的用户ID，未来可以替换为登录系统
-    user_id = "cli_user_001" 
+    user_id = "cli_user_001"
     print("Welcome to AuraWell CLI!")
     print(f"Initializing session for user: {user_id}")
     print("Type 'exit' or 'quit' to end the conversation.")
@@ -26,7 +27,7 @@ def main():
                 if user_message.lower() in ["exit", "quit"]:
                     print("AuraWell: Goodbye! Take care of your health.")
                     break
-                
+
                 print("AuraWell is thinking...")
                 response = await agent.process_message(user_message, {})
                 message = response.get("message", "抱歉，我无法处理您的请求。")
@@ -35,11 +36,12 @@ def main():
             except (KeyboardInterrupt, EOFError):
                 print("\n\nAuraWell: Goodbye! Session ended.")
                 break
-    
+
     try:
         asyncio.run(chat_loop())
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

@@ -34,7 +34,7 @@ CALORIES_CONSTANTS = {
     "DAILY_BURN_BASE": 2100,
     "MODERATE_BURN_SAMPLES": [2100, 2300, 1900],  # 用于测试数据
     "PROTEIN_DAILY_BASE": 80,  # 克
-    "CARB_DAILY_BASE": 250,    # 克
+    "CARB_DAILY_BASE": 250,  # 克
     "ACTIVITY_MINUTES_BASE": 45,
 }
 
@@ -77,13 +77,7 @@ CHALLENGE_CONSTANTS = {
     "MIN_PARTICIPANTS": 2,
     "FAMILY_POINTS_BASE": 150,
     "FAMILY_RANK_BASE": 5,
-    "CHALLENGE_TYPES": [
-        "activity",
-        "nutrition", 
-        "sleep",
-        "weight_loss",
-        "consistency"
-    ],
+    "CHALLENGE_TYPES": ["activity", "nutrition", "sleep", "weight_loss", "consistency"],
 }
 
 # ==================== 报告生成常量 ====================
@@ -99,14 +93,14 @@ REPORT_CONSTANTS = {
 # ==================== 提醒和告警常量 ====================
 ALERT_CONSTANTS = {
     "LOW_ACTIVITY_ALERT_THRESHOLD": 5000,  # 步数
-    "INSUFFICIENT_SLEEP_THRESHOLD": 6.5,   # 小时
-    "SIGNIFICANT_WEIGHT_CHANGE": 1.0,      # kg
+    "INSUFFICIENT_SLEEP_THRESHOLD": 6.5,  # 小时
+    "SIGNIFICANT_WEIGHT_CHANGE": 1.0,  # kg
     "ALERT_TYPES": [
         "low_activity",
-        "insufficient_sleep", 
+        "insufficient_sleep",
         "significant_weight_change",
         "irregular_heart_rate",
-        "missed_goals"
+        "missed_goals",
     ],
 }
 
@@ -143,28 +137,30 @@ HEALTH_CONSTANTS = {
     "test_data": TEST_DATA_CONSTANTS,
 }
 
+
 def get_health_constant(category: str, key: str, default: Any = None) -> Any:
     """
     获取健康常量值
-    
+
     Args:
         category: 常量类别 (steps, sleep, calories等)
         key: 常量键名
         default: 默认值
-        
+
     Returns:
         常量值或默认值
     """
     return HEALTH_CONSTANTS.get(category, {}).get(key, default)
 
+
 def get_category_constants(category: str) -> Dict[str, Any]:
     """
     获取指定类别的所有常量
-    
+
     Args:
         category: 常量类别
-        
+
     Returns:
         该类别的所有常量字典
     """
-    return HEALTH_CONSTANTS.get(category, {}) 
+    return HEALTH_CONSTANTS.get(category, {})

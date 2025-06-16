@@ -51,7 +51,9 @@ class Achievement:
             "icon": self.icon,
             "points": self.points,
             "unlocked": self.unlocked,
-            "unlocked_date": self.unlocked_date.isoformat() if self.unlocked_date else None,
+            "unlocked_date": (
+                self.unlocked_date.isoformat() if self.unlocked_date else None
+            ),
             "progress": self.progress,
             "progress_description": self.progress_description,
         }
@@ -70,7 +72,11 @@ class Achievement:
             icon=data["icon"],
             points=data["points"],
             unlocked=data.get("unlocked", False),
-            unlocked_date=datetime.fromisoformat(data["unlocked_date"]) if data.get("unlocked_date") else None,
+            unlocked_date=(
+                datetime.fromisoformat(data["unlocked_date"])
+                if data.get("unlocked_date")
+                else None
+            ),
             progress=data.get("progress", 0.0),
             progress_description=data.get("progress_description", ""),
         )
@@ -82,7 +88,9 @@ class AchievementManager:
     def __init__(self) -> None:
         """初始化成就管理器"""
         self.achievements: Dict[str, Achievement] = {}
-        self.user_achievements: Dict[str, Dict[str, Achievement]] = {}  # user_id -> achievements
+        self.user_achievements: Dict[str, Dict[str, Achievement]] = (
+            {}
+        )  # user_id -> achievements
         self._initialize_default_achievements()
         gamification_logger.info("AchievementManager初始化完成")
 
@@ -274,13 +282,14 @@ class AchievementManager:
         newly_unlocked = []
 
         for achievement in user_achievements.values():
-            if achievement.achievement_type == achievement_type and not achievement.unlocked:
+            if (
+                achievement.achievement_type == achievement_type
+                and not achievement.unlocked
+            ):
                 # 更新进度
                 progress = min(current_value / achievement.target_value, 1.0)
                 achievement.progress = progress
-                achievement.progress_description = (
-                    f"{current_value:.0f}/{achievement.target_value:.0f} {achievement.unit}"
-                )
+                achievement.progress_description = f"{current_value:.0f}/{achievement.target_value:.0f} {achievement.unit}"
 
                 # 检查是否达到解锁条件
                 if progress >= 1.0:
@@ -310,7 +319,9 @@ class AchievementManager:
         user_achievements = self.get_user_achievements(user_id)
         return [a for a in user_achievements.values() if not a.unlocked]
 
-    def get_achievements_by_difficulty(self, user_id: str, difficulty: AchievementDifficulty) -> List[Achievement]:
+    def get_achievements_by_difficulty(
+        self, user_id: str, difficulty: AchievementDifficulty
+    ) -> List[Achievement]:
         """按难度获取成就"""
         user_achievements = self.get_user_achievements(user_id)
         return [a for a in user_achievements.values() if a.difficulty == difficulty]
@@ -329,52 +340,82 @@ class AchievementManager:
         difficulty_counts = {}
         for difficulty in AchievementDifficulty:
             unlocked_count = len([a for a in unlocked if a.difficulty == difficulty])
-            total_count = len([a for a in user_achievements.values() if a.difficulty == difficulty])
-            difficulty_counts[difficulty.value] = {"unlocked": unlocked_count, "total": total_count}
+            total_count = len(
+                [a for a in user_achievements.values() if a.difficulty == difficulty]
+            )
+            difficulty_counts[difficulty.value] = {
+                "unlocked": unlocked_count,
+                "total": total_count,
+            }
 
         return {
             "total_achievements": len(user_achievements),
             "unlocked_achievements": len(unlocked),
-            "unlock_percentage": len(unlocked) / len(user_achievements) * 100 if user_achievements else 0,
+            "unlock_percentage": (
+                len(unlocked) / len(user_achievements) * 100 if user_achievements else 0
+            ),
             "total_points": total_points,
             "difficulty_breakdown": difficulty_counts,
             "recent_achievements": [
-                a.to_dict() for a in sorted(unlocked, key=lambda x: x.unlocked_date or datetime.min, reverse=True)[:5]
+                a.to_dict()
+                for a in sorted(
+                    unlocked,
+                    key=lambda x: x.unlocked_date or datetime.min,
+                    reverse=True,
+                )[:5]
             ],
         }
 
-    def check_weekly_achievements(self, user_id: str, weekly_data: Dict[str, float]) -> List[Achievement]:
+    def check_weekly_achievements(
+        self, user_id: str, weekly_data: Dict[str, float]
+    ) -> List[Achievement]:
         """检查周度成就"""
         newly_unlocked = []
 
         # 检查周步数成就
         if "weekly_steps" in weekly_data:
-            unlocked = self.update_progress(user_id, AchievementType.WEEKLY_STEPS, weekly_data["weekly_steps"])
+            unlocked = self.update_progress(
+                user_id, AchievementType.WEEKLY_STEPS, weekly_data["weekly_steps"]
+            )
             newly_unlocked.extend(unlocked)
 
         # 检查锻炼频率成就
         if "workout_count" in weekly_data:
-            unlocked = self.update_progress(user_id, AchievementType.WORKOUT_FREQUENCY, weekly_data["workout_count"])
+            unlocked = self.update_progress(
+                user_id, AchievementType.WORKOUT_FREQUENCY, weekly_data["workout_count"]
+            )
             newly_unlocked.extend(unlocked)
 
         return newly_unlocked
 
-    def check_sleep_achievements(self, user_id: str, sleep_efficiency: float) -> List[Achievement]:
+    def check_sleep_achievements(
+        self, user_id: str, sleep_efficiency: float
+    ) -> List[Achievement]:
         """检查睡眠相关成就"""
-        return self.update_progress(user_id, AchievementType.SLEEP_QUALITY, sleep_efficiency)
+        return self.update_progress(
+            user_id, AchievementType.SLEEP_QUALITY, sleep_efficiency
+        )
 
-    def check_streak_achievements(self, user_id: str, current_streak: int) -> List[Achievement]:
+    def check_streak_achievements(
+        self, user_id: str, current_streak: int
+    ) -> List[Achievement]:
         """检查连击成就"""
-        return self.update_progress(user_id, AchievementType.CONSECUTIVE_DAYS, current_streak)
+        return self.update_progress(
+            user_id, AchievementType.CONSECUTIVE_DAYS, current_streak
+        )
 
     def add_custom_achievement(self, achievement: Achievement) -> None:
         """添加自定义成就"""
         try:
             if achievement.achievement_id in self.achievements:
-                gamification_logger.warning(f"成就ID已存在，将覆盖: {achievement.achievement_id}")
+                gamification_logger.warning(
+                    f"成就ID已存在，将覆盖: {achievement.achievement_id}"
+                )
 
             self.achievements[achievement.achievement_id] = achievement
-            gamification_logger.info(f"添加自定义成就: {achievement.name} ({achievement.achievement_id})")
+            gamification_logger.info(
+                f"添加自定义成就: {achievement.name} ({achievement.achievement_id})"
+            )
         except Exception as e:
             gamification_logger.error(f"添加自定义成就失败: {e}")
             raise

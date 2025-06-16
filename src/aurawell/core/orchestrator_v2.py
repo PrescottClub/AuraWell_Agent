@@ -24,6 +24,7 @@ except ImportError:
     @dataclass
     class HealthPlan:
         """Fallback HealthPlan definition for compatibility"""
+
         plan_id: str
         title: str
         description: str
@@ -115,17 +116,29 @@ class AuraWellOrchestrator:
 
         # Generate different types of insights
         if activity_data:
-            insights.extend(self._analyze_activity_patterns(user_profile, activity_data))
+            insights.extend(
+                self._analyze_activity_patterns(user_profile, activity_data)
+            )
         if sleep_data:
             insights.extend(self._analyze_sleep_quality(user_profile, sleep_data))
         if nutrition_data:
-            insights.extend(self._analyze_nutrition_balance(user_profile, nutrition_data))
+            insights.extend(
+                self._analyze_nutrition_balance(user_profile, nutrition_data)
+            )
         if activity_data or sleep_data:
-            insights.extend(self._analyze_goal_progress(user_profile, activity_data or [], sleep_data or []))
+            insights.extend(
+                self._analyze_goal_progress(
+                    user_profile, activity_data or [], sleep_data or []
+                )
+            )
 
         # Generate AI insights if client is available
         if self.deepseek_client:
-            insights.extend(self._generate_ai_insights(user_profile, activity_data, sleep_data, nutrition_data))
+            insights.extend(
+                self._generate_ai_insights(
+                    user_profile, activity_data, sleep_data, nutrition_data
+                )
+            )
 
         # Cache insights
         self.insights_cache[user_id] = insights
@@ -157,7 +170,9 @@ class AuraWellOrchestrator:
 
         # Generate AI-powered health plan if client is available
         if self.deepseek_client and user_preferences and recent_insights:
-            plan_content = self._generate_ai_health_plan(user_profile, user_preferences, recent_insights)
+            plan_content = self._generate_ai_health_plan(
+                user_profile, user_preferences, recent_insights
+            )
         else:
             plan_content = self._get_default_health_plan(user_profile)
 
@@ -171,7 +186,7 @@ class AuraWellOrchestrator:
                         title=module_data.get("title", "健康模块"),
                         description=module_data.get("description", ""),
                         content=module_data.get("content", {}),
-                        duration_days=plan_content.get("duration_days", 30)
+                        duration_days=plan_content.get("duration_days", 30),
                     )
                     modules.append(module)
                 except Exception as e:
@@ -182,7 +197,9 @@ class AuraWellOrchestrator:
         health_plan = HealthPlan(
             plan_id=plan_id,
             title=plan_content.get("title", "个性化健康计划"),
-            description=plan_content.get("description", "基于您的健康数据和目标制定的个性化计划"),
+            description=plan_content.get(
+                "description", "基于您的健康数据和目标制定的个性化计划"
+            ),
             modules=modules,
             duration_days=plan_content.get("duration_days", 30),
             status="active",
@@ -197,7 +214,9 @@ class AuraWellOrchestrator:
         logger.info(f"Created health plan {plan_id} for user {user_id}")
         return health_plan
 
-    def get_daily_recommendations(self, user_id: str, target_date: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    def get_daily_recommendations(
+        self, user_id: str, target_date: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         """
         Get daily recommendations for a user
 
@@ -227,7 +246,9 @@ class AuraWellOrchestrator:
         return {
             "cached_users": len(self.insights_cache),
             "cached_plans": len(self.plans_cache),
-            "deepseek_client_status": "connected" if self.deepseek_client else "disconnected",
+            "deepseek_client_status": (
+                "connected" if self.deepseek_client else "disconnected"
+            ),
             "last_updated": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -256,7 +277,11 @@ class AuraWellOrchestrator:
                     priority=InsightPriority.MEDIUM,
                     title="步数目标完成度较低",
                     description=f"最近平均每日步数为 {int(avg_steps)} 步，仅达到目标的 {goal_achievement:.1f}%",
-                    recommendations=["尝试在日常生活中增加更多步行机会", "设置每小时提醒，进行短暂的步行", "选择楼梯而不是电梯"],
+                    recommendations=[
+                        "尝试在日常生活中增加更多步行机会",
+                        "设置每小时提醒，进行短暂的步行",
+                        "选择楼梯而不是电梯",
+                    ],
                     data_points={
                         "avg_steps": avg_steps,
                         "goal_steps": steps_goal,
@@ -274,7 +299,11 @@ class AuraWellOrchestrator:
                     priority=InsightPriority.LOW,
                     title="步数目标超额完成",
                     description=f"最近平均每日步数为 {int(avg_steps)} 步，超出目标 {goal_achievement-100:.1f}%",
-                    recommendations=["保持当前的活动水平", "考虑设置更高的步数目标", "注意适当休息，避免过度运动"],
+                    recommendations=[
+                        "保持当前的活动水平",
+                        "考虑设置更高的步数目标",
+                        "注意适当休息，避免过度运动",
+                    ],
                     data_points={
                         "avg_steps": avg_steps,
                         "goal_steps": steps_goal,
@@ -310,7 +339,11 @@ class AuraWellOrchestrator:
                     priority=InsightPriority.HIGH,
                     title="睡眠时间不足",
                     description=f"最近平均睡眠时间为 {avg_duration:.1f} 小时，低于推荐的 7-9 小时",
-                    recommendations=["建立规律的睡眠时间表", "睡前1小时避免使用电子设备", "创造舒适的睡眠环境"],
+                    recommendations=[
+                        "建立规律的睡眠时间表",
+                        "睡前1小时避免使用电子设备",
+                        "创造舒适的睡眠环境",
+                    ],
                     data_points={
                         "avg_sleep_hours": avg_duration,
                         "goal_sleep_hours": sleep_goal,
@@ -348,7 +381,11 @@ class AuraWellOrchestrator:
                     priority=InsightPriority.MEDIUM,
                     title="卡路里摄入不足",
                     description=f"平均每日摄入 {int(avg_calories)} 卡路里，低于建议的 {int(estimated_needs)} 卡路里",
-                    recommendations=["增加健康的高热量食物", "确保三餐规律", "添加健康的零食"],
+                    recommendations=[
+                        "增加健康的高热量食物",
+                        "确保三餐规律",
+                        "添加健康的零食",
+                    ],
                     data_points={
                         "avg_calories": avg_calories,
                         "recommended_calories": estimated_needs,
@@ -366,7 +403,11 @@ class AuraWellOrchestrator:
                     priority=InsightPriority.MEDIUM,
                     title="卡路里摄入过多",
                     description=f"平均每日摄入 {int(avg_calories)} 卡路里，高于建议的 {int(estimated_needs)} 卡路里",
-                    recommendations=["控制食物分量", "选择低热量高营养的食物", "增加运动量"],
+                    recommendations=[
+                        "控制食物分量",
+                        "选择低热量高营养的食物",
+                        "增加运动量",
+                    ],
                     data_points={
                         "avg_calories": avg_calories,
                         "recommended_calories": estimated_needs,
@@ -380,7 +421,10 @@ class AuraWellOrchestrator:
         return insights
 
     def _analyze_goal_progress(
-        self, user_profile: Dict[str, Any], activity_data: List[Dict[str, Any]], sleep_data: List[Dict[str, Any]]
+        self,
+        user_profile: Dict[str, Any],
+        activity_data: List[Dict[str, Any]],
+        sleep_data: List[Dict[str, Any]],
     ) -> List[HealthInsight]:
         """Analyze progress towards health goals"""
         insights = []
@@ -391,15 +435,21 @@ class AuraWellOrchestrator:
 
         # Steps goal progress
         if activity_data and user_profile.get("daily_steps_goal"):
-            avg_steps = sum(data.get("steps", 0) for data in activity_data) / len(activity_data)
+            avg_steps = sum(data.get("steps", 0) for data in activity_data) / len(
+                activity_data
+            )
             steps_progress = min(avg_steps / user_profile["daily_steps_goal"], 1.0)
             progress_score += steps_progress
             total_goals += 1
 
         # Sleep goal progress
         if sleep_data and user_profile.get("sleep_duration_goal_hours"):
-            avg_sleep = sum(data.get("duration_hours", 0) for data in sleep_data) / len(sleep_data)
-            sleep_progress = min(avg_sleep / user_profile["sleep_duration_goal_hours"], 1.0)
+            avg_sleep = sum(data.get("duration_hours", 0) for data in sleep_data) / len(
+                sleep_data
+            )
+            sleep_progress = min(
+                avg_sleep / user_profile["sleep_duration_goal_hours"], 1.0
+            )
             progress_score += sleep_progress
             total_goals += 1
 
@@ -413,8 +463,15 @@ class AuraWellOrchestrator:
                     priority=InsightPriority.LOW,
                     title=f"整体目标完成度: {overall_progress:.1f}%",
                     description=f"您的健康目标整体完成度为 {overall_progress:.1f}%",
-                    recommendations=["继续保持良好的健康习惯", "关注完成度较低的目标", "适当调整目标以保持挑战性"],
-                    data_points={"overall_progress": overall_progress, "goals_tracked": total_goals},
+                    recommendations=[
+                        "继续保持良好的健康习惯",
+                        "关注完成度较低的目标",
+                        "适当调整目标以保持挑战性",
+                    ],
+                    data_points={
+                        "overall_progress": overall_progress,
+                        "goals_tracked": total_goals,
+                    },
                     confidence_score=0.9,
                     generated_at=datetime.now(timezone.utc),
                 )
@@ -434,12 +491,20 @@ class AuraWellOrchestrator:
 
         try:
             # Prepare data summary for AI analysis
-            data_summary = self._prepare_data_summary(user_profile, activity_data, sleep_data, nutrition_data)
+            data_summary = self._prepare_data_summary(
+                user_profile, activity_data, sleep_data, nutrition_data
+            )
 
             # Create AI prompt
             messages = [
-                {"role": "system", "content": "你是AuraWell的健康分析专家。基于用户的健康数据，提供专业的健康洞察和建议。"},
-                {"role": "user", "content": f"请分析以下健康数据并提供洞察：\n{data_summary}"},
+                {
+                    "role": "system",
+                    "content": "你是AuraWell的健康分析专家。基于用户的健康数据，提供专业的健康洞察和建议。",
+                },
+                {
+                    "role": "user",
+                    "content": f"请分析以下健康数据并提供洞察：\n{data_summary}",
+                },
             ]
 
             # Get AI response
@@ -453,7 +518,11 @@ class AuraWellOrchestrator:
                 insight_type=InsightType.RECOMMENDATION,
                 priority=InsightPriority.MEDIUM,
                 title="AI健康分析",
-                description=response.content[:200] + "..." if len(response.content) > 200 else response.content,
+                description=(
+                    response.content[:200] + "..."
+                    if len(response.content) > 200
+                    else response.content
+                ),
                 recommendations=["基于AI分析的个性化建议"],
                 data_points={"ai_analysis": response.content},
                 confidence_score=0.8,
@@ -468,7 +537,10 @@ class AuraWellOrchestrator:
         return insights
 
     def _generate_ai_health_plan(
-        self, user_profile: Dict[str, Any], user_preferences: Dict[str, Any], recent_insights: List[HealthInsight]
+        self,
+        user_profile: Dict[str, Any],
+        user_preferences: Dict[str, Any],
+        recent_insights: List[HealthInsight],
     ) -> Dict[str, Any]:
         """Generate AI-powered health plan"""
         try:
@@ -477,13 +549,20 @@ class AuraWellOrchestrator:
                 "user_profile": user_profile,
                 "preferences": user_preferences,
                 "recent_insights": [
-                    {"type": insight.insight_type.value, "priority": insight.priority.value, "title": insight.title}
+                    {
+                        "type": insight.insight_type.value,
+                        "priority": insight.priority.value,
+                        "title": insight.title,
+                    }
                     for insight in recent_insights[:5]  # Top 5 insights
                 ],
             }
 
             messages = [
-                {"role": "system", "content": "你是AuraWell的健康计划专家。基于用户信息和健康洞察，制定个性化的30天健康计划。"},
+                {
+                    "role": "system",
+                    "content": "你是AuraWell的健康计划专家。基于用户信息和健康洞察，制定个性化的30天健康计划。",
+                },
                 {"role": "user", "content": f"请为以下用户制定健康计划：\n{context}"},
             ]
 
@@ -496,12 +575,28 @@ class AuraWellOrchestrator:
                 "title": "AI个性化健康计划",
                 "description": response.content,
                 "goals": [
-                    {"type": "daily_steps", "target": user_profile.get("daily_steps_goal", 10000)},
-                    {"type": "sleep_hours", "target": user_profile.get("sleep_duration_goal_hours", 8.0)},
+                    {
+                        "type": "daily_steps",
+                        "target": user_profile.get("daily_steps_goal", 10000),
+                    },
+                    {
+                        "type": "sleep_hours",
+                        "target": user_profile.get("sleep_duration_goal_hours", 8.0),
+                    },
                 ],
                 "daily_recommendations": [
-                    {"time": "morning", "title": "晨间运动", "activity": "晨间运动", "duration": 30},
-                    {"time": "evening", "title": "放松活动", "activity": "放松活动", "duration": 15},
+                    {
+                        "time": "morning",
+                        "title": "晨间运动",
+                        "activity": "晨间运动",
+                        "duration": 30,
+                    },
+                    {
+                        "time": "evening",
+                        "title": "放松活动",
+                        "activity": "放松活动",
+                        "duration": 15,
+                    },
                 ],
                 "weekly_targets": {"exercise_sessions": 3, "meditation_sessions": 5},
             }
@@ -527,22 +622,36 @@ class AuraWellOrchestrator:
 
         # Activity summary
         if activity_data:
-            avg_steps = sum(data.get("steps", 0) for data in activity_data) / len(activity_data)
-            summary_parts.append(f"活动数据: 最近{len(activity_data)}天平均步数{int(avg_steps)}步")
+            avg_steps = sum(data.get("steps", 0) for data in activity_data) / len(
+                activity_data
+            )
+            summary_parts.append(
+                f"活动数据: 最近{len(activity_data)}天平均步数{int(avg_steps)}步"
+            )
 
         # Sleep summary
         if sleep_data:
-            avg_sleep = sum(data.get("duration_hours", 0) for data in sleep_data) / len(sleep_data)
-            summary_parts.append(f"睡眠数据: 最近{len(sleep_data)}天平均睡眠{avg_sleep:.1f}小时")
+            avg_sleep = sum(data.get("duration_hours", 0) for data in sleep_data) / len(
+                sleep_data
+            )
+            summary_parts.append(
+                f"睡眠数据: 最近{len(sleep_data)}天平均睡眠{avg_sleep:.1f}小时"
+            )
 
         # Nutrition summary
         if nutrition_data:
-            avg_calories = sum(data.get("calories", 0) for data in nutrition_data) / len(nutrition_data)
-            summary_parts.append(f"营养数据: 最近{len(nutrition_data)}天平均摄入{int(avg_calories)}卡路里")
+            avg_calories = sum(
+                data.get("calories", 0) for data in nutrition_data
+            ) / len(nutrition_data)
+            summary_parts.append(
+                f"营养数据: 最近{len(nutrition_data)}天平均摄入{int(avg_calories)}卡路里"
+            )
 
         return "; ".join(summary_parts)
 
-    def _generate_daily_recommendations(self, user_id: str, target_date: datetime) -> List[Dict[str, Any]]:
+    def _generate_daily_recommendations(
+        self, user_id: str, target_date: datetime
+    ) -> List[Dict[str, Any]]:
         """Generate daily recommendations for a user"""
         # Default recommendations (in production, this would be more sophisticated)
         return [
@@ -585,26 +694,44 @@ class AuraWellOrchestrator:
                     "content": {
                         "daily_steps_goal": user_profile.get("daily_steps_goal", 10000),
                         "weekly_sessions": 3,
-                        "session_duration": 30
-                    }
+                        "session_duration": 30,
+                    },
                 },
                 {
                     "type": "sleep",
                     "title": "睡眠管理计划",
                     "description": "改善睡眠质量的建议",
                     "content": {
-                        "target_hours": user_profile.get("sleep_duration_goal_hours", 8.0),
-                        "bedtime_routine": ["避免电子设备", "放松活动", "规律作息"]
-                    }
-                }
+                        "target_hours": user_profile.get(
+                            "sleep_duration_goal_hours", 8.0
+                        ),
+                        "bedtime_routine": ["避免电子设备", "放松活动", "规律作息"],
+                    },
+                },
             ],
             "goals": [
-                {"type": "daily_steps", "target": user_profile.get("daily_steps_goal", 10000)},
-                {"type": "sleep_hours", "target": user_profile.get("sleep_duration_goal_hours", 8.0)},
+                {
+                    "type": "daily_steps",
+                    "target": user_profile.get("daily_steps_goal", 10000),
+                },
+                {
+                    "type": "sleep_hours",
+                    "target": user_profile.get("sleep_duration_goal_hours", 8.0),
+                },
             ],
             "daily_recommendations": [
-                {"time": "morning", "title": "轻度运动", "activity": "轻度运动", "duration": 30},
-                {"time": "evening", "title": "放松时间", "activity": "放松时间", "duration": 15},
+                {
+                    "time": "morning",
+                    "title": "轻度运动",
+                    "activity": "轻度运动",
+                    "duration": 30,
+                },
+                {
+                    "time": "evening",
+                    "title": "放松时间",
+                    "activity": "放松时间",
+                    "duration": 15,
+                },
             ],
             "weekly_targets": {"exercise_sessions": 3, "rest_days": 1},
         }
