@@ -6,9 +6,14 @@ Tests all major API endpoints and functionality.
 
 import pytest
 import asyncio
+import sys
+import os
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 import json
+
+# Add the src directory to Python path for new structure
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 # Import the FastAPI app
 from aurawell.interfaces.api_interface import app
