@@ -79,6 +79,28 @@ class HealthChatRequest(BaseModel):
     context: Optional[Dict[str, Any]] = None
 
 
+class HealthChatRequest(BaseModel):
+    """Enhanced health chat request with conversation context"""
+    message: str = Field(..., min_length=1, max_length=2000)
+    conversation_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+
+class EnhancedHealthChatRequest(BaseModel):
+    """Enhanced health chat request with member context"""
+    message: str = Field(..., min_length=1, max_length=2000)
+    conversation_id: Optional[str] = None
+    member_id: Optional[str] = Field(None, description="Active family member ID for data isolation")
+    context: Optional[Dict[str, Any]] = None
+
+    @field_validator('member_id')
+    @classmethod
+    def validate_member_id(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError('Member ID cannot be empty string')
+        return v
+
+
 class HealthChatResponse(BaseResponse):
     """Enhanced health chat response with suggestions and quick replies"""
     reply: str
