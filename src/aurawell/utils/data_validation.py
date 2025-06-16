@@ -74,36 +74,49 @@ def validate_health_metrics(data: Dict[str, Any]) -> Dict[str, List[str]]:
 
     # Validate steps
     if "steps" in data:
-        if not isinstance(data["steps"], (int, type(None))) or (data["steps"] is not None and data["steps"] < 0):
-            errors.setdefault("steps", []).append("Steps must be a non-negative integer or None")
+        if not isinstance(data["steps"], (int, type(None))) or (
+            data["steps"] is not None and data["steps"] < 0
+        ):
+            errors.setdefault("steps", []).append(
+                "Steps must be a non-negative integer or None"
+            )
 
     # Validate weight
     if "weight_kg" in data:
         if not isinstance(data["weight_kg"], (float, int, type(None))) or (
             data["weight_kg"] is not None and not 20 <= data["weight_kg"] <= 300
         ):
-            errors.setdefault("weight_kg", []).append("Weight must be between 20-300 kg")
+            errors.setdefault("weight_kg", []).append(
+                "Weight must be between 20-300 kg"
+            )
 
     # Validate height
     if "height_cm" in data:
         if not isinstance(data["height_cm"], (float, int, type(None))) or (
             data["height_cm"] is not None and not 50 <= data["height_cm"] <= 250
         ):
-            errors.setdefault("height_cm", []).append("Height must be between 50-250 cm")
+            errors.setdefault("height_cm", []).append(
+                "Height must be between 50-250 cm"
+            )
 
     # Validate heart rate
     if "heart_rate_bpm" in data:
         if not isinstance(data["heart_rate_bpm"], (int, type(None))) or (
-            data["heart_rate_bpm"] is not None and not 30 <= data["heart_rate_bpm"] <= 220
+            data["heart_rate_bpm"] is not None
+            and not 30 <= data["heart_rate_bpm"] <= 220
         ):
-            errors.setdefault("heart_rate_bpm", []).append("Heart rate must be between 30-220 BPM")
+            errors.setdefault("heart_rate_bpm", []).append(
+                "Heart rate must be between 30-220 BPM"
+            )
 
     # Validate sleep duration
     if "sleep_hours" in data:
         if not isinstance(data["sleep_hours"], (float, int, type(None))) or (
             data["sleep_hours"] is not None and not 0 <= data["sleep_hours"] <= 24
         ):
-            errors.setdefault("sleep_hours", []).append("Sleep hours must be between 0-24")
+            errors.setdefault("sleep_hours", []).append(
+                "Sleep hours must be between 0-24"
+            )
 
     return errors
 
@@ -207,7 +220,9 @@ def validate_date_range(date_range: str) -> bool:
         start_str, end_str = date_range.split("_to_")
 
         # 验证日期格式
-        if not validate_date_string(start_str.strip()) or not validate_date_string(end_str.strip()):
+        if not validate_date_string(start_str.strip()) or not validate_date_string(
+            end_str.strip()
+        ):
             return False
 
         # 验证日期逻辑
@@ -234,7 +249,11 @@ def validate_goals(goals: Dict[str, Any]) -> bool:
         return False
 
     valid_goal_keys = {
-        'daily_steps', 'sleep_hours', 'daily_calories', 'weight_target', 'target_date'
+        "daily_steps",
+        "sleep_hours",
+        "daily_calories",
+        "weight_target",
+        "target_date",
     }
 
     # 检查是否包含有效的目标键
@@ -242,27 +261,39 @@ def validate_goals(goals: Dict[str, Any]) -> bool:
         return False
 
     # 验证各个目标值
-    if 'daily_steps' in goals:
-        if not isinstance(goals['daily_steps'], (int, float)) or not 1000 <= goals['daily_steps'] <= 50000:
+    if "daily_steps" in goals:
+        if (
+            not isinstance(goals["daily_steps"], (int, float))
+            or not 1000 <= goals["daily_steps"] <= 50000
+        ):
             return False
 
-    if 'sleep_hours' in goals:
-        if not isinstance(goals['sleep_hours'], (int, float)) or not 4.0 <= goals['sleep_hours'] <= 12.0:
+    if "sleep_hours" in goals:
+        if (
+            not isinstance(goals["sleep_hours"], (int, float))
+            or not 4.0 <= goals["sleep_hours"] <= 12.0
+        ):
             return False
 
-    if 'daily_calories' in goals:
-        if not isinstance(goals['daily_calories'], (int, float)) or not 200 <= goals['daily_calories'] <= 5000:
+    if "daily_calories" in goals:
+        if (
+            not isinstance(goals["daily_calories"], (int, float))
+            or not 200 <= goals["daily_calories"] <= 5000
+        ):
             return False
 
-    if 'weight_target' in goals:
-        if not isinstance(goals['weight_target'], (int, float)) or not 30 <= goals['weight_target'] <= 300:
+    if "weight_target" in goals:
+        if (
+            not isinstance(goals["weight_target"], (int, float))
+            or not 30 <= goals["weight_target"] <= 300
+        ):
             return False
 
-    if 'target_date' in goals:
-        if goals['target_date'] is not None:
-            if not isinstance(goals['target_date'], str):
+    if "target_date" in goals:
+        if goals["target_date"] is not None:
+            if not isinstance(goals["target_date"], str):
                 return False
-            if not validate_date_string(goals['target_date']):
+            if not validate_date_string(goals["target_date"]):
                 return False
 
     return True

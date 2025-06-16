@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 try:
     import redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -25,10 +26,14 @@ logger = logging.getLogger(__name__)
 class CacheManager:
     """Redis-based cache manager for AuraWell API"""
 
-    def __init__(self, redis_url: str = "redis://localhost:6379/0", enabled: bool = True):
+    def __init__(
+        self, redis_url: str = "redis://localhost:6379/0", enabled: bool = True
+    ):
         self.enabled = enabled and REDIS_AVAILABLE
         self.redis_client = None
-        self.executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="redis_cache")
+        self.executor = ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="redis_cache"
+        )
 
         if self.enabled:
             try:
@@ -41,18 +46,15 @@ class CacheManager:
                 self.enabled = False
         else:
             logger.info("Cache disabled or Redis not available")
-    
+
     def _generate_key(self, prefix: str, *args, **kwargs) -> str:
         """Generate cache key from prefix and parameters"""
         # Create a deterministic key from arguments
-        key_data = {
-            'args': args,
-            'kwargs': sorted(kwargs.items())
-        }
+        key_data = {"args": args, "kwargs": sorted(kwargs.items())}
         key_str = json.dumps(key_data, sort_keys=True, default=str)
         key_hash = hashlib.md5(key_str.encode()).hexdigest()[:8]
         return f"aurawell:{prefix}:{key_hash}"
-    
+
     async def get(self, key: str) -> Optional[Any]:
         """Get value from cache"""
         if not self.enabled:
@@ -60,14 +62,16 @@ class CacheManager:
 
         try:
             loop = asyncio.get_event_loop()
-            value = await loop.run_in_executor(self.executor, self.redis_client.get, key)
+            value = await loop.run_in_executor(
+                self.executor, self.redis_client.get, key
+            )
             if value:
                 return json.loads(value)
         except Exception as e:
             logger.warning(f"Cache get error for key {key}: {e}")
 
         return None
-    
+
     async def set(self, key: str, value: Any, ttl: int = 300) -> bool:
         """Set value in cache with TTL (seconds)"""
         if not self.enabled:
@@ -83,7 +87,7 @@ class CacheManager:
         except Exception as e:
             logger.warning(f"Cache set error for key {key}: {e}")
             return False
-    
+
     async def delete(self, key: str) -> bool:
         """Delete key from cache"""
         if not self.enabled:
@@ -91,12 +95,14 @@ class CacheManager:
 
         try:
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(self.executor, self.redis_client.delete, key)
+            result = await loop.run_in_executor(
+                self.executor, self.redis_client.delete, key
+            )
             return bool(result)
         except Exception as e:
             logger.warning(f"Cache delete error for key {key}: {e}")
             return False
-    
+
     async def clear_pattern(self, pattern: str) -> int:
         """Clear all keys matching pattern"""
         if not self.enabled:
@@ -104,9 +110,13 @@ class CacheManager:
 
         try:
             loop = asyncio.get_event_loop()
-            keys = await loop.run_in_executor(self.executor, self.redis_client.keys, pattern)
+            keys = await loop.run_in_executor(
+                self.executor, self.redis_client.keys, pattern
+            )
             if keys:
-                result = await loop.run_in_executor(self.executor, self.redis_client.delete, *keys)
+                result = await loop.run_in_executor(
+                    self.executor, self.redis_client.delete, *keys
+                )
                 return result
             return 0
         except Exception as e:
@@ -120,28 +130,30 @@ class CacheManager:
 
     def cache_key(self, prefix: str, ttl: int = 300):
         """Decorator for caching function results"""
+
         def decorator(func):
             @wraps(func)
             async def wrapper(*args, **kwargs):
                 # Generate cache key
                 cache_key = self._generate_key(prefix, *args, **kwargs)
-                
+
                 # Try to get from cache
                 cached_result = await self.get(cache_key)
                 if cached_result is not None:
                     logger.debug(f"Cache hit for {func.__name__}")
                     return cached_result
-                
+
                 # Execute function
                 result = await func(*args, **kwargs)
-                
+
                 # Cache the result
                 await self.set(cache_key, result, ttl)
                 logger.debug(f"Cache miss for {func.__name__}, result cached")
-                
+
                 return result
-            
+
             return wrapper
+
         return decorator
 
 
@@ -198,31 +210,27 @@ async def invalidate_health_cache(user_id: str):
 # Performance monitoring
 class PerformanceMonitor:
     """Monitor API performance metrics"""
-    
+
     def __init__(self):
         self.request_times: Dict[str, list] = {}
-        self.cache_stats = {
-            'hits': 0,
-            'misses': 0,
-            'errors': 0
-        }
-    
+        self.cache_stats = {"hits": 0, "misses": 0, "errors": 0}
+
     def record_request_time(self, endpoint: str, duration: float):
         """Record request processing time"""
         if endpoint not in self.request_times:
             self.request_times[endpoint] = []
-        
+
         self.request_times[endpoint].append(duration)
-        
+
         # Keep only last 100 requests per endpoint
         if len(self.request_times[endpoint]) > 100:
             self.request_times[endpoint] = self.request_times[endpoint][-100:]
-    
+
     def get_average_response_time(self, endpoint: str) -> float:
         """Get average response time for endpoint"""
         times = self.request_times.get(endpoint, [])
         return sum(times) / len(times) if times else 0.0
-    
+
     def get_slow_endpoints(self, threshold: float = 0.5) -> Dict[str, float]:
         """Get endpoints with average response time above threshold"""
         slow_endpoints = {}
@@ -231,23 +239,23 @@ class PerformanceMonitor:
             if avg_time > threshold:
                 slow_endpoints[endpoint] = avg_time
         return slow_endpoints
-    
+
     def record_cache_hit(self):
         """Record cache hit"""
-        self.cache_stats['hits'] += 1
-    
+        self.cache_stats["hits"] += 1
+
     def record_cache_miss(self):
         """Record cache miss"""
-        self.cache_stats['misses'] += 1
-    
+        self.cache_stats["misses"] += 1
+
     def record_cache_error(self):
         """Record cache error"""
-        self.cache_stats['errors'] += 1
-    
+        self.cache_stats["errors"] += 1
+
     def get_cache_hit_rate(self) -> float:
         """Get cache hit rate percentage"""
-        total = self.cache_stats['hits'] + self.cache_stats['misses']
-        return (self.cache_stats['hits'] / total * 100) if total > 0 else 0.0
+        total = self.cache_stats["hits"] + self.cache_stats["misses"]
+        return (self.cache_stats["hits"] / total * 100) if total > 0 else 0.0
 
 
 # Global performance monitor
