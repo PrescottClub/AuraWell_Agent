@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class SectionType(Enum):
     """Health advice section types"""
+
     DIET = "饮食"
     EXERCISE = "运动"
     WEIGHT = "体重"
@@ -28,6 +29,7 @@ class SectionType(Enum):
 @dataclass
 class HealthSection:
     """Enhanced health section with completeness scoring"""
+
     section_type: SectionType
     content: str
     recommendations: List[str]
@@ -36,6 +38,7 @@ class HealthSection:
 
 class HealthAdviceSection(BaseModel):
     """Single health advice section (Pydantic model for API compatibility)"""
+
     title: str
     content: str
     recommendations: List[str] = []
@@ -44,6 +47,7 @@ class HealthAdviceSection(BaseModel):
 
 class HealthAdviceResponse(BaseModel):
     """Complete health advice response with all sections"""
+
     diet: HealthAdviceSection
     exercise: HealthAdviceSection
     weight: HealthAdviceSection
@@ -69,20 +73,14 @@ class FiveSectionParser:
     - Quality assessment for each section
     """
 
-    REQUIRED_SECTIONS = [
-        "### 饮食",
-        "### 运动",
-        "### 体重",
-        "### 睡眠",
-        "### 心理"
-    ]
+    REQUIRED_SECTIONS = ["### 饮食", "### 运动", "### 体重", "### 睡眠", "### 心理"]
 
     SECTION_PATTERNS = {
         "diet": r"### 饮食\n(.*?)(?=### |$)",
         "exercise": r"### 运动\n(.*?)(?=### |$)",
         "weight": r"### 体重\n(.*?)(?=### |$)",
         "sleep": r"### 睡眠\n(.*?)(?=### |$)",
-        "mental_health": r"### 心理\n(.*?)(?=### |$)"
+        "mental_health": r"### 心理\n(.*?)(?=### |$)",
     }
 
     def __init__(self):
@@ -130,26 +128,28 @@ class FiveSectionParser:
 
                 # Extract recommendations (lines starting with -)
                 recommendations = []
-                for line in content.split('\n'):
-                    if line.strip().startswith('-') or line.strip().startswith('•'):
+                for line in content.split("\n"):
+                    if line.strip().startswith("-") or line.strip().startswith("•"):
                         recommendations.append(line.strip()[1:].strip())
 
                 sections[section_key] = HealthAdviceSection(
                     title=self._get_section_title(section_key),
                     content=content,
-                    recommendations=recommendations
+                    recommendations=recommendations,
                 )
             else:
                 self.logger.warning(f"Section {section_key} not found in response")
                 sections[section_key] = HealthAdviceSection(
                     title=self._get_section_title(section_key),
                     content="内容生成中，请稍后重试...",
-                    recommendations=[]
+                    recommendations=[],
                 )
 
         return sections
 
-    def parse_and_validate(self, content: str) -> Tuple[Dict[str, HealthSection], List[str]]:
+    def parse_and_validate(
+        self, content: str
+    ) -> Tuple[Dict[str, HealthSection], List[str]]:
         """
         Enhanced parsing with validation and completeness scoring
 
@@ -189,7 +189,7 @@ class FiveSectionParser:
                 section_type=section_type,
                 content=section_content,
                 recommendations=recommendations,
-                completeness_score=completeness
+                completeness_score=completeness,
             )
 
         return sections, errors
@@ -197,9 +197,9 @@ class FiveSectionParser:
     def _extract_recommendations(self, content: str) -> List[str]:
         """Extract bullet point recommendations with enhanced patterns"""
         patterns = [
-            r'[•·-]\s*(.+)',  # Bullet points
-            r'^\d+\.\s*(.+)',  # Numbered lists
-            r'^\*\s*(.+)',     # Asterisk bullets
+            r"[•·-]\s*(.+)",  # Bullet points
+            r"^\d+\.\s*(.+)",  # Numbered lists
+            r"^\*\s*(.+)",  # Asterisk bullets
         ]
 
         recommendations = []
@@ -213,11 +213,19 @@ class FiveSectionParser:
         """Calculate section completeness score based on expected elements"""
 
         expected_elements = {
-            SectionType.DIET: ["热量", "营养", "食材", "时间", "蛋白质", "碳水", "脂肪"],
+            SectionType.DIET: [
+                "热量",
+                "营养",
+                "食材",
+                "时间",
+                "蛋白质",
+                "碳水",
+                "脂肪",
+            ],
             SectionType.EXERCISE: ["有氧", "力量", "频次", "强度", "运动", "训练"],
             SectionType.WEIGHT: ["BMI", "目标", "监测", "变化", "体重", "减重", "增重"],
             SectionType.SLEEP: ["时长", "作息", "环境", "质量", "睡眠", "小时"],
-            SectionType.MENTAL: ["压力", "情绪", "激励", "支持", "心理", "心态"]
+            SectionType.MENTAL: ["压力", "情绪", "激励", "支持", "心理", "心态"],
         }
 
         elements = expected_elements.get(section_type, [])
@@ -235,7 +243,9 @@ class FiveSectionParser:
     def should_retry_parse(self, errors: List[str]) -> bool:
         """Determine if parsing should be retried"""
         critical_errors = [error for error in errors if "缺失模块" in error]
-        return len(critical_errors) > 0 and len(critical_errors) <= 3  # Retry if 1-3 modules missing
+        return (
+            len(critical_errors) > 0 and len(critical_errors) <= 3
+        )  # Retry if 1-3 modules missing
 
     def is_complete(self, response: str) -> bool:
         """
@@ -263,7 +273,9 @@ class FiveSectionParser:
         validation = self.validate_sections(response)
         return [section for section, present in validation.items() if not present]
 
-    def generate_completion_prompt(self, missing_sections: List[str], user_context: Dict[str, Any]) -> str:
+    def generate_completion_prompt(
+        self, missing_sections: List[str], user_context: Dict[str, Any]
+    ) -> str:
         """
         Generate enhanced prompt to complete missing sections
 
@@ -295,7 +307,7 @@ class FiveSectionParser:
             "### 运动": "根据用户体质和目标，制定合适的运动计划，包括运动类型、强度、频次等。",
             "### 体重": "基于用户当前状况，提供科学的体重管理建议和目标设定。",
             "### 睡眠": "针对用户睡眠质量，提供改善睡眠的具体方法和作息建议。",
-            "### 心理": "从心理健康角度提供情绪管理、压力缓解的实用建议。"
+            "### 心理": "从心理健康角度提供情绪管理、压力缓解的实用建议。",
         }
 
         for section in missing_sections:
@@ -311,11 +323,13 @@ class FiveSectionParser:
             "exercise": "运动计划",
             "weight": "体重管理",
             "sleep": "睡眠优化",
-            "mental_health": "心理健康"
+            "mental_health": "心理健康",
         }
         return titles.get(section_key, section_key)
 
-    def format_structured_response(self, sections: Dict[str, HealthAdviceSection], user_id: str) -> HealthAdviceResponse:
+    def format_structured_response(
+        self, sections: Dict[str, HealthAdviceSection], user_id: str
+    ) -> HealthAdviceResponse:
         """
         Format parsed sections into structured response
 
@@ -327,11 +341,22 @@ class FiveSectionParser:
             Structured HealthAdviceResponse
         """
         return HealthAdviceResponse(
-            diet=sections.get("diet", HealthAdviceSection(title="饮食建议", content="暂无建议")),
-            exercise=sections.get("exercise", HealthAdviceSection(title="运动计划", content="暂无建议")),
-            weight=sections.get("weight", HealthAdviceSection(title="体重管理", content="暂无建议")),
-            sleep=sections.get("sleep", HealthAdviceSection(title="睡眠优化", content="暂无建议")),
-            mental_health=sections.get("mental_health", HealthAdviceSection(title="心理健康", content="暂无建议")),
+            diet=sections.get(
+                "diet", HealthAdviceSection(title="饮食建议", content="暂无建议")
+            ),
+            exercise=sections.get(
+                "exercise", HealthAdviceSection(title="运动计划", content="暂无建议")
+            ),
+            weight=sections.get(
+                "weight", HealthAdviceSection(title="体重管理", content="暂无建议")
+            ),
+            sleep=sections.get(
+                "sleep", HealthAdviceSection(title="睡眠优化", content="暂无建议")
+            ),
+            mental_health=sections.get(
+                "mental_health",
+                HealthAdviceSection(title="心理健康", content="暂无建议"),
+            ),
             generated_at=datetime.now().isoformat(),
-            user_id=user_id
+            user_id=user_id,
         )

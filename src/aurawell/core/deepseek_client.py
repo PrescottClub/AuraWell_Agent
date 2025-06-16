@@ -57,9 +57,13 @@ class DeepSeekClient:
         """
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         if not self.api_key:
-            raise ValueError("DeepSeek API key not provided. Set DEEPSEEK_API_KEY environment variable.")
+            raise ValueError(
+                "DeepSeek API key not provided. Set DEEPSEEK_API_KEY environment variable."
+            )
 
-        self.client = OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com/v1")
+        self.client = OpenAI(
+            api_key=self.api_key, base_url="https://api.deepseek.com/v1"
+        )
 
         logger.info("DeepSeek client initialized successfully")
 
@@ -120,10 +124,15 @@ class DeepSeekClient:
                         {
                             "id": tool_call.id,
                             "type": tool_call.type,
-                            "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments},
+                            "function": {
+                                "name": tool_call.function.name,
+                                "arguments": tool_call.function.arguments,
+                            },
                         }
                     )
-                logger.info(f"Function calls requested: {[tc['function']['name'] for tc in tool_calls]}")
+                logger.info(
+                    f"Function calls requested: {[tc['function']['name'] for tc in tool_calls]}"
+                )
 
             # Track usage
             usage = None
@@ -191,7 +200,9 @@ class DeepSeekClient:
                 api_params["tools"] = tools
                 api_params["tool_choice"] = "auto"
 
-            logger.info(f"Making streaming API call to DeepSeek with model: {model_name}")
+            logger.info(
+                f"Making streaming API call to DeepSeek with model: {model_name}"
+            )
             logger.debug(f"Messages: {json.dumps(messages, ensure_ascii=False)}")
 
             # Make streaming API call
@@ -202,12 +213,14 @@ class DeepSeekClient:
             for chunk in stream:
                 if chunk.choices and len(chunk.choices) > 0:
                     delta = chunk.choices[0].delta
-                    if hasattr(delta, 'content') and delta.content:
+                    if hasattr(delta, "content") and delta.content:
                         token = delta.content
                         full_content += token
                         yield token
 
-            logger.info(f"Streaming response completed. Total length: {len(full_content)}")
+            logger.info(
+                f"Streaming response completed. Total length: {len(full_content)}"
+            )
 
         except Exception as e:
             logger.error(f"DeepSeek streaming API call failed: {str(e)}")
@@ -232,7 +245,10 @@ def create_health_tools() -> List[Dict[str, Any]]:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "date": {"type": "string", "description": "日期格式 YYYY-MM-DD"},
+                        "date": {
+                            "type": "string",
+                            "description": "日期格式 YYYY-MM-DD",
+                        },
                         "time_window": {
                             "type": "string",
                             "enum": ["morning", "afternoon", "evening", "all_day"],
@@ -258,13 +274,30 @@ def create_health_tools() -> List[Dict[str, Any]]:
                         },
                         "data_type": {
                             "type": "string",
-                            "enum": ["steps", "sleep_summary", "heart_rate", "workout", "nutrition"],
+                            "enum": [
+                                "steps",
+                                "sleep_summary",
+                                "heart_rate",
+                                "workout",
+                                "nutrition",
+                            ],
                             "description": "数据类型",
                         },
-                        "start_date": {"type": "string", "description": "开始日期 YYYY-MM-DD"},
-                        "end_date": {"type": "string", "description": "结束日期 YYYY-MM-DD"},
+                        "start_date": {
+                            "type": "string",
+                            "description": "开始日期 YYYY-MM-DD",
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "结束日期 YYYY-MM-DD",
+                        },
                     },
-                    "required": ["platform_name", "data_type", "start_date", "end_date"],
+                    "required": [
+                        "platform_name",
+                        "data_type",
+                        "start_date",
+                        "end_date",
+                    ],
                 },
             },
         },
@@ -284,12 +317,20 @@ def demo_function_calling():
     tools = create_health_tools()
 
     messages = [
-        {"role": "system", "content": "你是AuraWell健康助手，专注于个性化健康建议。根据用户的健康数据和日程安排提供建议。"},
-        {"role": "user", "content": "我想了解一下今天的健康状况，请帮我获取步数和睡眠数据，日期是2024-01-15"},
+        {
+            "role": "system",
+            "content": "你是AuraWell健康助手，专注于个性化健康建议。根据用户的健康数据和日程安排提供建议。",
+        },
+        {
+            "role": "user",
+            "content": "我想了解一下今天的健康状况，请帮我获取步数和睡眠数据，日期是2024-01-15",
+        },
     ]
 
     try:
-        response = client.get_deepseek_response(messages=messages, tools=tools, model_name="deepseek-reasoner")
+        response = client.get_deepseek_response(
+            messages=messages, tools=tools, model_name="deepseek-reasoner"
+        )
 
         print(f"Response: {response.content}")
 

@@ -64,7 +64,11 @@ class SecurityLogFilter(logging.Filter):
             (r"(Bearer\s+)([^\s]+)", r"\1***REDACTED***"),
             (
                 r"([a-zA-Z0-9]{32,})",
-                lambda m: m.group(1)[:4] + "***REDACTED***" if len(m.group(1)) > 10 else m.group(1),
+                lambda m: (
+                    m.group(1)[:4] + "***REDACTED***"
+                    if len(m.group(1)) > 10
+                    else m.group(1)
+                ),
             ),
         ]
 
@@ -162,9 +166,14 @@ def setup_logging(
         formatter = AuraWellFormatter(include_context=True)
         console_formatter = AuraWellFormatter(include_context=False)
     else:
-        format_string = "%(asctime)s - %(name)s - %(levelname)s - " "%(module)s:%(funcName)s:%(lineno)d - %(message)s"
+        format_string = (
+            "%(asctime)s - %(name)s - %(levelname)s - "
+            "%(module)s:%(funcName)s:%(lineno)d - %(message)s"
+        )
         formatter = logging.Formatter(format_string)
-        console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+        console_formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+        )
 
     # Configure handlers
     handlers = []
@@ -195,14 +204,18 @@ def setup_logging(
         handlers.append(error_handler)
 
     # Configure root logger
-    logging.basicConfig(level=getattr(logging, log_level.upper()), handlers=handlers, force=True)
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()), handlers=handlers, force=True
+    )
 
     # Configure specific loggers
     configure_aurawell_loggers(log_level)
 
     # Log configuration info
     logger = logging.getLogger(__name__)
-    logger.info(f"Logging configured - Level: {log_level}, Structured: {enable_structured}")
+    logger.info(
+        f"Logging configured - Level: {log_level}, Structured: {enable_structured}"
+    )
 
 
 def configure_aurawell_loggers(log_level: str) -> None:
@@ -226,7 +239,12 @@ def configure_aurawell_loggers(log_level: str) -> None:
         logger.setLevel(getattr(logging, level.upper()))
 
     # External library loggers (usually more verbose)
-    external_loggers = {"requests": "WARNING", "urllib3": "WARNING", "openai": "INFO", "httpx": "WARNING"}
+    external_loggers = {
+        "requests": "WARNING",
+        "urllib3": "WARNING",
+        "openai": "INFO",
+        "httpx": "WARNING",
+    }
 
     for logger_name, level in external_loggers.items():
         logger = logging.getLogger(logger_name)
@@ -298,7 +316,8 @@ def log_health_data_access(
 
     # Use extra parameter to pass structured data
     audit_logger.info(
-        f"Health data access: {action} {data_type} from {platform} for user {user_id}", extra={"context": audit_entry}
+        f"Health data access: {action} {data_type} from {platform} for user {user_id}",
+        extra={"context": audit_entry},
     )
 
 
@@ -339,7 +358,8 @@ def log_ai_interaction(
         audit_entry["context"] = additional_context
 
     audit_logger.info(
-        f"AI interaction: {interaction_type} using {model_used} for user {user_id}", extra={"context": audit_entry}
+        f"AI interaction: {interaction_type} using {model_used} for user {user_id}",
+        extra={"context": audit_entry},
     )
 
 
@@ -413,7 +433,11 @@ DEFAULT_LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "aurawell": {"level": "DEBUG", "handlers": ["console", "file"], "propagate": False},
+        "aurawell": {
+            "level": "DEBUG",
+            "handlers": ["console", "file"],
+            "propagate": False,
+        },
         "aurawell.audit": {"level": "INFO", "handlers": ["file"], "propagate": False},
     },
     "root": {"level": "INFO", "handlers": ["console"]},

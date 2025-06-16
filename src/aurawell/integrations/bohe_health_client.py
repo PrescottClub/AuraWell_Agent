@@ -76,12 +76,16 @@ class BoheHealthClient(GenericHealthAPIClient):
                 self.credentials.access_token = response["access_token"]
                 if "expires_in" in response:
                     expires_in = int(response["expires_in"])
-                    self.credentials.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    self.credentials.token_expires_at = datetime.now() + timedelta(
+                        seconds=expires_in
+                    )
 
                 logger.info("Bohe Health authentication successful")
                 return True
 
-            logger.error("Bohe Health authentication failed: No access token in response")
+            logger.error(
+                "Bohe Health authentication failed: No access token in response"
+            )
             return False
 
         except Exception as e:
@@ -113,7 +117,9 @@ class BoheHealthClient(GenericHealthAPIClient):
                 self.credentials.access_token = response["access_token"]
                 if "expires_in" in response:
                     expires_in = int(response["expires_in"])
-                    self.credentials.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    self.credentials.token_expires_at = datetime.now() + timedelta(
+                        seconds=expires_in
+                    )
 
                 logger.info("Bohe Health token refresh successful")
                 return True
@@ -167,19 +173,27 @@ class BoheHealthClient(GenericHealthAPIClient):
             raise HealthAPIError("Authentication required for nutrition data access")
 
         try:
-            params = {"start_date": start_date, "end_date": end_date, "include_details": include_details}
+            params = {
+                "start_date": start_date,
+                "end_date": end_date,
+                "include_details": include_details,
+            }
 
             endpoint = f"/users/{user_id}/nutrition"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved nutrition data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved nutrition data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
             logger.error(f"Failed to get nutrition data: {e}")
             raise HealthAPIError(f"Failed to retrieve nutrition data: {e}")
 
-    def get_weight_data(self, user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
+    def get_weight_data(
+        self, user_id: str, start_date: str, end_date: str
+    ) -> Dict[str, Any]:
         """
         Get weight tracking data from 薄荷健康
 
@@ -200,7 +214,9 @@ class BoheHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/weight"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved weight data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved weight data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -227,7 +243,9 @@ class BoheHealthClient(GenericHealthAPIClient):
             endpoint = "/foods/search"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Food database search for '{query}' returned {len(response.get('foods', []))} results")
+            logger.info(
+                f"Food database search for '{query}' returned {len(response.get('foods', []))} results"
+            )
             return response
 
         except Exception as e:
@@ -235,7 +253,11 @@ class BoheHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to search food database: {e}")
 
     def get_activity_data(
-        self, user_id: str, start_date: str, end_date: str, data_types: Optional[List[str]] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        data_types: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Get activity data from 薄荷健康 (if available)
@@ -261,7 +283,9 @@ class BoheHealthClient(GenericHealthAPIClient):
             endpoint = f"/users/{user_id}/activities"
             response = self.get(endpoint, params=params)
 
-            logger.info(f"Retrieved activity data for {user_id} from {start_date} to {end_date}")
+            logger.info(
+                f"Retrieved activity data for {user_id} from {start_date} to {end_date}"
+            )
             return response
 
         except Exception as e:
@@ -269,7 +293,12 @@ class BoheHealthClient(GenericHealthAPIClient):
             raise HealthAPIError(f"Failed to retrieve activity data: {e}")
 
     def log_food_entry(
-        self, user_id: str, food_id: str, serving_size: float, meal_type: str, timestamp: Optional[datetime] = None
+        self,
+        user_id: str,
+        food_id: str,
+        serving_size: float,
+        meal_type: str,
+        timestamp: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """
         Log a food entry for the user

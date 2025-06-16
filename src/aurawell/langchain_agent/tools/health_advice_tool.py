@@ -41,7 +41,7 @@ class HealthAdviceTool:
         self,
         goal_type: Optional[str] = None,
         duration_weeks: int = 4,
-        special_requirements: Optional[str] = None
+        special_requirements: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate comprehensive health advice with five required sections
@@ -55,19 +55,23 @@ class HealthAdviceTool:
             Structured health advice with all five modules
         """
         try:
-            self.logger.info(f"Generating five-section health advice for user: {self.user_id}")
+            self.logger.info(
+                f"Generating five-section health advice for user: {self.user_id}"
+            )
 
             # Parse special requirements
             requirements_list = []
             if special_requirements:
-                requirements_list = [req.strip() for req in special_requirements.split(',')]
+                requirements_list = [
+                    req.strip() for req in special_requirements.split(",")
+                ]
 
             # Generate comprehensive advice
             advice_response = await self.service.generate_comprehensive_advice(
                 user_id=self.user_id,
                 goal_type=goal_type,
                 duration_weeks=duration_weeks,
-                special_requirements=requirements_list
+                special_requirements=requirements_list,
             )
 
             # Format response for LangChain consumption
@@ -77,33 +81,33 @@ class HealthAdviceTool:
                     "diet": {
                         "title": advice_response.diet.title,
                         "content": advice_response.diet.content,
-                        "recommendations": advice_response.diet.recommendations
+                        "recommendations": advice_response.diet.recommendations,
                     },
                     "exercise": {
                         "title": advice_response.exercise.title,
                         "content": advice_response.exercise.content,
-                        "recommendations": advice_response.exercise.recommendations
+                        "recommendations": advice_response.exercise.recommendations,
                     },
                     "weight": {
                         "title": advice_response.weight.title,
                         "content": advice_response.weight.content,
-                        "recommendations": advice_response.weight.recommendations
+                        "recommendations": advice_response.weight.recommendations,
                     },
                     "sleep": {
                         "title": advice_response.sleep.title,
                         "content": advice_response.sleep.content,
-                        "recommendations": advice_response.sleep.recommendations
+                        "recommendations": advice_response.sleep.recommendations,
                     },
                     "mental_health": {
                         "title": advice_response.mental_health.title,
                         "content": advice_response.mental_health.content,
-                        "recommendations": advice_response.mental_health.recommendations
-                    }
+                        "recommendations": advice_response.mental_health.recommendations,
+                    },
                 },
                 "summary": advice_response.summary,
                 "generated_at": advice_response.generated_at,
                 "user_id": advice_response.user_id,
-                "formatted_text": self._format_advice_text(advice_response)
+                "formatted_text": self._format_advice_text(advice_response),
             }
 
         except Exception as e:
@@ -111,7 +115,7 @@ class HealthAdviceTool:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "生成健康建议时遇到问题，请稍后重试"
+                "message": "生成健康建议时遇到问题，请稍后重试",
             }
 
     async def generate_quick_topic_advice(self, topic: str) -> Dict[str, Any]:
@@ -128,8 +132,7 @@ class HealthAdviceTool:
             self.logger.info(f"Generating quick advice for topic: {topic}")
 
             advice_text = await self.service.generate_quick_advice(
-                user_id=self.user_id,
-                topic=topic
+                user_id=self.user_id, topic=topic
             )
 
             return {
@@ -137,7 +140,7 @@ class HealthAdviceTool:
                 "topic": topic,
                 "advice": advice_text,
                 "user_id": self.user_id,
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.now().isoformat(),
             }
 
         except Exception as e:
@@ -146,7 +149,7 @@ class HealthAdviceTool:
                 "success": False,
                 "error": str(e),
                 "topic": topic,
-                "message": f"生成{topic}建议时遇到问题，请稍后重试"
+                "message": f"生成{topic}建议时遇到问题，请稍后重试",
             }
 
     def _format_advice_text(self, advice_response: HealthAdviceResponse) -> str:
@@ -232,21 +235,27 @@ class HealthAdviceTool:
                     "goal_type": {
                         "type": "string",
                         "description": "健康目标类型",
-                        "enum": ["weight_loss", "muscle_gain", "general_wellness", "endurance", "strength"]
+                        "enum": [
+                            "weight_loss",
+                            "muscle_gain",
+                            "general_wellness",
+                            "endurance",
+                            "strength",
+                        ],
                     },
                     "duration_weeks": {
                         "type": "integer",
                         "description": "计划执行周期（周）",
                         "minimum": 1,
                         "maximum": 52,
-                        "default": 4
+                        "default": 4,
                     },
                     "special_requirements": {
                         "type": "string",
-                        "description": "特殊健康要求或限制，用逗号分隔"
-                    }
-                }
-            }
+                        "description": "特殊健康要求或限制，用逗号分隔",
+                    },
+                },
+            },
         }
 
     def get_quick_advice_schema(self) -> Dict[str, Any]:
@@ -265,11 +274,11 @@ class HealthAdviceTool:
                     "topic": {
                         "type": "string",
                         "description": "健康话题",
-                        "enum": ["diet", "exercise", "weight", "sleep", "mental"]
+                        "enum": ["diet", "exercise", "weight", "sleep", "mental"],
                     }
                 },
-                "required": ["topic"]
-            }
+                "required": ["topic"],
+            },
         }
 
 
@@ -292,7 +301,7 @@ class HealthAdviceToolAdapter(HealthToolAdapter):
         super().__init__(
             name="health_advice_generator",
             description="Comprehensive health advice generator with five modules",
-            original_tool=self.health_advice_tool.generate_five_section_advice
+            original_tool=self.health_advice_tool.generate_five_section_advice,
         )
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
@@ -315,18 +324,14 @@ class HealthAdviceToolAdapter(HealthToolAdapter):
             result = await self.health_advice_tool.generate_five_section_advice(
                 goal_type=goal_type,
                 duration_weeks=duration_weeks,
-                special_requirements=special_requirements
+                special_requirements=special_requirements,
             )
 
             return result
 
         except Exception as e:
             logger.error(f"HealthAdviceToolAdapter execution failed: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "tool": self.name
-            }
+            return {"success": False, "error": str(e), "tool": self.name}
 
     def get_schema(self) -> Dict[str, Any]:
         """Get tool schema for LangChain"""
@@ -352,7 +357,7 @@ def register_health_advice_tools(user_id: str, tool_registry) -> None:
         quick_adapter = HealthToolAdapter(
             name="quick_health_advice",
             description="Quick advice for specific health topics",
-            original_tool=health_tool.generate_quick_topic_advice
+            original_tool=health_tool.generate_quick_topic_advice,
         )
         tool_registry.register_tool(quick_adapter)
 

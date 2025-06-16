@@ -1,8 +1,8 @@
 """
 AuraWell - 超个性化健康生活方式编排AI Agent
 
-A personalized health lifestyle orchestration AI Agent that integrates 
-fitness goals, daily routines, dietary preferences, work schedules, 
+A personalized health lifestyle orchestration AI Agent that integrates
+fitness goals, daily routines, dietary preferences, work schedules,
 and social activities to provide contextual recommendations and habit formation support.
 """
 
@@ -30,19 +30,27 @@ from .utils import calculate_bmi, calculate_bmr
 
 __all__ = [
     # 版本信息
-    "__version__", "__author__", "__description__",
-
+    "__version__",
+    "__author__",
+    "__description__",
     # 智能代理 - 现在使用LangChain Agent，保留兼容性
-    "LangChainAgent", "HealthToolsRegistry", "cli_interface",
-
+    "LangChainAgent",
+    "HealthToolsRegistry",
+    "cli_interface",
     # 数据库层
-    "DatabaseManager", "get_database_manager", "DatabaseService",
-    "UserRepository", "HealthDataRepository", "AchievementRepository",
-
+    "DatabaseManager",
+    "get_database_manager",
+    "DatabaseService",
+    "UserRepository",
+    "HealthDataRepository",
+    "AchievementRepository",
     # 数据模型
-    "UserProfile", "UnifiedActivitySummary", "UnifiedSleepSession",
-    "HealthPlatform", "DataQuality",
-
+    "UserProfile",
+    "UnifiedActivitySummary",
+    "UnifiedSleepSession",
+    "HealthPlatform",
+    "DataQuality",
     # 工具函数
-    "calculate_bmi", "calculate_bmr",
+    "calculate_bmi",
+    "calculate_bmr",
 ]

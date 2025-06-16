@@ -48,7 +48,12 @@ class RateLimitInfo:
 class HealthAPIError(Exception):
     """Base exception for health API errors"""
 
-    def __init__(self, message: str, status_code: Optional[int] = None, response_data: Optional[Dict] = None):
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        response_data: Optional[Dict] = None,
+    ):
         self.message = message
         self.status_code = status_code
         self.response_data = response_data
@@ -75,7 +80,12 @@ class GenericHealthAPIClient(ABC):
     error handling, and rate limiting.
     """
 
-    def __init__(self, base_url: str, credentials: APICredentials, rate_limit_info: Optional[RateLimitInfo] = None):
+    def __init__(
+        self,
+        base_url: str,
+        credentials: APICredentials,
+        rate_limit_info: Optional[RateLimitInfo] = None,
+    ):
         """
         Initialize the generic health API client
 
@@ -118,7 +128,10 @@ class GenericHealthAPIClient(ABC):
             self.rate_limit.current_hour_requests = 0
 
         # Check limits
-        if self.rate_limit.current_minute_requests >= self.rate_limit.requests_per_minute:
+        if (
+            self.rate_limit.current_minute_requests
+            >= self.rate_limit.requests_per_minute
+        ):
             raise RateLimitError("Rate limit exceeded: too many requests per minute")
         if self.rate_limit.current_hour_requests >= self.rate_limit.requests_per_hour:
             raise RateLimitError("Rate limit exceeded: too many requests per hour")
@@ -135,7 +148,11 @@ class GenericHealthAPIClient(ABC):
         Returns:
             Dictionary of headers including authorization
         """
-        headers = {"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "AuraWell/1.0"}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "AuraWell/1.0",
+        }
 
         if self.credentials.access_token:
             headers["Authorization"] = f"Bearer {self.credentials.access_token}"
@@ -170,14 +187,22 @@ class GenericHealthAPIClient(ABC):
             return response_data
         elif response.status_code == 401:
             raise AuthenticationError(
-                "Authentication failed", status_code=response.status_code, response_data=response_data
+                "Authentication failed",
+                status_code=response.status_code,
+                response_data=response_data,
             )
         elif response.status_code == 429:
-            raise RateLimitError("Rate limit exceeded", status_code=response.status_code, response_data=response_data)
+            raise RateLimitError(
+                "Rate limit exceeded",
+                status_code=response.status_code,
+                response_data=response_data,
+            )
         elif response.status_code >= 400:
             error_message = response_data.get("error", "Unknown API error")
             raise HealthAPIError(
-                f"API error: {error_message}", status_code=response.status_code, response_data=response_data
+                f"API error: {error_message}",
+                status_code=response.status_code,
+                response_data=response_data,
             )
 
         return response_data
@@ -223,7 +248,12 @@ class GenericHealthAPIClient(ABC):
 
         try:
             response = self.session.request(
-                method=method, url=url, params=params, json=data, headers=request_headers, timeout=30
+                method=method,
+                url=url,
+                params=params,
+                json=data,
+                headers=request_headers,
+                timeout=30,
             )
 
             return self._handle_response(response)
@@ -235,15 +265,21 @@ class GenericHealthAPIClient(ABC):
         except requests.exceptions.RequestException as e:
             raise HealthAPIError(f"Request failed: {str(e)}")
 
-    def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def get(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Make GET request"""
         return self._make_request("GET", endpoint, params=params)
 
-    def post(self, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def post(
+        self, endpoint: str, data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Make POST request"""
         return self._make_request("POST", endpoint, data=data)
 
-    def put(self, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def put(
+        self, endpoint: str, data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Make PUT request"""
         return self._make_request("PUT", endpoint, data=data)
 
@@ -286,7 +322,11 @@ class GenericHealthAPIClient(ABC):
 
     @abstractmethod
     def get_activity_data(
-        self, user_id: str, start_date: str, end_date: str, data_types: Optional[List[str]] = None
+        self,
+        user_id: str,
+        start_date: str,
+        end_date: str,
+        data_types: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Get user activity data for a date range

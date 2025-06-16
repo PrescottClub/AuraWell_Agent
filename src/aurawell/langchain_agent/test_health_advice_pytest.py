@@ -67,8 +67,7 @@ async def test_health_advice_integration(health_agent):
     try:
         # 生成健康建议
         advice = await health_agent.generate_comprehensive_health_advice(
-            goal_type="general_wellness",
-            duration_weeks=4
+            goal_type="general_wellness", duration_weeks=4
         )
 
         assert advice is not None

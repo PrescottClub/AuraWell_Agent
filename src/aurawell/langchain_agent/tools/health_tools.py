@@ -2,11 +2,13 @@
 LangChain 健康工具适配器
 将现有的健康工具适配到LangChain框架
 """
+
 import logging
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
 
 from .adapter import HealthToolAdapter, tool_registry
+
 # 注意：这里我们将使用现有的健康工具函数，而不是HealthTools类
 from ...agent import health_tools
 
@@ -40,7 +42,7 @@ class LangChainHealthTools:
         activity_adapter = HealthToolAdapter(
             name="get_user_activity_summary",
             description="获取用户活动摘要数据",
-            original_tool=health_tools.get_user_activity_summary
+            original_tool=health_tools.get_user_activity_summary,
         )
         tool_registry.register_tool(activity_adapter)
 
@@ -48,7 +50,7 @@ class LangChainHealthTools:
         sleep_adapter = HealthToolAdapter(
             name="analyze_sleep_quality",
             description="分析用户睡眠质量",
-            original_tool=health_tools.analyze_sleep_quality
+            original_tool=health_tools.analyze_sleep_quality,
         )
         tool_registry.register_tool(sleep_adapter)
 
@@ -56,7 +58,7 @@ class LangChainHealthTools:
         insights_adapter = HealthToolAdapter(
             name="get_health_insights",
             description="获取个性化健康洞察",
-            original_tool=health_tools.get_health_insights
+            original_tool=health_tools.get_health_insights,
         )
         tool_registry.register_tool(insights_adapter)
 
@@ -64,7 +66,7 @@ class LangChainHealthTools:
         nutrition_adapter = HealthToolAdapter(
             name="analyze_nutrition_intake",
             description="分析营养摄入并提供建议",
-            original_tool=health_tools.analyze_nutrition_intake
+            original_tool=health_tools.analyze_nutrition_intake,
         )
         tool_registry.register_tool(nutrition_adapter)
 
@@ -72,18 +74,22 @@ class LangChainHealthTools:
         exercise_adapter = HealthToolAdapter(
             name="generate_exercise_plan",
             description="生成个性化运动计划",
-            original_tool=health_tools.generate_exercise_plan
+            original_tool=health_tools.generate_exercise_plan,
         )
         tool_registry.register_tool(exercise_adapter)
 
         # NEW: 注册五模块健康建议生成工具
         try:
             register_health_advice_tools(self.user_id, tool_registry)
-            logger.info(f"Successfully registered health advice tools for user: {self.user_id}")
+            logger.info(
+                f"Successfully registered health advice tools for user: {self.user_id}"
+            )
         except Exception as e:
             logger.error(f"Failed to register health advice tools: {e}")
 
-        logger.info(f"为用户 {self.user_id} 注册了 {len(tool_registry.get_all_tools())} 个健康工具")
+        logger.info(
+            f"为用户 {self.user_id} 注册了 {len(tool_registry.get_all_tools())} 个健康工具"
+        )
 
     async def get_available_tools(self) -> List[Dict[str, Any]]:
         """
@@ -94,11 +100,13 @@ class LangChainHealthTools:
         """
         tools = []
         for tool in tool_registry.get_all_tools():
-            tools.append({
-                "name": tool.name,
-                "description": tool.description,
-                "schema": tool.get_schema()
-            })
+            tools.append(
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "schema": tool.get_schema(),
+                }
+            )
         return tools
 
     async def execute_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
@@ -118,7 +126,7 @@ class LangChainHealthTools:
         self,
         goal_type: str = "general_wellness",
         duration_weeks: int = 4,
-        special_requirements: str = None
+        special_requirements: str = None,
     ) -> Dict[str, Any]:
         """
         生成五模块综合健康建议（新增功能）
@@ -138,7 +146,7 @@ class LangChainHealthTools:
             result = await health_advice_tool.generate_five_section_advice(
                 goal_type=goal_type,
                 duration_weeks=duration_weeks,
-                special_requirements=special_requirements
+                special_requirements=special_requirements,
             )
 
             return result
@@ -148,7 +156,7 @@ class LangChainHealthTools:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "生成健康建议时遇到问题"
+                "message": "生成健康建议时遇到问题",
             }
 
     async def get_quick_health_advice(self, topic: str) -> Dict[str, Any]:
@@ -174,7 +182,7 @@ class LangChainHealthTools:
                 "success": False,
                 "error": str(e),
                 "topic": topic,
-                "message": f"生成{topic}建议时遇到问题"
+                "message": f"生成{topic}建议时遇到问题",
             }
 
     async def get_health_summary(self) -> Dict[str, Any]:
@@ -190,7 +198,7 @@ class LangChainHealthTools:
                 "query_health_data",
                 data_type="all",
                 start_date=(datetime.now() - timedelta(days=7)).isoformat(),
-                end_date=datetime.now().isoformat()
+                end_date=datetime.now().isoformat(),
             )
 
             # 获取健康建议
@@ -201,19 +209,17 @@ class LangChainHealthTools:
                 "summary": {
                     "recent_data": recent_data.get("result", {}),
                     "health_advice": advice.get("result", {}),
-                    "last_updated": datetime.now().isoformat()
-                }
+                    "last_updated": datetime.now().isoformat(),
+                },
             }
 
         except Exception as e:
             logger.error(f"获取健康摘要失败: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "获取健康摘要失败"
-            }
+            return {"success": False, "error": str(e), "message": "获取健康摘要失败"}
 
-    async def analyze_health_trend(self, data_type: str, days: int = 30) -> Dict[str, Any]:
+    async def analyze_health_trend(
+        self, data_type: str, days: int = 30
+    ) -> Dict[str, Any]:
         """
         分析健康数据趋势
 
@@ -230,7 +236,7 @@ class LangChainHealthTools:
                 "query_health_data",
                 data_type=data_type,
                 start_date=(datetime.now() - timedelta(days=days)).isoformat(),
-                end_date=datetime.now().isoformat()
+                end_date=datetime.now().isoformat(),
             )
 
             if not historical_data.get("success"):
@@ -242,21 +248,23 @@ class LangChainHealthTools:
                 return {
                     "success": True,
                     "trend": "insufficient_data",
-                    "message": "数据点不足，无法分析趋势"
+                    "message": "数据点不足，无法分析趋势",
                 }
 
             # 简单趋势分析
-            values = [point.get("value", 0) for point in data_points if point.get("value")]
+            values = [
+                point.get("value", 0) for point in data_points if point.get("value")
+            ]
             if not values:
                 return {
                     "success": True,
                     "trend": "no_data",
-                    "message": "没有有效的数据值"
+                    "message": "没有有效的数据值",
                 }
 
             # 计算趋势
-            first_half = values[:len(values) // 2]
-            second_half = values[len(values) // 2:]
+            first_half = values[: len(values) // 2]
+            second_half = values[len(values) // 2 :]
 
             avg_first = sum(first_half) / len(first_half)
             avg_second = sum(second_half) / len(second_half)
@@ -276,13 +284,11 @@ class LangChainHealthTools:
                 "data_points_count": len(data_points),
                 "average_first_half": avg_first,
                 "average_second_half": avg_second,
-                "change_percentage": ((avg_second - avg_first) / avg_first * 100) if avg_first > 0 else 0
+                "change_percentage": (
+                    ((avg_second - avg_first) / avg_first * 100) if avg_first > 0 else 0
+                ),
             }
 
         except Exception as e:
             logger.error(f"分析健康趋势失败: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "分析健康趋势失败"
-            }
+            return {"success": False, "error": str(e), "message": "分析健康趋势失败"}

@@ -2,6 +2,7 @@
 LangChain 对话记忆管理
 基于LangChain框架的对话记忆管理实现
 """
+
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -59,7 +60,7 @@ class LangChainConversationMemory:
         self,
         user_message: str,
         ai_response: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         添加对话到记忆
@@ -81,7 +82,7 @@ class LangChainConversationMemory:
                 user_id=self.user_id,
                 user_message=user_message,
                 ai_response=ai_response,
-                intent_type="langchain"
+                intent_type="langchain",
             )
 
             # LangChain memory component would be updated here
@@ -94,9 +95,7 @@ class LangChainConversationMemory:
             return False
 
     async def get_conversation_history(
-        self,
-        limit: int = 10,
-        include_metadata: bool = True
+        self, limit: int = 10, include_metadata: bool = True
     ) -> List[Dict[str, Any]]:
         """
         获取对话历史
@@ -111,8 +110,7 @@ class LangChainConversationMemory:
         try:
             # 从现有记忆管理器获取历史
             history_data = await self.memory_manager.get_conversation_history(
-                user_id=self.user_id,
-                limit=limit
+                user_id=self.user_id, limit=limit
             )
             history = history_data.get("conversations", [])
 
@@ -123,11 +121,13 @@ class LangChainConversationMemory:
                     "user_message": conversation.get("user_message", ""),
                     "ai_response": conversation.get("ai_response", ""),
                     "timestamp": conversation.get("timestamp", ""),
-                    "conversation_id": conversation.get("conversation_id", "")
+                    "conversation_id": conversation.get("conversation_id", ""),
                 }
 
                 if include_metadata:
-                    langchain_conversation["metadata"] = conversation.get("metadata", {})
+                    langchain_conversation["metadata"] = conversation.get(
+                        "metadata", {}
+                    )
 
                 langchain_history.append(langchain_conversation)
 
@@ -138,9 +138,7 @@ class LangChainConversationMemory:
             return []
 
     async def get_relevant_context(
-        self,
-        query: str,
-        max_conversations: int = 5
+        self, query: str, max_conversations: int = 5
     ) -> List[Dict[str, Any]]:
         """
         获取与查询相关的上下文
@@ -154,7 +152,9 @@ class LangChainConversationMemory:
         """
         try:
             # 获取最近的对话历史
-            recent_history = await self.get_conversation_history(limit=max_conversations * 2)
+            recent_history = await self.get_conversation_history(
+                limit=max_conversations * 2
+            )
 
             # 简单的相关性过滤（后续可以使用更复杂的语义搜索）
             relevant_conversations = []
@@ -165,10 +165,14 @@ class LangChainConversationMemory:
                 ai_msg = conversation.get("ai_response", "").lower()
 
                 # 简单的关键词匹配
-                if (query_lower in user_msg
+                if (
+                    query_lower in user_msg
                     or query_lower in ai_msg
-                    or any(word in user_msg or word in ai_msg
-                           for word in query_lower.split())):
+                    or any(
+                        word in user_msg or word in ai_msg
+                        for word in query_lower.split()
+                    )
+                ):
                     relevant_conversations.append(conversation)
 
                 if len(relevant_conversations) >= max_conversations:
@@ -223,7 +227,9 @@ class LangChainConversationMemory:
             for conversation in all_history:
                 timestamp_str = conversation.get("timestamp", "")
                 try:
-                    timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00')).timestamp()
+                    timestamp = datetime.fromisoformat(
+                        timestamp_str.replace("Z", "+00:00")
+                    ).timestamp()
                     if timestamp >= cutoff_date:
                         recent_conversations.append(conversation)
                 except (ValueError, TypeError) as e:
@@ -233,17 +239,32 @@ class LangChainConversationMemory:
 
             # 统计信息
             total_conversations = len(recent_conversations)
-            total_user_messages = sum(1 for conv in recent_conversations if conv.get("user_message"))
-            total_ai_responses = sum(1 for conv in recent_conversations if conv.get("ai_response"))
+            total_user_messages = sum(
+                1 for conv in recent_conversations if conv.get("user_message")
+            )
+            total_ai_responses = sum(
+                1 for conv in recent_conversations if conv.get("ai_response")
+            )
 
             # 常见话题（简单的关键词统计）
-            all_text = " ".join([
-                conv.get("user_message", "") + " " + conv.get("ai_response", "")
-                for conv in recent_conversations
-            ]).lower()
+            all_text = " ".join(
+                [
+                    conv.get("user_message", "") + " " + conv.get("ai_response", "")
+                    for conv in recent_conversations
+                ]
+            ).lower()
 
             common_topics = []
-            health_keywords = ["健康", "体重", "血压", "心率", "运动", "饮食", "睡眠", "bmi"]
+            health_keywords = [
+                "健康",
+                "体重",
+                "血压",
+                "心率",
+                "运动",
+                "饮食",
+                "睡眠",
+                "bmi",
+            ]
             for keyword in health_keywords:
                 count = all_text.count(keyword)
                 if count > 0:
@@ -259,14 +280,12 @@ class LangChainConversationMemory:
                     "total_user_messages": total_user_messages,
                     "total_ai_responses": total_ai_responses,
                     "common_topics": common_topics[:5],  # 前5个话题
-                    "last_conversation": recent_conversations[0] if recent_conversations else None
-                }
+                    "last_conversation": (
+                        recent_conversations[0] if recent_conversations else None
+                    ),
+                },
             }
 
         except Exception as e:
             logger.error(f"获取对话摘要失败: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "获取对话摘要失败"
-            }
+            return {"success": False, "error": str(e), "message": "获取对话摘要失败"}

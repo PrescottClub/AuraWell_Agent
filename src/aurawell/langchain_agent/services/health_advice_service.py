@@ -20,17 +20,34 @@ from ...repositories.user_repository import UserRepository
 from ...repositories.health_data_repository import HealthDataRepository
 from ...core.deepseek_client import DeepSeekClient
 from ...utils.health_calculations import (
-    calculate_bmi, calculate_bmr, calculate_tdee,
-    get_bmi_category, calculate_ideal_weight_range,
-    calculate_calorie_goal
+    calculate_bmi,
+    calculate_bmr,
+    calculate_tdee,
+    get_bmi_category,
+    calculate_ideal_weight_range,
+    calculate_calorie_goal,
 )
+
 # from ...models.user_profile import UserProfile  # Not used in current implementation
 from ...models.enums import Gender, ActivityLevel, HealthGoal, BMICategory
 
 # Service imports
 from .parsers import FiveSectionParser, HealthAdviceResponse
+from ...core.exceptions import (
+    AurawellException,
+    ExternalServiceError,
+    BusinessLogicError,
+    NotFoundError,
+)
 
 logger = logging.getLogger(__name__)
+
+# 模型选择配置
+MODEL_CONFIG = {
+    "reasoning_tasks": "deepseek-reasoner",  # 复杂推理任务
+    "chat_tasks": "deepseek-chat",          # 简单对话任务
+    "default": "deepseek-reasoner"          # 默认使用推理模型
+}
 
 
 class HealthAdviceService:
@@ -54,14 +71,16 @@ class HealthAdviceService:
             self.deepseek_client = DeepSeekClient()
             self.logger.info("HealthAdviceService initialized with DeepSeek client")
         except Exception as e:
-            self.logger.warning(f"DeepSeek client not available: {e}. Using fallback mode.")
+            self.logger.warning(
+                f"DeepSeek client not available: {e}. Using fallback mode."
+            )
 
     async def generate_comprehensive_advice(
         self,
         user_id: str,
         goal_type: Optional[str] = None,
         duration_weeks: int = 4,
-        special_requirements: Optional[List[str]] = None
+        special_requirements: Optional[List[str]] = None,
     ) -> HealthAdviceResponse:
         """
         Generate comprehensive health advice for a user
@@ -76,7 +95,9 @@ class HealthAdviceService:
             HealthAdviceResponse: Structured health advice with all five modules
         """
         try:
-            self.logger.info(f"Generating comprehensive health advice for user: {user_id}")
+            self.logger.info(
+                f"Generating comprehensive health advice for user: {user_id}"
+            )
 
             # Step 1: UserProfileLookup - Get user data
             user_data = await self._get_user_profile_data(user_id)
@@ -86,7 +107,11 @@ class HealthAdviceService:
 
             # Step 3: SearchKnowledge - AI-powered advice generation
             advice_content = await self._generate_ai_advice(
-                user_data, health_metrics, goal_type, duration_weeks, special_requirements
+                user_data,
+                health_metrics,
+                goal_type,
+                duration_weeks,
+                special_requirements,
             )
 
             # Step 4: Parse and validate output structure
@@ -94,55 +119,65 @@ class HealthAdviceService:
                 advice_content, user_id, user_data, health_metrics
             )
 
-            self.logger.info(f"Successfully generated health advice for user: {user_id}")
+            self.logger.info(
+                f"Successfully generated health advice for user: {user_id}"
+            )
             return parsed_advice
 
+        except (NotFoundError, BusinessLogicError):
+            raise
         except Exception as e:
             self.logger.error(f"Error generating health advice for user {user_id}: {e}")
-            return await self._generate_fallback_advice(user_id, str(e))
+            raise BusinessLogicError(f"Failed to generate health advice: {str(e)}")
 
     async def get_streaming_advice(self, advice_request) -> AsyncGenerator[str, None]:
         """
         Generate streaming health advice for WebSocket connections
-        
+
         Args:
             advice_request: HealthAdviceRequest object containing user query and context
-            
+
         Yields:
             str: Token chunks from the AI response
         """
         try:
             # Extract user_id from advice_request (could be user_id or active_member_id)
-            user_id = getattr(advice_request, 'user_id', None) or getattr(advice_request, 'active_member_id', 'unknown_user')
+            user_id = getattr(advice_request, "user_id", None) or getattr(
+                advice_request, "active_member_id", "unknown_user"
+            )
             self.logger.info(f"Generating streaming health advice for user: {user_id}")
-            
+
             # Get user data and health metrics
             user_data = await self._get_user_profile_data(user_id)
             health_metrics = await self._calculate_health_metrics(user_data)
-            
+
             # Build AI prompt based on user query
-            prompt = self._build_streaming_prompt(advice_request, user_data, health_metrics)
-            
+            prompt = self._build_streaming_prompt(
+                advice_request, user_data, health_metrics
+            )
+
             messages = [
                 {"role": "system", "content": self._get_system_prompt()},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt},
             ]
-            
+
             # Stream response from DeepSeek
             if self.deepseek_client:
                 async for token in self.deepseek_client.get_streaming_response(
                     messages=messages,
                     model_name="deepseek-reasoner",
                     temperature=0.3,
-                    max_tokens=2048
+                    max_tokens=2048,
                 ):
                     yield token
             else:
                 # Fallback for when DeepSeek is not available
-                fallback_response = await self._generate_fallback_streaming_response(advice_request)
+                fallback_response = await self._generate_fallback_streaming_response(
+                    advice_request
+                )
                 for token in fallback_response:
                     yield token
-                    
+
         except Exception as e:
             self.logger.error(f"Error generating streaming advice: {e}")
             yield f"抱歉，生成健康建议时发生错误：{str(e)}"
@@ -161,30 +196,28 @@ class HealthAdviceService:
                 # Get user profile
                 user_profile = await user_repo.get_user_by_id(user_id)
                 if not user_profile:
-                    raise ValueError(f"User {user_id} not found")
+                    raise NotFoundError(
+                        f"User {user_id} not found", resource_type="user"
+                    )
 
                 # Get recent activity data
                 end_date = date.today()
                 start_date = end_date - timedelta(days=30)
 
                 activity_data = await health_repo.get_activity_summaries(
-                    user_id=user_id,
-                    start_date=start_date,
-                    end_date=end_date
+                    user_id=user_id, start_date=start_date, end_date=end_date
                 )
 
                 # Get recent sleep data
                 sleep_data = await health_repo.get_sleep_sessions(
-                    user_id=user_id,
-                    start_date=start_date,
-                    end_date=end_date
+                    user_id=user_id, start_date=start_date, end_date=end_date
                 )
 
                 return {
                     "profile": user_profile,
                     "activity_data": activity_data or [],
                     "sleep_data": sleep_data or [],
-                    "user_id": user_id
+                    "user_id": user_id,
                 }
 
         except Exception as e:
@@ -194,10 +227,12 @@ class HealthAdviceService:
                 "profile": self._get_mock_user_profile(user_id),
                 "activity_data": [],
                 "sleep_data": [],
-                "user_id": user_id
+                "user_id": user_id,
             }
 
-    async def _calculate_health_metrics(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _calculate_health_metrics(
+        self, user_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Tool Chain 2: CalcMetrics
         Calculate comprehensive health metrics
@@ -208,12 +243,14 @@ class HealthAdviceService:
             metrics = {}
 
             # Basic metrics
-            if hasattr(profile, 'weight_kg') and hasattr(profile, 'height_cm'):
+            if hasattr(profile, "weight_kg") and hasattr(profile, "height_cm"):
                 weight = profile.weight_kg or 70.0  # Default weight
                 height = profile.height_cm or 170.0  # Default height
                 age = profile.age or 30  # Default age
-                gender = getattr(profile, 'gender', Gender.MALE)
-                activity_level = getattr(profile, 'activity_level', ActivityLevel.MODERATELY_ACTIVE)
+                gender = getattr(profile, "gender", Gender.MALE)
+                activity_level = getattr(
+                    profile, "activity_level", ActivityLevel.MODERATELY_ACTIVE
+                )
 
                 # BMI calculation
                 bmi = calculate_bmi(weight, height)
@@ -224,7 +261,9 @@ class HealthAdviceService:
                 tdee = calculate_tdee(bmr, activity_level)
 
                 # Ideal weight range
-                ideal_weight_min, ideal_weight_max = calculate_ideal_weight_range(height, gender)
+                ideal_weight_min, ideal_weight_max = calculate_ideal_weight_range(
+                    height, gender
+                )
 
                 metrics = {
                     "bmi": round(bmi, 1),
@@ -235,12 +274,20 @@ class HealthAdviceService:
                     "height": height,
                     "ideal_weight_range": (ideal_weight_min, ideal_weight_max),
                     "age": age,
-                    "gender": gender.value if hasattr(gender, 'value') else str(gender),
-                    "activity_level": activity_level.value if hasattr(activity_level, 'value') else str(activity_level)
+                    "gender": gender.value if hasattr(gender, "value") else str(gender),
+                    "activity_level": (
+                        activity_level.value
+                        if hasattr(activity_level, "value")
+                        else str(activity_level)
+                    ),
                 }
 
                 # Calculate calorie goals for different objectives
-                for goal in [HealthGoal.WEIGHT_LOSS, HealthGoal.WEIGHT_GAIN, HealthGoal.GENERAL_WELLNESS]:
+                for goal in [
+                    HealthGoal.WEIGHT_LOSS,
+                    HealthGoal.WEIGHT_GAIN,
+                    HealthGoal.GENERAL_WELLNESS,
+                ]:
                     goal_calories = calculate_calorie_goal(tdee, goal)
                     metrics[f"calories_{goal.value.lower()}"] = goal_calories
 
@@ -256,7 +303,7 @@ class HealthAdviceService:
                     "ideal_weight_range": (53.5, 72.3),
                     "age": 30,
                     "gender": "male",
-                    "activity_level": "moderately_active"
+                    "activity_level": "moderately_active",
                 }
 
             self.logger.info(f"Calculated health metrics: {metrics}")
@@ -272,7 +319,7 @@ class HealthAdviceService:
         health_metrics: Dict[str, Any],
         goal_type: Optional[str],
         duration_weeks: int,
-        special_requirements: Optional[List[str]]
+        special_requirements: Optional[List[str]],
     ) -> str:
         """
         Tool Chain 3: SearchKnowledge
@@ -280,37 +327,54 @@ class HealthAdviceService:
         """
         try:
             if not self.deepseek_client:
-                return await self._generate_local_advice(user_data, health_metrics, goal_type)
+                self.logger.warning(
+                    "DeepSeek client not available, using local advice generation"
+                )
+                return await self._generate_local_advice(
+                    user_data, health_metrics, goal_type
+                )
 
             # Construct comprehensive prompt
             prompt = self._build_health_advice_prompt(
-                user_data, health_metrics, goal_type, duration_weeks, special_requirements
+                user_data,
+                health_metrics,
+                goal_type,
+                duration_weeks,
+                special_requirements,
             )
 
             messages = [
-                {
-                    "role": "system",
-                    "content": self._get_system_prompt()
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": self._get_system_prompt()},
+                {"role": "user", "content": prompt},
             ]
 
-            # Use deepseek-reasoner for comprehensive analysis
-            response = self.deepseek_client.get_deepseek_response(
+            # 使用重试机制调用API
+            response_content = await self._call_deepseek_with_retry(
                 messages=messages,
-                model_name="deepseek-reasoner",  # Use reasoning model for health advice
-                temperature=0.3,  # Lower temperature for more consistent medical advice
-                max_tokens=2048
+                model_name=MODEL_CONFIG["reasoning_tasks"],
+                temperature=0.3,
+                max_tokens=2048,
             )
 
-            return response.content
+            return response_content
 
+        except ExternalServiceError:
+            # Re-raise external service errors
+            raise
         except Exception as e:
             self.logger.error(f"Error generating AI advice: {e}")
-            return await self._generate_local_advice(user_data, health_metrics, goal_type)
+            # Fallback to local advice generation
+            try:
+                return await self._generate_local_advice(
+                    user_data, health_metrics, goal_type
+                )
+            except Exception as fallback_error:
+                self.logger.error(
+                    f"Fallback advice generation also failed: {fallback_error}"
+                )
+                raise ExternalServiceError(
+                    f"AI advice generation failed: {str(e)}", service_name="deepseek"
+                )
 
     def _build_health_advice_prompt(
         self,
@@ -318,7 +382,7 @@ class HealthAdviceService:
         health_metrics: Dict[str, Any],
         goal_type: Optional[str],
         duration_weeks: int,
-        special_requirements: Optional[List[str]]
+        special_requirements: Optional[List[str]],
     ) -> str:
         """Build comprehensive prompt for health advice generation"""
 
@@ -414,7 +478,7 @@ class HealthAdviceService:
         advice_content: str,
         user_id: str,
         user_data: Dict[str, Any],
-        health_metrics: Dict[str, Any]
+        health_metrics: Dict[str, Any],
     ) -> HealthAdviceResponse:
         """Parse and validate the generated advice content"""
         try:
@@ -425,12 +489,13 @@ class HealthAdviceService:
 
                 # Generate completion for missing sections
                 completion_prompt = self.parser.generate_completion_prompt(
-                    missing_sections, {
+                    missing_sections,
+                    {
                         "age": health_metrics.get("age"),
                         "gender": health_metrics.get("gender"),
                         "bmi": health_metrics.get("bmi"),
-                        "health_goal": "整体健康"
-                    }
+                        "health_goal": "整体健康",
+                    },
                 )
 
                 # Try to complete missing sections
@@ -438,8 +503,8 @@ class HealthAdviceService:
                     try:
                         completion = self.deepseek_client.get_deepseek_response(
                             messages=[{"role": "user", "content": completion_prompt}],
-                            model_name="deepseek-chat",
-                            temperature=0.3
+                            model_name=MODEL_CONFIG["reasoning_tasks"],  # 使用推理模型补全建议
+                            temperature=0.3,
                         )
                         advice_content += "\n\n" + completion.content
                     except Exception as e:
@@ -449,7 +514,9 @@ class HealthAdviceService:
             parsed_sections = self.parser.parse_sections(advice_content)
 
             # Format structured response
-            structured_response = self.parser.format_structured_response(parsed_sections, user_id)
+            structured_response = self.parser.format_structured_response(
+                parsed_sections, user_id
+            )
 
             return structured_response
 
@@ -461,7 +528,7 @@ class HealthAdviceService:
         self,
         user_data: Dict[str, Any],
         health_metrics: Dict[str, Any],
-        goal_type: Optional[str]
+        goal_type: Optional[str],
     ) -> str:
         """Generate local fallback advice when DeepSeek is not available"""
 
@@ -513,50 +580,58 @@ class HealthAdviceService:
 
         return advice
 
-    async def _generate_fallback_advice(self, user_id: str, error_msg: str) -> HealthAdviceResponse:
+    async def _generate_fallback_advice(
+        self, user_id: str, error_msg: str
+    ) -> HealthAdviceResponse:
         """Generate fallback advice when all else fails"""
 
         fallback_sections = {
             "diet": {
                 "title": "饮食建议",
                 "content": "均衡饮食是健康的基础。建议多吃蔬菜水果，适量蛋白质，控制油盐糖摄入。",
-                "recommendations": ["多吃蔬菜水果", "选择瘦肉蛋白", "控制油盐糖"]
+                "recommendations": ["多吃蔬菜水果", "选择瘦肉蛋白", "控制油盐糖"],
             },
             "exercise": {
                 "title": "运动计划",
                 "content": "规律运动有益健康。建议每周至少150分钟中等强度运动。",
-                "recommendations": ["每周3-5次有氧运动", "适量力量训练", "注意运动安全"]
+                "recommendations": [
+                    "每周3-5次有氧运动",
+                    "适量力量训练",
+                    "注意运动安全",
+                ],
             },
             "weight": {
                 "title": "体重管理",
                 "content": "健康体重管理需要综合饮食和运动。设定合理目标，持续监测。",
-                "recommendations": ["合理设定目标", "定期监测体重", "保持耐心"]
+                "recommendations": ["合理设定目标", "定期监测体重", "保持耐心"],
             },
             "sleep": {
                 "title": "睡眠优化",
                 "content": "充足优质睡眠对健康重要。建议每晚7-9小时，规律作息。",
-                "recommendations": ["保证睡眠时长", "规律作息时间", "优化睡眠环境"]
+                "recommendations": ["保证睡眠时长", "规律作息时间", "优化睡眠环境"],
             },
             "mental_health": {
                 "title": "心理健康",
                 "content": "积极心态有助于健康目标达成。学会压力管理，保持动力。",
-                "recommendations": ["保持积极心态", "学会压力管理", "寻求社会支持"]
-            }
+                "recommendations": ["保持积极心态", "学会压力管理", "寻求社会支持"],
+            },
         }
 
         from .parsers import HealthAdviceSection
+
         sections = {}
         for key, section_data in fallback_sections.items():
             sections[key] = HealthAdviceSection(
                 title=section_data["title"],
                 content=section_data["content"],
-                recommendations=section_data["recommendations"]
+                recommendations=section_data["recommendations"],
             )
 
         return self.parser.format_structured_response(sections, user_id)
 
     def _get_mock_user_profile(self, user_id: str) -> Any:
         """Generate mock user profile for testing"""
+
         class MockProfile:
             def __init__(self):
                 self.user_id = user_id
@@ -588,7 +663,7 @@ class HealthAdviceService:
                 "exercise": "根据活动水平，推荐适合的运动方案",
                 "weight": f"当前体重{health_metrics.get('current_weight', 70)}kg的管理建议",
                 "sleep": "改善睡眠质量的实用技巧",
-                "mental": "保持积极心态和动力的方法"
+                "mental": "保持积极心态和动力的方法",
             }
 
             prompt = topic_prompts.get(topic, f"关于{topic}的健康建议")
@@ -596,9 +671,9 @@ class HealthAdviceService:
             if self.deepseek_client:
                 response = self.deepseek_client.get_deepseek_response(
                     messages=[{"role": "user", "content": prompt}],
-                    model_name="deepseek-chat",
+                    model_name=MODEL_CONFIG["chat_tasks"],  # 快速建议使用对话模型
                     temperature=0.3,
-                    max_tokens=512
+                    max_tokens=512,
                 )
                 return response.content
             else:
@@ -608,10 +683,12 @@ class HealthAdviceService:
             self.logger.error(f"Error generating quick advice: {e}")
             return f"暂时无法生成{topic}建议，请稍后重试。"
 
-    def _build_streaming_prompt(self, advice_request, user_data: Dict[str, Any], health_metrics: Dict[str, Any]) -> str:
+    def _build_streaming_prompt(
+        self, advice_request, user_data: Dict[str, Any], health_metrics: Dict[str, Any]
+    ) -> str:
         """Build prompt for streaming health advice"""
         profile = user_data["profile"]
-        
+
         prompt = f"""
 用户咨询：{advice_request.user_query}
 
@@ -634,20 +711,148 @@ class HealthAdviceService:
     async def _generate_fallback_streaming_response(self, advice_request) -> List[str]:
         """Generate fallback streaming response when DeepSeek is not available"""
         base_response = f"感谢您的咨询：{advice_request.user_query}\n\n由于AI服务暂时不可用，建议您：\n1. 咨询专业医生获取个性化建议\n2. 保持均衡饮食和适量运动\n3. 确保充足的睡眠和休息\n4. 定期监测健康指标\n\n祝您身体健康！"
-        
+
         # Split into chunks for streaming effect
         words = base_response.split()
         chunks = []
         current_chunk = ""
-        
+
         for word in words:
             if len(current_chunk + word + " ") < 20:  # Chunk size
                 current_chunk += word + " "
             else:
                 chunks.append(current_chunk.strip())
                 current_chunk = word + " "
-        
+
         if current_chunk.strip():
             chunks.append(current_chunk.strip())
-            
+
         return chunks
+
+    async def _call_deepseek_with_retry(
+        self,
+        messages: List[Dict[str, str]],
+        model_name: str,
+        temperature: float = 0.3,
+        max_tokens: int = 2048,
+        max_retries: int = 3,
+        retry_delay: float = 1.0
+    ) -> str:
+        """
+        调用DeepSeek API并实现重试机制
+
+        Args:
+            messages: 消息列表
+            model_name: 模型名称
+            temperature: 温度参数
+            max_tokens: 最大token数
+            max_retries: 最大重试次数
+            retry_delay: 重试延迟（秒）
+
+        Returns:
+            API响应内容
+
+        Raises:
+            ExternalServiceError: API调用失败
+        """
+        import asyncio
+        from aurawell.core.exceptions import ExternalServiceError
+
+        last_error = None
+
+        for attempt in range(max_retries + 1):
+            try:
+                response = self.deepseek_client.get_deepseek_response(
+                    messages=messages,
+                    model_name=model_name,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+
+                if response and hasattr(response, 'content'):
+                    return response.content
+                else:
+                    raise ExternalServiceError("DeepSeek API返回空响应")
+
+            except Exception as e:
+                last_error = e
+                error_type = type(e).__name__
+
+                # 记录错误详情
+                self.logger.warning(
+                    f"DeepSeek API调用失败 (尝试 {attempt + 1}/{max_retries + 1}): "
+                    f"{error_type} - {str(e)}"
+                )
+
+                # 判断是否应该重试
+                if attempt < max_retries:
+                    if self._should_retry_error(e):
+                        # 指数退避延迟
+                        delay = retry_delay * (2 ** attempt)
+                        self.logger.info(f"等待 {delay:.1f} 秒后重试...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        # 不可重试的错误，直接抛出
+                        self.logger.error(f"遇到不可重试的错误: {error_type}")
+                        break
+
+        # 所有重试都失败了
+        error_msg = f"DeepSeek API调用失败，已重试{max_retries}次: {str(last_error)}"
+        self.logger.error(error_msg)
+        raise ExternalServiceError(error_msg, service_name="deepseek")
+
+    def _should_retry_error(self, error: Exception) -> bool:
+        """
+        判断错误是否应该重试
+
+        Args:
+            error: 异常对象
+
+        Returns:
+            是否应该重试
+        """
+        error_str = str(error).lower()
+        error_type = type(error).__name__
+
+        # 网络相关错误 - 应该重试
+        network_errors = [
+            'timeout', 'connection', 'network', 'socket',
+            'connectionerror', 'timeouterror', 'httperror'
+        ]
+
+        # API限流错误 - 应该重试
+        rate_limit_errors = [
+            'rate limit', 'too many requests', '429', 'quota'
+        ]
+
+        # 服务器错误 - 应该重试
+        server_errors = [
+            '500', '502', '503', '504', 'internal server error',
+            'bad gateway', 'service unavailable', 'gateway timeout'
+        ]
+
+        # 认证错误 - 不应该重试
+        auth_errors = [
+            '401', '403', 'unauthorized', 'forbidden',
+            'invalid api key', 'authentication'
+        ]
+
+        # 客户端错误 - 不应该重试
+        client_errors = [
+            '400', 'bad request', 'invalid request',
+            'validation error', 'malformed'
+        ]
+
+        # 检查是否为不可重试的错误
+        for pattern in auth_errors + client_errors:
+            if pattern in error_str:
+                return False
+
+        # 检查是否为可重试的错误
+        for pattern in network_errors + rate_limit_errors + server_errors:
+            if pattern in error_str:
+                return True
+
+        # 默认情况下，对于未知错误进行重试
+        return True

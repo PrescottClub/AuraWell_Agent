@@ -8,7 +8,4 @@ M2阶段：FastAPI REST API接口
 from . import cli_interface
 from .api_interface import app
 
-__all__ = [
-    'cli_interface',
-    'app'
-]
+__all__ = ["cli_interface", "app"]

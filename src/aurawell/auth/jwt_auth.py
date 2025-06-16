@@ -29,51 +29,53 @@ security = HTTPBearer()
 
 class JWTAuthenticator:
     """JWT authentication handler"""
-    
+
     def __init__(self, secret_key: str = SECRET_KEY, algorithm: str = ALGORITHM):
         self.secret_key = secret_key
         self.algorithm = algorithm
-    
+
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
         return pwd_context.verify(plain_password, hashed_password)
-    
+
     def get_password_hash(self, password: str) -> str:
         """Generate password hash"""
         return pwd_context.hash(password)
-    
-    def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+
+    def create_access_token(
+        self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+    ) -> str:
         """
         Create JWT access token
-        
+
         Args:
             data: Token payload data
             expires_delta: Token expiration time
-            
+
         Returns:
             Encoded JWT token
         """
         to_encode = data.copy()
-        
+
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
             expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        
+
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
-    
+
     def verify_token(self, token: str) -> Dict[str, Any]:
         """
         Verify and decode JWT token
-        
+
         Args:
             token: JWT token string
-            
+
         Returns:
             Decoded token payload
-            
+
         Raises:
             HTTPException: If token is invalid or expired
         """
@@ -87,30 +89,30 @@ class JWTAuthenticator:
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    
+
     def get_current_user_id(self, token: str) -> str:
         """
         Extract user ID from JWT token
-        
+
         Args:
             token: JWT token string
-            
+
         Returns:
             User ID from token
-            
+
         Raises:
             HTTPException: If token is invalid or user_id missing
         """
         payload = self.verify_token(token)
         user_id: str = payload.get("sub")
-        
+
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         return user_id
 
 
@@ -119,7 +121,9 @@ authenticator = JWTAuthenticator()
 
 
 # Dependency functions for FastAPI
-async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+async def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
     """
     FastAPI dependency to get current user ID from JWT token
 
@@ -140,7 +144,11 @@ async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depend
     return authenticator.get_current_user_id(credentials.credentials)
 
 
-async def get_optional_user_id(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> Optional[str]:
+async def get_optional_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    ),
+) -> Optional[str]:
     """
     FastAPI dependency to optionally get user ID from JWT token
 
@@ -162,14 +170,14 @@ async def get_optional_user_id(credentials: Optional[HTTPAuthorizationCredential
 def authenticate_user(username: str, password: str) -> Optional[str]:
     """
     Authenticate user with username and password
-    
+
     Args:
         username: User's username
         password: User's password
-        
+
     Returns:
         User ID if authentication successful, None otherwise
-        
+
     Note:
         This is a simplified implementation. In production, you would
         validate against a user database with proper password hashing.
@@ -178,28 +186,30 @@ def authenticate_user(username: str, password: str) -> Optional[str]:
     demo_users = {
         "demo_user": {
             "user_id": "user_001",
-            "password_hash": authenticator.get_password_hash("demo_password")
+            "password_hash": authenticator.get_password_hash("demo_password"),
         },
         "test_user": {
-            "user_id": "user_002", 
-            "password_hash": authenticator.get_password_hash("test_password")
-        }
+            "user_id": "user_002",
+            "password_hash": authenticator.get_password_hash("test_password"),
+        },
     }
-    
+
     user_data = demo_users.get(username)
-    if user_data and authenticator.verify_password(password, user_data["password_hash"]):
+    if user_data and authenticator.verify_password(
+        password, user_data["password_hash"]
+    ):
         return user_data["user_id"]
-    
+
     return None
 
 
 def create_user_token(user_id: str) -> Dict[str, Any]:
     """
     Create access token for user
-    
+
     Args:
         user_id: User identifier
-        
+
     Returns:
         Token data including access_token, token_type, and expires_in
     """
@@ -207,11 +217,11 @@ def create_user_token(user_id: str) -> Dict[str, Any]:
     access_token = authenticator.create_access_token(
         data={"sub": user_id}, expires_delta=access_token_expires
     )
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # seconds
     }
 
 

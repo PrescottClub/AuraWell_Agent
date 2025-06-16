@@ -2,13 +2,15 @@
 LangChain Agent 实现
 基于LangChain框架的AI Agent，整合健康工具
 """
+
 import logging
 from typing import Dict, Any, Optional, List
 
 from ..core.agent_router import BaseAgent
 from ..conversation.memory_manager import MemoryManager
 from ..core.deepseek_client import DeepSeekClient
-from .tools.health_tools import LangChainHealthTools
+# from .tools.health_tools import LangChainHealthTools  # 暂时不使用
+
 # DeepSeek LLM integration - using direct client instead of LangChain wrapper
 from .services.health_advice_service import HealthAdviceService
 
@@ -19,13 +21,12 @@ class HealthAdviceAgent(BaseAgent):
     """
     AuraWell健康建议生成AI Agent
 
-    整合三大工具链：
+    基于LangChain框架的真正Agent实现，整合三大工具链：
     - UserProfileLookup (用户档案查询)
     - CalcMetrics (健康指标计算)
     - SearchKnowledge (知识检索和AI推理)
 
     核心功能：五模块健康建议生成（饮食、运动、体重、睡眠、心理）
-    注：虽然命名为Agent，但当前实现是直接调用DeepSeek API，非标准LangChain架构
     """
 
     def __init__(self, user_id: str):
@@ -35,11 +36,9 @@ class HealthAdviceAgent(BaseAgent):
         Args:
             user_id: 用户ID
         """
-        # 不调用super().__init__，因为BaseAgent是抽象类，没有__init__方法
         self.user_id = user_id
         self.memory_manager = MemoryManager()
-        self.health_tools = LangChainHealthTools(user_id)
-        self.health_advice_service = HealthAdviceService()  # NEW: 健康建议服务
+        self.health_advice_service = HealthAdviceService()
 
         # DeepSeek客户端和LLM
         self.deepseek_client = None
@@ -60,7 +59,15 @@ class HealthAdviceAgent(BaseAgent):
         try:
             # 初始化DeepSeek客户端
             self.deepseek_client = DeepSeekClient()
-            self.llm = None  # Using direct DeepSeek client instead of LangChain LLM wrapper
+
+            # 尝试创建LangChain LLM包装器
+            try:
+                self.llm = self._create_langchain_llm()
+                logger.info("LangChain LLM包装器初始化成功")
+            except Exception as llm_e:
+                logger.warning(f"LangChain LLM包装器初始化失败: {llm_e}，使用直接客户端")
+                self.llm = None
+
             logger.info("DeepSeek客户端初始化成功")
         except Exception as e:
             logger.warning(f"DeepSeek客户端初始化失败: {e}，将使用本地模式")
@@ -76,7 +83,9 @@ class HealthAdviceAgent(BaseAgent):
             self.tools = self._create_tools()
 
             # 创建agent执行器 - 使用直接服务调用而非LangChain executor
-            self.agent_executor = None  # Using direct service calls instead of LangChain executor
+            self.agent_executor = (
+                None  # Using direct service calls instead of LangChain executor
+            )
 
             logger.info(f"LangChain Agent 初始化完成，用户: {self.user_id}")
 
@@ -84,28 +93,130 @@ class HealthAdviceAgent(BaseAgent):
             logger.error(f"LangChain Agent 初始化失败: {e}")
             raise
 
-    def _create_llm(self):
-        """创建LLM"""
-        if self.llm:
-            return self.llm
-        else:
-            # 使用本地LLM或简化实现
-            logger.warning("使用本地LLM实现")
+    def _create_langchain_llm(self):
+        """创建LangChain LLM包装器"""
+        try:
+            from langchain_openai import ChatOpenAI
+
+            if not self.deepseek_client:
+                return None
+
+            # 创建LangChain兼容的LLM
+            llm = ChatOpenAI(
+                model="deepseek-reasoner",
+                openai_api_key=self.deepseek_client.api_key,
+                openai_api_base="https://api.deepseek.com",
+                temperature=0.7,
+                max_tokens=1024
+            )
+
+            return llm
+
+        except ImportError as e:
+            logger.warning(f"LangChain OpenAI包装器不可用: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"创建LangChain LLM失败: {e}")
             return None
 
+    def _create_llm(self):
+        """创建LLM（兼容性方法）"""
+        return self.llm or self._create_langchain_llm()
+
     def _create_tools(self):
-        """创建工具列表"""
-        # Using direct service calls instead of LangChain tools for better control
-        # Tools are managed through health_tools and health_advice_service
-        return []
+        """创建LangChain工具列表"""
+        try:
+            from langchain.tools import Tool
+
+            tools = []
+
+            # 用户档案查询工具
+            user_profile_tool = Tool(
+                name="UserProfileLookup",
+                description="查询用户的基本信息和健康档案，包括年龄、性别、身高体重、活动水平等",
+                func=self._user_profile_lookup_sync,
+                coroutine=self._user_profile_lookup
+            )
+            tools.append(user_profile_tool)
+
+            # 健康指标计算工具
+            calc_metrics_tool = Tool(
+                name="CalcMetrics",
+                description="计算健康指标，如BMI、BMR、TDEE、理想体重范围等",
+                func=self._calc_metrics_sync,
+                coroutine=self._calc_metrics
+            )
+            tools.append(calc_metrics_tool)
+
+            # 健康建议生成工具
+            health_advice_tool = Tool(
+                name="SearchKnowledge",
+                description="基于用户数据和健康指标，生成个性化的五模块健康建议（饮食、运动、体重、睡眠、心理）",
+                func=self._search_knowledge_sync,
+                coroutine=self._search_knowledge
+            )
+            tools.append(health_advice_tool)
+
+            return tools
+
+        except ImportError as e:
+            logger.warning(f"LangChain工具不可用: {e}，使用简化工具列表")
+            # 返回简化的工具描述列表
+            return [
+                {"name": "UserProfileLookup", "description": "查询用户档案"},
+                {"name": "CalcMetrics", "description": "计算健康指标"},
+                {"name": "SearchKnowledge", "description": "生成健康建议"}
+            ]
 
     def _create_agent_executor(self):
-        """创建Agent执行器"""
-        # Using direct service calls for better control and error handling
-        # LangChain executor would be created here if needed in the future
-        return None
+        """创建LangChain Agent执行器"""
+        try:
+            from langchain.agents import create_openai_tools_agent, AgentExecutor
+            from langchain.prompts import ChatPromptTemplate
 
-    async def process_message(self, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+            if not self.llm or not self.tools:
+                logger.warning("LLM或工具未初始化，无法创建Agent执行器")
+                return None
+
+            # 创建提示模板
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """你是AuraWell健康助手，一个专业的健康管理AI助手。
+
+你有以下工具可以使用：
+- UserProfileLookup: 查询用户基本信息和健康档案
+- CalcMetrics: 计算健康指标（BMI、BMR、TDEE等）
+- SearchKnowledge: 生成个性化健康建议
+
+请根据用户的问题，合理使用这些工具来提供专业的健康建议。
+如果涉及医疗诊断，请建议用户咨询专业医生。"""),
+                ("user", "{input}"),
+                ("assistant", "{agent_scratchpad}")
+            ])
+
+            # 创建Agent
+            agent = create_openai_tools_agent(self.llm, self.tools, prompt)
+
+            # 创建执行器
+            agent_executor = AgentExecutor(
+                agent=agent,
+                tools=self.tools,
+                verbose=True,
+                handle_parsing_errors=True,
+                max_iterations=3
+            )
+
+            return agent_executor
+
+        except ImportError as e:
+            logger.warning(f"LangChain组件导入失败: {e}，使用直接服务调用")
+            return None
+        except Exception as e:
+            logger.error(f"创建Agent执行器失败: {e}")
+            return None
+
+    async def process_message(
+        self, message: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         处理用户消息
 
@@ -121,20 +232,21 @@ class HealthAdviceAgent(BaseAgent):
 
             # 获取对话历史
             conversation_history = await self.memory_manager.get_conversation_history(
-                user_id=self.user_id,
-                limit=10
+                user_id=self.user_id, limit=10
             )
 
             # 构建上下文
             full_context = {
                 "user_id": self.user_id,
                 "conversation_history": conversation_history,
-                **(context or {})
+                **(context or {}),
             }
 
             # 检测是否是健康建议生成请求
             if self._is_health_advice_request(message):
-                response = await self._handle_health_advice_request(message, full_context)
+                response = await self._handle_health_advice_request(
+                    message, full_context
+                )
             else:
                 # 使用标准的LangChain流程处理
                 response = await self._process_with_langchain(message, full_context)
@@ -144,7 +256,7 @@ class HealthAdviceAgent(BaseAgent):
                 user_id=self.user_id,
                 user_message=message,
                 ai_response=response.get("message", ""),
-                intent_type="langchain_chat"
+                intent_type="langchain_chat",
             )
 
             return {
@@ -152,7 +264,7 @@ class HealthAdviceAgent(BaseAgent):
                 "message": response.get("message", ""),
                 "data": response.get("data"),
                 "agent_type": "langchain",
-                "tools_used": response.get("tools_used", [])
+                "tools_used": response.get("tools_used", []),
             }
 
         except Exception as e:
@@ -161,7 +273,7 @@ class HealthAdviceAgent(BaseAgent):
                 "success": False,
                 "message": "处理消息时发生错误",
                 "error": str(e),
-                "agent_type": "langchain"
+                "agent_type": "langchain",
             }
 
     def _is_health_advice_request(self, message: str) -> bool:
@@ -175,16 +287,32 @@ class HealthAdviceAgent(BaseAgent):
             是否是健康建议请求
         """
         advice_keywords = [
-            "健康建议", "健康计划", "健康方案", "全面建议", "综合建议",
-            "饮食建议", "运动建议", "睡眠建议", "心理建议", "体重建议",
-            "健康管理", "制定计划", "生成建议", "个性化建议",
-            "五个模块", "完整建议", "health advice", "comprehensive advice"
+            "健康建议",
+            "健康计划",
+            "健康方案",
+            "全面建议",
+            "综合建议",
+            "饮食建议",
+            "运动建议",
+            "睡眠建议",
+            "心理建议",
+            "体重建议",
+            "健康管理",
+            "制定计划",
+            "生成建议",
+            "个性化建议",
+            "五个模块",
+            "完整建议",
+            "health advice",
+            "comprehensive advice",
         ]
 
         message_lower = message.lower()
         return any(keyword in message_lower for keyword in advice_keywords)
 
-    async def _handle_health_advice_request(self, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_health_advice_request(
+        self, message: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         处理健康建议生成请求
 
@@ -204,15 +332,17 @@ class HealthAdviceAgent(BaseAgent):
             special_requirements = self._extract_special_requirements(message)
 
             # 生成五模块健康建议
-            advice_result = await self.health_advice_service.generate_comprehensive_advice(
-                user_id=self.user_id,
-                goal_type=goal_type,
-                duration_weeks=duration_weeks,
-                special_requirements=special_requirements
+            advice_result = (
+                await self.health_advice_service.generate_comprehensive_advice(
+                    user_id=self.user_id,
+                    goal_type=goal_type,
+                    duration_weeks=duration_weeks,
+                    special_requirements=special_requirements,
+                )
             )
 
             # 格式化响应
-            if hasattr(advice_result, 'diet'):  # HealthAdviceResponse对象
+            if hasattr(advice_result, "diet"):  # HealthAdviceResponse对象
                 formatted_message = self._format_health_advice_message(advice_result)
 
                 return {
@@ -223,14 +353,39 @@ class HealthAdviceAgent(BaseAgent):
                         "duration_weeks": duration_weeks,
                         "generated_at": advice_result.generated_at,
                         "sections": {
-                            "diet": advice_result.diet.dict() if hasattr(advice_result.diet, 'dict') else advice_result.diet,
-                            "exercise": advice_result.exercise.dict() if hasattr(advice_result.exercise, 'dict') else advice_result.exercise,
-                            "weight": advice_result.weight.dict() if hasattr(advice_result.weight, 'dict') else advice_result.weight,
-                            "sleep": advice_result.sleep.dict() if hasattr(advice_result.sleep, 'dict') else advice_result.sleep,
-                            "mental_health": advice_result.mental_health.dict() if hasattr(advice_result.mental_health, 'dict') else advice_result.mental_health
-                        }
+                            "diet": (
+                                advice_result.diet.model_dump()
+                                if hasattr(advice_result.diet, "model_dump")
+                                else advice_result.diet
+                            ),
+                            "exercise": (
+                                advice_result.exercise.model_dump()
+                                if hasattr(advice_result.exercise, "model_dump")
+                                else advice_result.exercise
+                            ),
+                            "weight": (
+                                advice_result.weight.model_dump()
+                                if hasattr(advice_result.weight, "model_dump")
+                                else advice_result.weight
+                            ),
+                            "sleep": (
+                                advice_result.sleep.model_dump()
+                                if hasattr(advice_result.sleep, "model_dump")
+                                else advice_result.sleep
+                            ),
+                            "mental_health": (
+                                advice_result.mental_health.model_dump()
+                                if hasattr(advice_result.mental_health, "model_dump")
+                                else advice_result.mental_health
+                            ),
+                        },
                     },
-                    "tools_used": ["UserProfileLookup", "CalcMetrics", "SearchKnowledge", "HealthAdviceService"]
+                    "tools_used": [
+                        "UserProfileLookup",
+                        "CalcMetrics",
+                        "SearchKnowledge",
+                        "HealthAdviceService",
+                    ],
                 }
             else:
                 # 处理错误情况
@@ -238,20 +393,17 @@ class HealthAdviceAgent(BaseAgent):
                     "message": "很抱歉，生成健康建议时遇到了问题，请稍后重试。",
                     "data": {
                         "advice_type": "comprehensive",
-                        "error": "advice_generation_failed"
+                        "error": "advice_generation_failed",
                     },
-                    "tools_used": ["HealthAdviceService"]
+                    "tools_used": ["HealthAdviceService"],
                 }
 
         except Exception as e:
             logger.error(f"处理健康建议请求失败: {e}")
             return {
                 "message": "很抱歉，生成健康建议时遇到了问题，请稍后重试。",
-                "data": {
-                    "advice_type": "comprehensive",
-                    "error": str(e)
-                },
-                "tools_used": []
+                "data": {"advice_type": "comprehensive", "error": str(e)},
+                "tools_used": [],
             }
 
     def _extract_goal_type(self, message: str) -> str:
@@ -260,7 +412,9 @@ class HealthAdviceAgent(BaseAgent):
 
         if any(keyword in message_lower for keyword in ["减肥", "减重", "weight loss"]):
             return "weight_loss"
-        elif any(keyword in message_lower for keyword in ["增肌", "增重", "muscle", "gain"]):
+        elif any(
+            keyword in message_lower for keyword in ["增肌", "增重", "muscle", "gain"]
+        ):
             return "muscle_gain"
         elif any(keyword in message_lower for keyword in ["力量", "strength"]):
             return "strength"
@@ -275,16 +429,16 @@ class HealthAdviceAgent(BaseAgent):
 
         # 查找数字和周相关的词
         week_patterns = [
-            r'(\d+)\s*周',
-            r'(\d+)\s*weeks?',
-            r'(\d+)\s*个?月',  # 月份转换为周
+            r"(\d+)\s*周",
+            r"(\d+)\s*weeks?",
+            r"(\d+)\s*个?月",  # 月份转换为周
         ]
 
         for pattern in week_patterns:
             match = re.search(pattern, message.lower())
             if match:
                 num = int(match.group(1))
-                if '月' in pattern:
+                if "月" in pattern:
                     return num * 4  # 月份转换为周
                 return min(num, 52)  # 最多52周
 
@@ -355,7 +509,9 @@ class HealthAdviceAgent(BaseAgent):
             return "- 暂无具体推荐"
         return "\n".join([f"- {rec}" for rec in recommendations])
 
-    async def _process_with_langchain(self, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _process_with_langchain(
+        self, message: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         使用LangChain流程处理消息
 
@@ -372,31 +528,24 @@ class HealthAdviceAgent(BaseAgent):
                 ai_response = await self._get_ai_response(message, context)
                 return {
                     "message": ai_response,
-                    "data": {
-                        "response_type": "ai_generated"
-                    },
-                    "tools_used": ["DeepSeekAI"]
+                    "data": {"response_type": "ai_generated"},
+                    "tools_used": ["DeepSeekAI"],
                 }
             else:
                 # 使用本地响应
                 local_response = await self._get_local_response(message, context)
                 return {
                     "message": local_response,
-                    "data": {
-                        "response_type": "local_fallback"
-                    },
-                    "tools_used": []
+                    "data": {"response_type": "local_fallback"},
+                    "tools_used": [],
                 }
 
         except Exception as e:
             logger.error(f"LangChain消息处理失败: {e}")
             return {
                 "message": "很抱歉，我现在无法处理您的请求，请稍后重试。",
-                "data": {
-                    "response_type": "error_fallback",
-                    "error": str(e)
-                },
-                "tools_used": []
+                "data": {"response_type": "error_fallback", "error": str(e)},
+                "tools_used": [],
             }
 
     async def _get_ai_response(self, message: str, context: Dict[str, Any]) -> str:
@@ -419,7 +568,9 @@ class HealthAdviceAgent(BaseAgent):
             messages.append({"role": "system", "content": system_prompt})
 
             # 添加最近的对话历史
-            recent_history = self._conversation_history[-10:] if self._conversation_history else []
+            recent_history = (
+                self._conversation_history[-10:] if self._conversation_history else []
+            )
             messages.extend(recent_history)
 
             # 添加当前消息
@@ -427,9 +578,7 @@ class HealthAdviceAgent(BaseAgent):
 
             # 调用DeepSeek API
             response = self.deepseek_client.get_deepseek_response(
-                messages=messages,
-                model_name="deepseek-chat",
-                temperature=0.7
+                messages=messages, model_name="deepseek-chat", temperature=0.7
             )
 
             return response.content
@@ -474,8 +623,7 @@ class HealthAdviceAgent(BaseAgent):
         """
         try:
             history_data = await self.memory_manager.get_conversation_history(
-                user_id=self.user_id,
-                limit=limit
+                user_id=self.user_id, limit=limit
             )
             return history_data.get("conversations", [])
         except Exception as e:
@@ -490,11 +638,18 @@ class HealthAdviceAgent(BaseAgent):
             bool: 是否成功清除
         """
         try:
-            # 注意：当前的MemoryManager没有clear_conversation_history方法
-            # 这里我们可以通过删除所有对话记录来实现清除功能
-            # 暂时返回True，后续可以实现具体的清除逻辑
-            logger.info(f"清除用户 {self.user_id} 的对话历史")
+            # 清除内存中的对话历史
+            self._conversation_history.clear()
+
+            # 清除内存管理器中的历史（如果支持）
+            if self.memory_manager and hasattr(self.memory_manager, 'clear_memory'):
+                self.memory_manager.clear_memory(self.user_id)
+            elif self.memory_manager and hasattr(self.memory_manager, 'clear_conversation_history'):
+                await self.memory_manager.clear_conversation_history(self.user_id)
+
+            logger.info(f"已成功清除用户 {self.user_id} 的对话历史")
             return True
+
         except Exception as e:
             logger.error(f"清除对话历史失败: {e}")
             return False
@@ -504,7 +659,7 @@ class HealthAdviceAgent(BaseAgent):
         self,
         goal_type: str = "general_wellness",
         duration_weeks: int = 4,
-        special_requirements: Optional[List[str]] = None
+        special_requirements: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         生成综合健康建议（公开API）
@@ -520,7 +675,9 @@ class HealthAdviceAgent(BaseAgent):
         return await self.health_tools.generate_comprehensive_health_advice(
             goal_type=goal_type,
             duration_weeks=duration_weeks,
-            special_requirements=",".join(special_requirements) if special_requirements else None
+            special_requirements=(
+                ",".join(special_requirements) if special_requirements else None
+            ),
         )
 
     async def get_quick_health_advice(self, topic: str) -> Dict[str, Any]:
@@ -540,21 +697,107 @@ class HealthAdviceAgent(BaseAgent):
         return {
             "type": "langchain",
             "user_id": self.user_id,
-            "version": "2.0.0",  # 升级版本号
+            "version": "2.1.0",  # 升级版本号
             "features": [
                 "conversation_memory",
                 "tool_calling",
                 "context_awareness",
-                "comprehensive_health_advice",  # NEW
-                "five_section_health_planning"   # NEW
+                "comprehensive_health_advice",
+                "five_section_health_planning",
+                "langchain_agent_executor",  # NEW
             ],
             "tools": [
                 "UserProfileLookup",
                 "CalcMetrics",
                 "SearchKnowledge",
-                "HealthAdviceService"
-            ]
+            ],
         }
+
+    # LangChain工具方法实现
+    async def _user_profile_lookup(self, query: str = "") -> str:
+        """用户档案查询工具（异步版本）"""
+        try:
+            user_data = await self.health_advice_service._get_user_profile_data(self.user_id)
+            return f"用户档案信息：{user_data}"
+        except Exception as e:
+            logger.error(f"用户档案查询失败: {e}")
+            return f"用户档案查询失败: {str(e)}"
+
+    def _user_profile_lookup_sync(self, query: str = "") -> str:
+        """用户档案查询工具（同步版本）"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(self._user_profile_lookup(query))
+        except Exception as e:
+            logger.error(f"用户档案查询失败: {e}")
+            return f"用户档案查询失败: {str(e)}"
+
+    async def _calc_metrics(self, user_data: str = "") -> str:
+        """健康指标计算工具（异步版本）"""
+        try:
+            if not user_data:
+                user_data = await self.health_advice_service._get_user_profile_data(self.user_id)
+            else:
+                # 如果传入的是字符串，需要解析
+                import json
+                try:
+                    user_data = json.loads(user_data) if isinstance(user_data, str) else user_data
+                except:
+                    user_data = await self.health_advice_service._get_user_profile_data(self.user_id)
+
+            metrics = await self.health_advice_service._calculate_health_metrics(user_data)
+            return f"健康指标：{metrics}"
+        except Exception as e:
+            logger.error(f"健康指标计算失败: {e}")
+            return f"健康指标计算失败: {str(e)}"
+
+    def _calc_metrics_sync(self, user_data: str = "") -> str:
+        """健康指标计算工具（同步版本）"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(self._calc_metrics(user_data))
+        except Exception as e:
+            logger.error(f"健康指标计算失败: {e}")
+            return f"健康指标计算失败: {str(e)}"
+
+    async def _search_knowledge(self, query: str) -> str:
+        """知识检索和健康建议生成工具（异步版本）"""
+        try:
+            # 解析查询中的参数
+            goal_type = "general_wellness"
+            duration_weeks = 4
+
+            if "减肥" in query or "weight loss" in query.lower():
+                goal_type = "weight_loss"
+            elif "增肌" in query or "muscle" in query.lower():
+                goal_type = "muscle_gain"
+
+            advice_result = await self.health_advice_service.generate_comprehensive_advice(
+                user_id=self.user_id,
+                goal_type=goal_type,
+                duration_weeks=duration_weeks
+            )
+
+            if hasattr(advice_result, 'diet'):
+                return self._format_health_advice_message(advice_result)
+            else:
+                return f"健康建议生成完成：{advice_result}"
+
+        except Exception as e:
+            logger.error(f"健康建议生成失败: {e}")
+            return f"健康建议生成失败: {str(e)}"
+
+    def _search_knowledge_sync(self, query: str) -> str:
+        """知识检索和健康建议生成工具（同步版本）"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(self._search_knowledge(query))
+        except Exception as e:
+            logger.error(f"健康建议生成失败: {e}")
+            return f"健康建议生成失败: {str(e)}"
 
 
 # 为了保持兼容性，创建别名

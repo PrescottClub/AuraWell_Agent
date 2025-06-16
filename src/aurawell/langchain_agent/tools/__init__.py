@@ -6,17 +6,17 @@ LangChain 工具适配器模块
 from .adapter import ToolAdapter
 from .health_tools import LangChainHealthTools
 from .family_tools import (
-    FamilyContextTool, 
-    DataComparisonTool, 
+    FamilyContextTool,
+    DataComparisonTool,
     GoalSharingTool,
-    register_phase_ii_tools
+    register_phase_ii_tools,
 )
 
 __all__ = [
-    "ToolAdapter", 
+    "ToolAdapter",
     "LangChainHealthTools",
     "FamilyContextTool",
-    "DataComparisonTool", 
+    "DataComparisonTool",
     "GoalSharingTool",
-    "register_phase_ii_tools"
+    "register_phase_ii_tools",
 ]
