@@ -5,6 +5,11 @@
       <p>管理您的个人信息和健康数据</p>
     </div>
 
+    <!-- 家庭成员切换器 -->
+    <div class="member-switcher-section mb-6">
+      <MemberSwitcher />
+    </div>
+
     <a-row :gutter="24">
       <!-- 基本信息卡片 -->
       <a-col :span="24" :lg="12">
@@ -275,9 +280,12 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { MoreOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '../../stores/user.js'
-// import dayjs from 'dayjs'
+import { useFamilyStore } from '../../stores/family.js'
+import MemberSwitcher from '../../components/family/MemberSwitcher.vue'
+import dayjs from 'dayjs'
 
 const userStore = useUserStore()
+const familyStore = useFamilyStore()
 
 // 响应式数据
 const showGoalModal = ref(false)

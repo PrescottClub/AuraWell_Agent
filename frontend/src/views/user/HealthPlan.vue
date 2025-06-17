@@ -13,6 +13,11 @@
       </div>
     </div>
 
+    <!-- 家庭成员切换器 -->
+    <div class="member-switcher-section mb-6">
+      <MemberSwitcher />
+    </div>
+
     <!-- 计划列表 -->
     <div v-if="healthPlanStore.plans.length === 0 && !healthPlanStore.loading" class="empty-plans">
       <a-empty description="暂无健康计划">
@@ -374,9 +379,12 @@ import {
 } from '@ant-design/icons-vue'
 import { useHealthPlanStore } from '../../stores/healthPlan.js'
 import { useUserStore } from '../../stores/user.js'
+import { useFamilyStore } from '../../stores/family.js'
+import MemberSwitcher from '../../components/family/MemberSwitcher.vue'
 
 const healthPlanStore = useHealthPlanStore()
 const userStore = useUserStore()
+const familyStore = useFamilyStore()
 
 // 响应式数据
 const showGenerateModal = ref(false)
