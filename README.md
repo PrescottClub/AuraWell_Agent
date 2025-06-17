@@ -241,45 +241,70 @@ ws.onmessage = function(event) {
 ### 🚀 **为什么选择AuraWell？**
 
 **🤖 真正智能的AI对话**
-- 基于DeepSeek Reasoner，具备复杂推理能力
-- 不是简单的问答，而是能理解上下文的深度对话
-- 结合医学知识库，给出科学可信的建议
+- 基于DeepSeek Reasoner，具备复杂推理和多轮对话能力
+- LangChain框架支持，实现工具调用和记忆管理
+- RAG知识库加持，结合权威医学文献给出科学建议
+- 五模块结构化输出，覆盖营养、运动、睡眠、心理、体重管理
 
 **⚡ 极致的用户体验**
-- WebSocket实时对话，像聊天一样自然
-- 流式输出，AI回复逐字显示，无需等待
-- 自动重连，网络断开也不影响使用
+- WebSocket实时对话，流式输出逐字显示
+- 自动重连机制，网络断开无感知恢复
+- 多用户并发支持，家庭成员同时使用
+- 响应式设计，支持桌面和移动设备
 
 **🏠 专为家庭设计**
-- 一个账号管理全家健康
-- 灵活的权限控制，保护隐私
-- 家庭互动功能，让健康管理更有趣
+- 细粒度权限控制 (Owner/Manager/Viewer)
+- 家庭成员数据隔离和隐私保护
+- 健康排行榜和挑战赛，增强家庭互动
+- 异常健康状态自动告警通知
 
 **🛡️ 企业级稳定性**
-- 完善的错误处理和重试机制
-- 详细的操作日志和审计追踪
-- API限流保护，防止滥用
+- 完善的错误处理和自动重试机制
+- 详细的操作日志和安全审计追踪
+- API限流保护和DDoS防护
+- 数据加密存储和传输安全保障
+
+**🔌 先进的技术架构**
+- MCP协议支持，13个智能化服务器协作
+- 微服务架构，支持水平扩展
+- 异步处理，高并发性能优化
+- 多数据库支持，灵活的部署选择
+
+**📚 专业的知识体系**
+- 权威医学文献知识库
+- 中文健康内容优化
+- 持续更新的医学研究成果
+- 个性化健康建议生成
 
 ### 🏗️ **核心技术架构**
 
 ```
-🌐 用户界面
+🌐 前端界面 (React + TypeScript)
     ↓
-📡 WebSocket实时通信
+📡 WebSocket实时通信 + REST API
     ↓
-🤖 LangChain AI Agent
+🛡️ 认证中间件 (JWT + 权限控制)
     ↓
-🧠 DeepSeek推理引擎 + 📚 医学知识库
+🤖 LangChain AI Agent + 🔄 Agent Router
     ↓
-🗄️ 数据库 (用户数据 + 健康记录)
+📚 RAG知识库 (ChromaDB + 向量检索) + 🧠 DeepSeek推理引擎
+    ↓
+🔌 MCP协议层 (13个智能化MCP服务器)
+    ↓
+🗄️ 数据库层 (SQLAlchemy + PostgreSQL/SQLite)
+    ↓
+🔗 健康平台集成 (小米健康 + 薄荷健康 + Apple Health)
 ```
 
 **技术亮点**
-- **LangChain框架** - 业界领先的AI Agent开发框架
-- **DeepSeek Reasoner** - 国产顶级推理模型
-- **FastAPI** - 高性能Python Web框架
-- **WebSocket** - 实时双向通信
-- **SQLAlchemy** - 企业级数据库ORM
+- **LangChain框架** - 业界领先的AI Agent开发框架，支持工具调用和记忆管理
+- **DeepSeek Reasoner** - 国产顶级推理模型，具备复杂推理能力
+- **RAG知识库** - ChromaDB向量数据库 + Sentence Transformers，提供专业医学知识检索
+- **MCP协议支持** - 13个智能化MCP服务器自动协作，实现复杂健康管理任务
+- **FastAPI** - 高性能Python Web框架，支持异步处理和自动API文档生成
+- **WebSocket** - 实时双向通信，支持流式AI对话和自动重连
+- **SQLAlchemy** - 企业级数据库ORM，支持多数据库和异步操作
+- **家庭权限系统** - 基于角色的细粒度权限控制，保护家庭成员隐私
 
 ---
 
@@ -287,9 +312,15 @@ ws.onmessage = function(event) {
 
 ### 📋 环境要求
 
-- Python 3.11+
-- 数据库 (PostgreSQL/MySQL)
+**基础环境**
+- Python 3.11+ (推荐 3.12)
+- 数据库 (PostgreSQL 推荐 / SQLite 开发)
 - DeepSeek API Key
+
+**可选组件**
+- ChromaDB (RAG知识库)
+- Redis (缓存和会话管理)
+- Docker (容器化部署)
 
 ### ⚡ 5分钟快速体验
 
@@ -302,21 +333,61 @@ cd aurawell
 pip install -r requirements.txt
 
 # 3. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，添加你的 DeepSeek API Key
+cp env.example .env
+# 编辑 .env 文件，添加必要配置：
+# DEEPSEEK_API_KEY=your_deepseek_api_key
+# DATABASE_URL=sqlite:///aurawell.db  # 开发环境
+# JWT_SECRET_KEY=your_jwt_secret_key
 
-# 4. 启动服务
+# 4. 初始化数据库
+python -c "from src.aurawell.database import get_database_manager; import asyncio; asyncio.run(get_database_manager().initialize_database())"
+
+# 5. 启动服务
 python run_api_server.py
 
-# 5. 打开浏览器访问
-# http://localhost:8000/docs - API文档
-# ws://localhost:8000/ws/chat/{user_id} - WebSocket对话
+# 6. 访问服务
+# http://localhost:8000/docs - Swagger API文档
+# http://localhost:8000/redoc - ReDoc API文档
+# ws://localhost:8000/ws/chat/{user_id}?token=demo-test-token - WebSocket对话
 ```
 
-### 🌐 在线体验
+### 🔧 **详细配置说明**
 
-如果你想直接体验功能，可以使用我们的在线演示：
+**环境变量配置 (.env)**
+```bash
+# AI服务配置
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
 
+# 数据库配置
+DATABASE_URL=postgresql://user:password@localhost/aurawell  # 生产环境
+# DATABASE_URL=sqlite:///aurawell.db  # 开发环境
+
+# 认证配置
+JWT_SECRET_KEY=your_jwt_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=1440
+
+# RAG配置 (可选)
+CHROMA_DB_PATH=./data/chroma_db
+EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+
+# MCP配置 (可选)
+MCP_SERVER_PORT=8001
+MCP_WEBSOCKET_URL=ws://localhost:8001
+
+# 健康平台API (可选)
+XIAOMI_HEALTH_API_KEY=your_xiaomi_api_key
+BOHE_HEALTH_API_KEY=your_bohe_api_key
+
+# 日志配置
+LOG_LEVEL=INFO
+LOG_FILE=./logs/aurawell.log
+```
+
+### 🌐 **功能测试**
+
+**API接口测试**
 ```bash
 # 创建家庭
 curl -X POST "http://localhost:8000/api/v1/family" \
@@ -329,72 +400,178 @@ curl -X POST "http://localhost:8000/api/v1/health/advice/comprehensive" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer demo-test-token" \
   -d '{"goal_type": "general_health", "duration_weeks": 4, "special_requirements": "如何改善睡眠质量？"}'
+
+# WebSocket连接测试
+wscat -c "ws://localhost:8000/ws/chat/test_user?token=demo-test-token"
 ```
 
-### 🌐 前端开发
+### 🌐 **前端开发**
 
 ```bash
 cd frontend
 npm install
 npm run dev  # 开发模式: http://localhost:5175
 npm run build  # 生产构建
+npm run preview  # 预览构建结果
 ```
 
-### ☁️ 云端部署
+**前端技术栈**
+- React 18 + TypeScript
+- Vite 构建工具
+- Tailwind CSS 样式框架
+- WebSocket 实时通信
+- Chart.js 数据可视化
 
+### ☁️ **部署选项**
+
+**Docker部署**
 ```bash
-# 安装Serverless Devs CLI
+# 构建镜像
+docker build -t aurawell:latest .
+
+# 运行容器
+docker run -d \
+  --name aurawell \
+  -p 8000:8000 \
+  -e DEEPSEEK_API_KEY=your_key \
+  -e DATABASE_URL=postgresql://user:pass@host/db \
+  aurawell:latest
+```
+
+**云端部署**
+```bash
+# 阿里云Serverless部署
 npm install -g @serverless-devs/s
+s config add  # 配置阿里云凭证
+s deploy      # 一键部署
 
-# 配置阿里云凭证
-s config add
+# AWS Lambda部署
+pip install chalice
+chalice deploy
 
-# 一键部署到阿里云
-s deploy
+# 腾讯云SCF部署
+pip install scf
+scf deploy
 ```
 
 ---
 
 ## 📊 核心功能模块
 
-### 🎯 健康数据同步
+### 🤖 **LangChain AI智能体**
+**核心能力**
+- **智能对话** - 基于DeepSeek Reasoner的自然语言理解和生成
+- **工具调用** - 动态调用健康分析、家庭管理等专业工具
+- **记忆管理** - 维护长期对话历史和用户偏好
+- **意图识别** - 准确理解用户健康咨询需求
+
+**五模块结构化输出**
+- 🍎 **饮食营养** - 个性化营养需求计算和食谱推荐
+- 🏃‍♂️ **运动健身** - 基于体质的运动计划制定
+- ⚖️ **体重管理** - 科学减重/增重策略
+- 😴 **睡眠优化** - 睡眠质量改善建议
+- 🧘‍♀️ **心理健康** - 压力管理和情绪调节
+
+### 📚 **RAG知识库系统**
+**知识来源**
+- 权威医学文献和指南
+- 营养学专业资料
+- 运动科学研究成果
+- 心理健康专业知识
+
+**技术实现**
+- **ChromaDB向量数据库** - 高效的向量存储和检索
+- **Sentence Transformers** - 中文医学文本向量化
+- **FAISS索引** - 快速相似性搜索
+- **知识更新机制** - 定期更新最新医学研究
+
+### 🔌 **MCP协议支持**
+**13个智能化MCP服务器**
+- 健康数据分析服务器
+- 营养计算服务器
+- 运动计划生成服务器
+- 睡眠质量评估服务器
+- 心理健康评估服务器
+- 家庭权限管理服务器
+- 报告生成服务器
+- 数据同步服务器
+- 通知推送服务器
+- 成就系统服务器
+- 数据可视化服务器
+- 安全审计服务器
+- 系统监控服务器
+
+### 🏠 **家庭健康管理**
+**权限控制系统**
+- **Owner (家长)** - 全权管理，查看所有成员数据
+- **Manager (配偶)** - 管理指定成员，设置健康目标
+- **Viewer (成员)** - 查看个人数据，参与家庭活动
+
+**家庭互动功能**
+- 健康数据排行榜 (步数、睡眠、运动)
+- 家庭健康挑战赛
+- 成员健康状态监控
+- 异常情况自动告警
+
+### 🎯 **健康数据同步**
 **支持平台**
-- Apple Health (HealthKit)
-- 华为健康 (Huawei Health)
-- 小米运动 (Mi Fitness)
-- 薄荷健康 (Bohe Health)
+- 小米健康 (Mi Health) - 完整API集成
+- 薄荷健康 (Bohe Health) - 营养数据同步
+- Apple Health (HealthKit) - iOS设备数据
+- 华为健康 (Huawei Health) - 华为设备数据
 
-**同步数据**
-- 步数、距离、卡路里消耗
-- 心率、血压、体重
-- 睡眠时长、深睡比例
-- 运动类型、运动时长
+**同步数据类型**
+- **活动数据** - 步数、距离、卡路里消耗、运动类型
+- **生理指标** - 心率、血压、体重、体脂率
+- **睡眠数据** - 睡眠时长、深睡比例、睡眠质量
+- **营养数据** - 饮食记录、营养摄入、热量统计
 
-### 📈 智能健康报告
-
-**AI深度解读**
+### 📈 **智能健康报告**
+**AI深度分析**
 ```
-"过去两周深睡时间下降15%，可能与工作强度上升有关，
-建议睡前做5分钟深呼吸放松。"
+"过去两周深睡时间下降15%，可能与工作强度上升有关。
+建议：睡前做5分钟深呼吸放松，调整晚餐时间至19:00前，
+减少睡前2小时的屏幕时间。预计1周内睡眠质量可改善20%。"
 ```
 
 **可视化图表**
-- 体重趋势折线图
-- 运动量柱状图
-- 睡眠质量热力图
-- 心理状态雷达图
+- 体重趋势折线图 - 长期体重变化分析
+- 运动量柱状图 - 每日/周/月运动统计
+- 睡眠质量热力图 - 睡眠模式可视化
+- 心理状态雷达图 - 多维度心理健康评估
+- 营养摄入饼图 - 营养结构分析
 
-### 🛡️ 数据安全与合规
+### 💬 **WebSocket实时通信**
+**技术特性**
+- **流式AI对话** - 逐字显示AI回复，无需等待
+- **自动重连机制** - 网络断开自动恢复连接
+- **多用户并发** - 支持大量用户同时在线
+- **消息确认机制** - 确保消息可靠传输
 
+**支持的消息类型**
+- 健康咨询对话 (health_chat)
+- 一般聊天对话 (general_chat)
+- 家庭成员切换 (switch_member)
+- 系统状态更新 (status_update)
+
+### 🛡️ **数据安全与合规**
 **传输安全**
 - 全链路TLS 1.3加密
+- WebSocket安全连接 (WSS)
 - API Gateway统一鉴权
 - JWT Token过期管理
 
 **存储安全**
 - 敏感字段AES-256加密
-- 数据库访问最小权限
+- 数据库访问最小权限原则
 - 定期数据备份与恢复
+- 审计日志完整记录
+
+**隐私保护**
+- 家庭成员数据隔离
+- 细粒度权限控制
+- 数据匿名化处理
+- GDPR合规设计
 
 ---
 
@@ -403,45 +580,200 @@ s deploy
 ### 📁 **项目结构一览**
 
 ```
-src/aurawell/
-├── 🤖 langchain_agent/          # AI智能体核心
-│   ├── agent.py                 # 主要的AI对话逻辑
-│   ├── tools/                   # AI可以使用的工具
-│   └── services/                # 健康建议生成服务
-├── 🏠 services/                 # 业务功能
-│   ├── family_service.py        # 家庭管理
-│   ├── dashboard_service.py     # 健康仪表盘
-│   └── report_service.py        # 报告生成
-├── 🔌 interfaces/               # 对外接口
-│   ├── api_interface.py         # REST API
-│   └── websocket_interface.py   # 实时对话
-├── 📊 models/                   # 数据模型
-│   ├── family_models.py         # 家庭相关数据
-│   └── health_models.py         # 健康相关数据
-├── ⚙️ config/                   # 配置管理
-│   ├── settings.py              # 应用配置
-│   └── health_constants.py      # 健康常量
-└── 🔧 core/                     # 核心组件
-    ├── agent_router.py          # 智能路由
-    └── deepseek_client.py       # AI客户端
+AuraWell_Agent/
+├── 📁 src/aurawell/                 # 主要源代码目录
+│   ├── 🤖 langchain_agent/          # LangChain AI智能体核心
+│   │   ├── agent.py                 # 主要的AI对话逻辑和工具调用
+│   │   ├── tools/                   # AI可以使用的工具集
+│   │   │   ├── adapter.py               # 工具适配器
+│   │   │   ├── health_advice_tool.py    # 健康建议生成工具
+│   │   │   ├── family_tools.py          # 家庭管理工具
+│   │   │   └── health_tools.py          # 健康数据分析工具
+│   │   ├── services/                # 健康建议生成服务
+│   │   │   ├── health_advice_service.py # 核心健康建议服务
+│   │   │   └── parsers.py               # 五模块结构化解析器
+│   │   ├── memory/                  # 对话记忆管理
+│   │   │   └── conversation_memory.py   # 对话历史存储
+│   │   └── templates/               # 提示词模板
+│   │       └── health_advice_prompt.template # 健康建议提示词模板
+│   ├── 🤖 agent/                    # 传统Agent系统 (兼容性保留)
+│   │   ├── health_tools.py          # 健康工具集合
+│   │   ├── health_tools_helpers.py  # 健康工具辅助函数
+│   │   └── tools_registry.py        # 工具注册表
+│   ├── 📚 rag/                      # RAG知识库系统
+│   │   └── __init__.py              # RAG模块初始化
+│   ├── 🔌 mcp/                      # MCP协议支持
+│   │   └── __init__.py              # MCP模块初始化
+│   ├── 🏠 services/                 # 业务功能服务层
+│   │   ├── family_service.py        # 家庭管理服务
+│   │   ├── dashboard_service.py     # 健康仪表盘服务
+│   │   ├── report_service.py        # 报告生成服务
+│   │   ├── chat_service.py          # 对话管理服务
+│   │   ├── database_service.py      # 数据库操作服务
+│   │   └── data_sanitization_service.py # 数据清理服务
+│   ├── 🔌 interfaces/               # 对外接口层
+│   │   ├── api_interface.py         # REST API接口
+│   │   ├── websocket_interface.py   # WebSocket实时通信
+│   │   └── cli_interface.py         # 命令行接口
+│   ├── 🛡️ auth/                     # 认证授权系统
+│   │   └── jwt_auth.py              # JWT认证实现
+│   ├── 🔄 middleware/               # 中间件层
+│   │   ├── cors_middleware.py       # 跨域处理
+│   │   ├── error_handler.py         # 错误处理中间件
+│   │   └── rate_limiter.py          # API限流中间件
+│   ├── 📊 models/                   # 数据模型层
+│   │   ├── family_models.py         # 家庭相关数据模型
+│   │   ├── health_data_model.py     # 健康数据模型
+│   │   ├── user_profile.py          # 用户档案模型
+│   │   ├── api_models.py            # API请求响应模型
+│   │   ├── chat_models.py           # 对话数据模型
+│   │   ├── dashboard_models.py      # 仪表盘数据模型
+│   │   ├── enums.py                 # 枚举定义
+│   │   └── error_codes.py           # 错误代码定义
+│   ├── 🗄️ database/                 # 数据库层
+│   │   ├── connection.py            # 数据库连接管理
+│   │   ├── models.py                # SQLAlchemy数据库模型
+│   │   ├── base.py                  # 数据库基类
+│   │   ├── migrations.py            # 数据库迁移
+│   │   └── db_init_checker.py       # 数据库初始化检查
+│   ├── 📦 repositories/             # 数据访问层
+│   │   ├── base.py                  # 仓库基类
+│   │   ├── user_repository.py       # 用户数据仓库
+│   │   ├── health_data_repository.py # 健康数据仓库
+│   │   ├── family_repository.py     # 家庭数据仓库
+│   │   ├── chat_repository.py       # 对话数据仓库
+│   │   ├── achievement_repository.py # 成就数据仓库
+│   │   └── health_plan_repository.py # 健康计划仓库
+│   ├── 🔗 integrations/             # 外部平台集成
+│   │   ├── xiaomi_health_client.py  # 小米健康API集成
+│   │   ├── bohe_health_client.py    # 薄荷健康API集成
+│   │   ├── apple_health_client.py   # Apple Health集成
+│   │   └── generic_health_api_client.py # 通用健康API客户端
+│   ├── 🎮 gamification/             # 游戏化系统
+│   │   └── achievement_system.py    # 成就系统
+│   ├── 💬 conversation/             # 对话管理
+│   │   ├── memory_manager.py        # 记忆管理器
+│   │   └── session_manager.py       # 会话管理器
+│   ├── ⚙️ config/                   # 配置管理
+│   │   ├── settings.py              # 应用配置
+│   │   ├── health_constants.py      # 健康常量定义
+│   │   └── logging_config.py        # 日志配置
+│   ├── 🔧 core/                     # 核心组件
+│   │   ├── agent_router.py          # 智能Agent路由
+│   │   ├── deepseek_client.py       # DeepSeek AI客户端
+│   │   ├── orchestrator_v2.py       # 系统协调器
+│   │   ├── permissions.py           # 权限管理
+│   │   └── exceptions.py            # 异常定义
+│   ├── 🛠️ utils/                    # 工具函数
+│   │   ├── health_calculations.py   # 健康指标计算
+│   │   ├── data_validation.py       # 数据验证
+│   │   ├── async_tasks.py           # 异步任务管理
+│   │   ├── cache.py                 # 缓存工具
+│   │   ├── date_utils.py            # 日期工具
+│   │   └── encryption_utils.py      # 加密工具
+│   └── main.py                      # 应用入口文件
+├── 🌐 frontend/                     # 前端项目目录 (Vue 3 + Vite)
+│   ├── src/                         # 前端源代码
+│   │   ├── App.vue                  # 主应用组件
+│   │   ├── main.js                  # 应用入口文件
+│   │   ├── style.css                # 全局样式
+│   │   ├── api/                     # API接口层
+│   │   │   ├── chat.js              # 聊天API接口
+│   │   │   ├── healthPlan.js        # 健康计划API接口
+│   │   │   └── user.js              # 用户API接口
+│   │   ├── components/              # 可复用组件
+│   │   │   ├── GlobalHeader.vue     # 全局头部组件
+│   │   │   ├── chat/                # 聊天相关组件
+│   │   │   └── health/              # 健康相关组件
+│   │   ├── layout/                  # 布局组件
+│   │   │   ├── AdminLayout.vue      # 管理员布局
+│   │   │   └── BasicLayout.vue      # 基础布局
+│   │   ├── router/                  # 路由配置
+│   │   │   └── index.js             # 路由定义
+│   │   ├── stores/                  # 状态管理 (Pinia)
+│   │   │   ├── auth.js              # 认证状态
+│   │   │   ├── chat.js              # 聊天状态
+│   │   │   ├── health.js            # 健康数据状态
+│   │   │   ├── healthPlan.js        # 健康计划状态
+│   │   │   └── user.js              # 用户状态
+│   │   ├── utils/                   # 工具函数
+│   │   │   ├── healthPlanUtils.js   # 健康计划工具
+│   │   │   └── request.js           # HTTP请求工具
+│   │   └── views/                   # 页面组件
+│   │       ├── Login.vue            # 登录页面
+│   │       ├── Register.vue         # 注册页面
+│   │       ├── admin/               # 管理员页面
+│   │       └── user/                # 用户页面
+│   ├── public/                      # 静态资源
+│   │   └── vite.svg                 # Vite图标
+│   ├── node_modules/                # 前端依赖包
+│   ├── package.json                 # 前端依赖配置
+│   ├── package-lock.json            # 依赖锁定文件
+│   ├── vite.config.js               # Vite构建配置
+│   ├── tailwind.config.js           # Tailwind CSS配置
+│   ├── postcss.config.js            # PostCSS配置
+│   ├── index.html                   # HTML入口文件
+│   └── README.md                    # 前端项目说明
+├── 📚 docs/                         # 项目文档
+│   ├── API.md                       # API接口文档
+│   ├── ARCHITECTURE_SUMMARY.md      # 架构总结文档
+│   ├── DEPLOYMENT.md                # 部署指南
+│   ├── FASTAPI_IMPLEMENTATION.md    # FastAPI实现文档
+│   ├── VERSION_MANAGEMENT.md        # 版本管理文档
+│   ├── development_roadmap.md       # 开发路线图
+│   ├── family_architecture.md       # 家庭架构文档
+│   ├── tools_contract.md            # 工具契约文档
+│   └── reports/                     # 报告文档
+│       ├── AURAWELL_FAMILY_AGENT_AUDIT_REPORT.md      # 家庭代理审计报告
+│       └── FAMILY_AGENT_AUDIT_COMPLETION_REPORT.md    # 家庭代理审计完成报告
+├── 🧪 tests/                        # 测试文件
+│   ├── test_health_constants.py     # 健康常量测试
+│   ├── __pycache__/                 # Python缓存文件
+│   └── README.md                    # 测试说明文档
+├── 🚀 scripts/                      # 部署和工具脚本
+│   ├── __init__.py                  # Python包初始化
+│   ├── mcp_auto_setup.py            # MCP自动设置脚本
+│   ├── deploy_mcp_config.ps1        # MCP部署配置
+│   ├── start_mcp_env.ps1            # MCP环境启动
+│   └── release.py                   # 发布脚本
+├── ☁️ deployment/                   # 部署配置
+│   └── serverless.yml              # Serverless部署配置
+├── 📝 logs/                         # 日志文件
+│   ├── aurawell.log                 # 应用日志
+│   └── aurawell_errors.log          # 错误日志
+├── 📋 requirements.txt              # Python依赖配置
+├── 🔧 run_api_server.py             # API服务器启动脚本
+├── ⚙️ env.example                   # 环境变量配置示例
+├── 📖 README.md                     # 项目说明文档
+├── 📄 CHANGELOG.md                  # 版本更新日志
+├── 📋 AURAWELL_DEVELOPMENT_GUIDE.md # 开发指南
+└── 🗄️ aurawell.db*                  # SQLite数据库文件 (开发环境)
 ```
-
-### 👥 **开发团队**
-
-| 成员 | 角色 | 主要贡献 |
-|------|------|----------|
-| **Terence** | 项目负责人 | 架构设计、核心功能开发 |
-| **wizardG7777777** | 后端开发 | 用户意图识别、对话管理、测试 |
-| **Young** | 前端开发 | 用户界面、交互体验 |
 
 ### 🎯 **开发进展**
 
-- ✅ **核心AI对话** - 基于LangChain的智能健康顾问
-- ✅ **家庭管理** - 多用户权限控制和成员管理
-- ✅ **实时通信** - WebSocket流式对话体验
-- ✅ **健康报告** - AI生成个性化健康分析
-- ✅ **数据安全** - 企业级权限控制和审计日志
-- 🔄 **前端界面** - 用户友好的Web界面开发中
+**✅ 已完成功能**
+- **LangChain AI智能体** - 基于DeepSeek的智能健康顾问，支持工具调用和记忆管理
+- **家庭管理系统** - 完整的多用户权限控制和成员管理功能
+- **WebSocket实时通信** - 流式AI对话体验，支持自动重连和并发处理
+- **健康数据集成** - 小米健康、薄荷健康等平台的数据同步
+- **智能健康报告** - AI生成个性化健康分析和可视化图表
+- **RAG知识库** - ChromaDB向量数据库和医学知识检索系统
+- **MCP协议支持** - 13个智能化MCP服务器自动协作
+- **数据安全系统** - 企业级权限控制、JWT认证和审计日志
+- **FastAPI后端** - 完整的REST API和自动文档生成
+- **数据库层** - SQLAlchemy ORM，支持PostgreSQL和SQLite
+
+**🔄 开发中功能**
+- **前端界面** - Vue 3 + TypeScript + Ant Design Vue用户界面开发
+- **高级分析** - 更复杂的健康趋势分析和预测
+- **移动端适配** - 响应式设计和PWA支持
+
+**📋 计划中功能**
+- **机器学习模型** - 个性化健康预测模型
+- **更多健康平台** - 华为健康、Apple Health等集成
+- **智能提醒系统** - 基于AI的个性化健康提醒
+- **社交功能** - 家庭健康社区和分享功能
 
 ---
 
