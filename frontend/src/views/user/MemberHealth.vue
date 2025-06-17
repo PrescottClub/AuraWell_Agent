@@ -70,7 +70,7 @@
               suffix="步"
             >
               <template #prefix>
-                <WalkOutlined />
+                <StepForwardOutlined />
               </template>
             </a-statistic>
           </a-card>
@@ -85,7 +85,7 @@
               :precision="1"
             >
               <template #prefix>
-                <MoonOutlined />
+                <ClockCircleOutlined />
               </template>
             </a-statistic>
           </a-card>
@@ -264,8 +264,8 @@ import { message } from 'ant-design-vue'
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
-  WalkOutlined,
-  MoonOutlined,
+  StepForwardOutlined,
+  ClockCircleOutlined,
   FireOutlined,
   HeartOutlined,
   ArrowUpOutlined,

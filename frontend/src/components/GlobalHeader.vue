@@ -3,8 +3,8 @@
         <a-row :wrap="false">
             <a-col felx="100px">
                 <div class="title-bar">
-                <img src="../../public/vite.svg" class="logo">
-                <div class="title">Auraweell Agent</div>
+                <img src="/vite.svg" class="logo">
+                <div class="title">AuraWell Agent</div>
             </div>
             </a-col>
             <a-col flex="auto">
@@ -65,7 +65,8 @@ import {
   FileTextOutlined,
   DownOutlined,
   LogoutOutlined,
-  TeamOutlined
+  TeamOutlined,
+  BarChartOutlined
 } from '@ant-design/icons-vue';
 import { useAuthStore } from '../stores/auth.js';
 import { useUserStore } from '../stores/user.js';
@@ -97,6 +98,12 @@ const items = ref([
         title: '健康计划',
     },
     {
+        key: 'health-report',
+        icon: () => h(BarChartOutlined),
+        label: '健康报告',
+        title: '健康报告',
+    },
+    {
         key: 'family',
         icon: () => h(TeamOutlined),
         label: '家庭管理',
@@ -124,8 +131,11 @@ const handleMenuClick = ({ key }) => {
     case 'health-plan':
       router.push('/health-plan');
       break;
+    case 'health-report':
+      router.push('/health-report');
+      break;
     case 'family':
-      router.push('/family/dashboard');
+      router.push('/family');
       break;
     case 'profile':
       router.push('/profile');
@@ -154,6 +164,8 @@ const updateCurrentMenu = () => {
     current.value = ['health-chat'];
   } else if (path.includes('health-plan')) {
     current.value = ['health-plan'];
+  } else if (path.includes('health-report')) {
+    current.value = ['health-report'];
   } else if (path.includes('family')) {
     current.value = ['family'];
   } else if (path.includes('profile')) {
