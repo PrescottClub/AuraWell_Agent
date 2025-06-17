@@ -177,7 +177,7 @@ import {
   DashboardOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons-vue'
-import { useFamilyStore } from '@/stores/family'
+import { useFamilyStore } from '../../stores/family.js'
 import MemberManagement from './MemberManagement.vue'
 
 const familyStore = useFamilyStore()

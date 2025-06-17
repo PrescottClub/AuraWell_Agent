@@ -1,7 +1,8 @@
-import request from '../utils/request'
+// 使用Mock API替代真实API调用
+import { authAPI } from '../mock/api.js'
 
 /**
- * 用户管理API服务
+ * 用户管理API服务 - Mock版本
  */
 export class UserAPI {
   /**
@@ -11,7 +12,7 @@ export class UserAPI {
    */
   static async register(userData) {
     try {
-      const response = await request.post('/auth/register', userData)
+      const response = await authAPI.register(userData)
       return response
     } catch (error) {
       console.error('用户注册失败:', error)
@@ -26,7 +27,7 @@ export class UserAPI {
    */
   static async login(credentials) {
     try {
-      const response = await request.post('/auth/login', credentials)
+      const response = await authAPI.login(credentials)
       return response
     } catch (error) {
       console.error('用户登录失败:', error)
@@ -40,7 +41,7 @@ export class UserAPI {
    */
   static async getProfile() {
     try {
-      const response = await request.get('/user/profile')
+      const response = await authAPI.getCurrentUser()
       return response
     } catch (error) {
       console.error('获取用户档案失败:', error)
@@ -55,7 +56,7 @@ export class UserAPI {
    */
   static async updateProfile(profileData) {
     try {
-      const response = await request.put('/user/profile', profileData)
+      const response = await authAPI.updateProfile(profileData)
       return response
     } catch (error) {
       console.error('更新用户档案失败:', error)
@@ -64,13 +65,32 @@ export class UserAPI {
   }
 
   /**
-   * 获取用户健康数据
+   * 获取用户健康数据 - Mock实现
    * @returns {Promise} 健康数据
    */
   static async getHealthData() {
     try {
-      const response = await request.get('/user/health-data')
-      return response
+      // 模拟健康数据
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      const mockHealthData = {
+        weight: 70,
+        height: 175,
+        bmi: 22.9,
+        blood_pressure: '120/80',
+        heart_rate: 72,
+        steps_today: 8500,
+        sleep_hours: 7.5,
+        water_intake: 2.1,
+        last_updated: new Date().toISOString()
+      }
+
+      return {
+        success: true,
+        data: mockHealthData,
+        message: '获取健康数据成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('获取健康数据失败:', error)
       throw error
@@ -78,14 +98,23 @@ export class UserAPI {
   }
 
   /**
-   * 更新用户健康数据
+   * 更新用户健康数据 - Mock实现
    * @param {Object} healthData - 健康数据
    * @returns {Promise} API响应
    */
   static async updateHealthData(healthData) {
     try {
-      const response = await request.put('/user/health-data', healthData)
-      return response
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      return {
+        success: true,
+        data: {
+          ...healthData,
+          last_updated: new Date().toISOString()
+        },
+        message: '健康数据更新成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('更新健康数据失败:', error)
       throw error
@@ -93,13 +122,44 @@ export class UserAPI {
   }
 
   /**
-   * 获取用户健康目标
+   * 获取用户健康目标 - Mock实现
    * @returns {Promise} 健康目标列表
    */
   static async getHealthGoals() {
     try {
-      const response = await request.get('/user/health-goals')
-      return response
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      const mockGoals = [
+        {
+          goal_id: 'goal_001',
+          title: '减重目标',
+          description: '3个月内减重5kg',
+          target_value: 65,
+          current_value: 70,
+          unit: 'kg',
+          deadline: '2024-09-17',
+          status: 'active',
+          progress: 0
+        },
+        {
+          goal_id: 'goal_002',
+          title: '每日步数',
+          description: '每天走10000步',
+          target_value: 10000,
+          current_value: 8500,
+          unit: '步',
+          deadline: '2024-12-31',
+          status: 'active',
+          progress: 85
+        }
+      ]
+
+      return {
+        success: true,
+        data: mockGoals,
+        message: '获取健康目标成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('获取健康目标失败:', error)
       throw error
@@ -107,14 +167,29 @@ export class UserAPI {
   }
 
   /**
-   * 创建健康目标
+   * 创建健康目标 - Mock实现
    * @param {Object} goalData - 目标数据
    * @returns {Promise} API响应
    */
   static async createHealthGoal(goalData) {
     try {
-      const response = await request.post('/user/health-goals', goalData)
-      return response
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const newGoal = {
+        goal_id: 'goal_' + Date.now(),
+        ...goalData,
+        current_value: 0,
+        progress: 0,
+        status: 'active',
+        created_at: new Date().toISOString()
+      }
+
+      return {
+        success: true,
+        data: newGoal,
+        message: '健康目标创建成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('创建健康目标失败:', error)
       throw error
@@ -122,15 +197,27 @@ export class UserAPI {
   }
 
   /**
-   * 更新健康目标
+   * 更新健康目标 - Mock实现
    * @param {string} goalId - 目标ID
    * @param {Object} goalData - 目标数据
    * @returns {Promise} API响应
    */
   static async updateHealthGoal(goalId, goalData) {
     try {
-      const response = await request.put(`/user/health-goals/${goalId}`, goalData)
-      return response
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const updatedGoal = {
+        goal_id: goalId,
+        ...goalData,
+        updated_at: new Date().toISOString()
+      }
+
+      return {
+        success: true,
+        data: updatedGoal,
+        message: '健康目标更新成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('更新健康目标失败:', error)
       throw error
@@ -138,16 +225,36 @@ export class UserAPI {
   }
 
   /**
-   * 删除健康目标
+   * 删除健康目标 - Mock实现
    * @param {string} goalId - 目标ID
    * @returns {Promise} API响应
    */
   static async deleteHealthGoal(goalId) {
     try {
-      const response = await request.delete(`/user/health-goals/${goalId}`)
-      return response
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        data: null,
+        message: '健康目标删除成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('删除健康目标失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 用户登出 - Mock实现
+   * @returns {Promise} API响应
+   */
+  static async logout() {
+    try {
+      const response = await authAPI.logout()
+      return response
+    } catch (error) {
+      console.error('用户登出失败:', error)
       throw error
     }
   }

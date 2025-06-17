@@ -197,6 +197,12 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  const setUser = (userData) => {
+    if (userData) {
+      userProfile.value = { ...userProfile.value, ...userData }
+    }
+  }
+
   const clearUserData = () => {
     userProfile.value = {
       id: '',
@@ -239,6 +245,7 @@ export const useUserStore = defineStore('user', () => {
     bmiCategory,
     
     // 方法
+    setUser,
     fetchUserProfile,
     updateUserProfile,
     fetchHealthData,

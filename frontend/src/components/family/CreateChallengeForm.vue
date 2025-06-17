@@ -36,7 +36,7 @@
         >
           <a-select-option value="steps">
             <div class="flex items-center">
-              <WalkOutlined class="mr-2" />
+              <StepForwardOutlined class="mr-2" />
               步数挑战
             </div>
           </a-select-option>
@@ -48,7 +48,7 @@
           </a-select-option>
           <a-select-option value="sleep_hours">
             <div class="flex items-center">
-              <MoonOutlined class="mr-2" />
+              <ClockCircleOutlined class="mr-2" />
               睡眠挑战
             </div>
           </a-select-option>
@@ -60,7 +60,7 @@
           </a-select-option>
           <a-select-option value="weight_loss">
             <div class="flex items-center">
-              <ScaleOutlined class="mr-2" />
+              <LineChartOutlined class="mr-2" />
               减重挑战
             </div>
           </a-select-option>
@@ -217,11 +217,11 @@
 import { ref, computed, watch } from 'vue'
 import dayjs from 'dayjs'
 import {
-  WalkOutlined,
+  StepForwardOutlined,
   FireOutlined,
-  MoonOutlined,
+  ClockCircleOutlined,
   CalendarOutlined,
-  ScaleOutlined
+  LineChartOutlined
 } from '@ant-design/icons-vue'
 
 const props = defineProps({

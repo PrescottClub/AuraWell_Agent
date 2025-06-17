@@ -119,7 +119,7 @@ import { reactive, ref } from 'vue';
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { useRouter, useRoute } from 'vue-router';
-import request from '../utils/request';
+import { UserAPI } from '../api/user';
 import { useAuthStore } from '../stores/auth';
 import { useUserStore } from '../stores/user';
 
@@ -137,31 +137,38 @@ const formState = reactive({
 const onFinish = async (values) => {
     try {
         loading.value = true;
-        const response = await request.post('/auth/login', {
+
+        // 使用Mock API进行登录
+        const response = await UserAPI.login({
             username: values.username,
             password: values.password
         });
 
-        // 使用store保存token
-        const tokenData = response.data || response;
-        authStore.setToken(
-            tokenData.access_token,
-            tokenData.token_type,
-            tokenData.expires_in
-        );
-        localStorage.setItem('isLoggedIn', 'true');
+        // 检查响应格式并保存token和用户信息
+        if (response.success && response.data) {
+            authStore.setToken(
+                response.data.access_token,
+                response.data.token_type,
+                response.data.expires_in
+            );
+            localStorage.setItem('isLoggedIn', 'true');
 
-        // 获取用户信息
-        await userStore.fetchUserProfile();
+            // 设置用户信息
+            if (response.data.user) {
+                userStore.setUser(response.data.user);
+            }
 
-        message.success('登录成功！');
+            message.success('登录成功！');
 
-        // 重定向到原来要访问的页面，或者默认到首页
-        const redirectPath = route.query.redirect || '/';
-        router.push(redirectPath);
+            // 重定向到原来要访问的页面，或者默认到首页
+            const redirectPath = route.query.redirect || '/';
+            router.push(redirectPath);
+        } else {
+            throw new Error(response.message || '登录失败');
+        }
     } catch (error) {
         console.error('登录失败：', error);
-        message.error('登录失败，请检查用户名和密码');
+        message.error(error.message || '登录失败，请检查用户名和密码');
     } finally {
         loading.value = false;
     }
