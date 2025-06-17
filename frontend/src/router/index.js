@@ -45,7 +45,57 @@ const routes = [
         name: 'HealthPlan',
         component: () => import('../views/user/HealthPlan.vue'),
         meta: { requiresAuth: true }
+      },
+
+    ]
+  },
+  // 家庭管理路由
+  {
+    path: '/family',
+    component: () => import('../layout/BasicLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        redirect: 'dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'FamilyDashboard',
+        component: () => import('../views/user/FamilyDashboard.vue'),
+        meta: { requiresAuth: true }
       }
+      // 其他家庭管理页面暂时注释，等待后续实现
+      // {
+      //   path: 'members',
+      //   name: 'FamilyMembers',
+      //   component: () => import('../views/user/FamilyMembers.vue'),
+      //   meta: { requiresAuth: true }
+      // },
+      // {
+      //   path: 'member/:memberId/health',
+      //   name: 'MemberHealth',
+      //   component: () => import('../views/user/MemberHealth.vue'),
+      //   meta: { requiresAuth: true }
+      // },
+      // {
+      //   path: 'challenges',
+      //   name: 'FamilyChallenges',
+      //   component: () => import('../views/user/FamilyChallenges.vue'),
+      //   meta: { requiresAuth: true }
+      // },
+      // {
+      //   path: 'alerts',
+      //   name: 'FamilyAlerts',
+      //   component: () => import('../views/user/FamilyAlerts.vue'),
+      //   meta: { requiresAuth: true }
+      // },
+      // {
+      //   path: 'settings',
+      //   name: 'FamilySettings',
+      //   component: () => import('../views/user/FamilySettings.vue'),
+      //   meta: { requiresAuth: true }
+      // }
     ]
   },
   {

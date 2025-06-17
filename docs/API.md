@@ -2,9 +2,26 @@
 
 ## 📋 概述
 
-AuraWell API 提供完整的健康管理功能，包括用户认证、健康数据管理、AI健康咨询、健康计划生成等核心服务。
+AuraWell API v1.0.0 提供完整的健康管理功能，包括用户认证、健康数据管理、AI健康咨询、健康计划生成、家庭健康管理等核心服务。
 
-**Base URL**: `http://localhost:8000/api/v1`
+**Base URL**: `http://127.0.0.1:8000/api/v1`
+
+## 📚 交互式文档
+
+- **Swagger UI**: http://127.0.0.1:8000/docs
+- **ReDoc**: http://127.0.0.1:8000/redoc
+- **OpenAPI Schema**: http://127.0.0.1:8000/openapi.json
+- **English Documentation**: [API_EN.md](./API_EN.md)
+
+## 🆕 最新更新 (v1.0.0)
+
+- ✅ 新增家庭健康管理功能
+- ✅ 增强的AI健康建议系统
+- ✅ 健康计划生成和管理
+- ✅ 成就系统和游戏化功能
+- ✅ WebSocket实时通信支持
+- ✅ 性能监控和缓存优化
+- ✅ 速率限制和安全增强
 
 ## 🔐 认证
 
