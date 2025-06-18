@@ -9,6 +9,7 @@ import asyncio
 import aiohttp
 import sys
 from datetime import datetime
+from pathlib import Path
 
 
 async def check_backend_api():
@@ -62,7 +63,8 @@ async def check_database():
     
     try:
         # 导入数据库管理器
-        sys.path.insert(0, '.')
+        project_root = Path(__file__).parent.parent
+        sys.path.insert(0, str(project_root / "src"))
         from aurawell.database.connection import DatabaseManager
         
         db_manager = DatabaseManager()
@@ -156,7 +158,7 @@ def print_summary(backend_ok, frontend_ok, database_ok, api_results):
             print("   - 检查npm依赖是否安装完整")
         if not database_ok:
             print("   - 检查数据库文件是否存在")
-            print("   - 运行 python init_database.py 初始化数据库")
+            print("   - 运行 python scripts/init_database.py 初始化数据库")
 
 
 async def main():
