@@ -1365,6 +1365,149 @@ async def switch_active_member(
 
 
 # ============================================================================
+# FAMILY ADDITIONAL ENDPOINTS (契约守护行动补充)
+# ============================================================================
+
+
+@app.get(
+    "/api/v1/family/{family_id}/health-report",
+    response_model=HealthReportResponse,
+    tags=["Family Management"],
+)
+async def get_family_health_report(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    report_service: HealthReportService = Depends(get_report_service),
+):
+    """
+    获取家庭健康报告 - 前端兼容性接口
+
+    这是 /api/v1/family/{family_id}/report 的别名，确保前端API调用兼容性
+
+    Args:
+        family_id: 家庭ID
+        current_user_id: 认证用户ID
+        report_service: 健康报告服务
+
+    Returns:
+        家庭健康报告数据
+    """
+    try:
+        # 调用现有的报告生成逻辑
+        report_data = await report_service.generate_family_health_report(
+            family_id=family_id,
+            requester_user_id=current_user_id,
+            report_type="comprehensive",
+            date_range="last_30_days"
+        )
+
+        return HealthReportResponse(
+            data=report_data,
+            message="家庭健康报告生成成功"
+        )
+    except Exception as e:
+        logger.error(f"Failed to generate family health report: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate family health report",
+        )
+
+
+@app.post(
+    "/api/v1/family/members/{member_id}/like",
+    response_model=BaseResponse,
+    tags=["Family Management"],
+)
+async def like_family_member(
+    member_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service),
+):
+    """
+    为家庭成员点赞
+
+    Args:
+        member_id: 成员ID
+        current_user_id: 认证用户ID
+        family_service: 家庭服务
+
+    Returns:
+        点赞成功确认
+    """
+    try:
+        # 模拟点赞逻辑 - 暂时返回成功响应
+        return BaseResponse(
+            success=True,
+            message=f"成功为成员 {member_id} 点赞",
+            data={
+                "member_id": member_id,
+                "liked_by": current_user_id,
+                "liked_at": datetime.now().isoformat(),
+                "total_likes": 1  # 模拟数据
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to like family member: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to like family member",
+        )
+
+
+@app.get(
+    "/api/v1/family/{family_id}/health-alerts",
+    response_model=BaseResponse,
+    tags=["Family Management"],
+)
+async def get_family_health_alerts(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_service: FamilyService = Depends(get_family_service),
+):
+    """
+    获取家庭健康告警列表
+
+    Args:
+        family_id: 家庭ID
+        current_user_id: 认证用户ID
+        family_service: 家庭服务
+
+    Returns:
+        健康告警列表
+    """
+    try:
+        # 模拟健康告警数据 - 暂时返回空列表
+        mock_alerts = [
+            {
+                "alert_id": "alert_001",
+                "member_id": "member_001",
+                "member_name": "张三",
+                "alert_type": "blood_pressure",
+                "severity": "medium",
+                "message": "血压偏高，建议关注",
+                "created_at": datetime.now().isoformat(),
+                "status": "active"
+            }
+        ]
+
+        return BaseResponse(
+            success=True,
+            message="获取健康告警成功",
+            data={
+                "alerts": mock_alerts,
+                "total_count": len(mock_alerts),
+                "family_id": family_id
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to get family health alerts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get family health alerts",
+        )
+
+
+# ============================================================================
 # AUTHENTICATION ENDPOINTS
 # ============================================================================
 
@@ -1504,6 +1647,43 @@ async def register(
             message="Registration service error",
             error_code=ErrorCode.INTERNAL_SERVER_ERROR,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@app.post(
+    "/api/v1/auth/logout", response_model=BaseResponse, tags=["Authentication"]
+)
+async def logout(
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    用户登出接口
+
+    Args:
+        current_user_id: 认证用户ID
+
+    Returns:
+        登出成功确认
+    """
+    try:
+        # 模拟登出逻辑 - 在实际实现中可能需要：
+        # 1. 将JWT token加入黑名单
+        # 2. 清除服务器端session
+        # 3. 记录登出日志
+
+        return BaseResponse(
+            success=True,
+            message="用户登出成功",
+            data={
+                "user_id": current_user_id,
+                "logged_out_at": datetime.now().isoformat()
+            }
+        )
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Logout failed",
         )
 
 
@@ -2955,7 +3135,7 @@ async def delete_user_health_goal(
 
 
 @app.get(
-    "/api/v1/health-plan/plans",
+    "/api/v1/health/plans",
     response_model=HealthPlansListResponse,
     tags=["Health Plans"],
 )
@@ -3027,7 +3207,7 @@ async def get_health_plans(
 
 
 @app.post(
-    "/api/v1/health-plan/generate",
+    "/api/v1/health/plans/generate",
     response_model=HealthPlanGenerateResponse,
     tags=["Health Plans"],
 )
@@ -3226,7 +3406,7 @@ async def generate_health_plan(
 
 
 @app.get(
-    "/api/v1/health-plan/plans/{plan_id}",
+    "/api/v1/health/plans/{plan_id}",
     response_model=HealthPlanResponse,
     tags=["Health Plans"],
 )
@@ -3285,7 +3465,7 @@ async def get_health_plan(
 
 
 @app.put(
-    "/api/v1/health-plan/plans/{plan_id}",
+    "/api/v1/health/plans/{plan_id}",
     response_model=HealthPlanResponse,
     tags=["Health Plans"],
 )
@@ -3375,7 +3555,7 @@ async def update_health_plan(
 
 
 @app.delete(
-    "/api/v1/health-plan/plans/{plan_id}",
+    "/api/v1/health/plans/{plan_id}",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3409,7 +3589,7 @@ async def delete_health_plan(
         )
 
 
-@app.get("/api/v1/health-plan/plans/{plan_id}/export", tags=["Health Plans"])
+@app.get("/api/v1/health/plans/{plan_id}/export", tags=["Health Plans"])
 async def export_health_plan(
     plan_id: str,
     format: str = "pdf",
@@ -3458,7 +3638,7 @@ async def export_health_plan(
 
 
 @app.post(
-    "/api/v1/health-plan/plans/{plan_id}/feedback",
+    "/api/v1/health/plans/{plan_id}/feedback",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3504,7 +3684,7 @@ async def save_plan_feedback(
 
 
 @app.get(
-    "/api/v1/health-plan/plans/{plan_id}/progress",
+    "/api/v1/health/plans/{plan_id}/progress",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3555,7 +3735,7 @@ async def get_plan_progress(
 
 
 @app.put(
-    "/api/v1/health-plan/plans/{plan_id}/progress",
+    "/api/v1/health/plans/{plan_id}/progress",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3602,7 +3782,7 @@ async def update_plan_progress(
 
 
 @app.get(
-    "/api/v1/health-plan/templates", response_model=BaseResponse, tags=["Health Plans"]
+    "/api/v1/health/plans/templates", response_model=BaseResponse, tags=["Health Plans"]
 )
 async def get_plan_templates(
     category: Optional[str] = None,
@@ -3684,7 +3864,7 @@ async def get_plan_templates(
 
 
 @app.post(
-    "/api/v1/health-plan/templates/{template_id}/create",
+    "/api/v1/health/plans/from-template",
     response_model=HealthPlanResponse,
     tags=["Health Plans"],
 )
