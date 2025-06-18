@@ -9,7 +9,7 @@ echo "🚀 启动 AuraWell 健康管理系统"
 echo "=================================="
 
 # 检查是否在项目根目录
-if [ ! -f "run_api_server.py" ] || [ ! -d "frontend" ]; then
+if [ ! -f "scripts/run_api_server.py" ] || [ ! -d "frontend" ]; then
     echo "❌ 错误: 请在项目根目录运行此脚本"
     exit 1
 fi
@@ -30,7 +30,7 @@ fi
 echo "🔍 检查数据库状态..."
 if [ ! -f "aurawell.db" ]; then
     echo "📊 初始化数据库..."
-    python init_database.py
+    python scripts/init_database.py
 else
     echo "✅ 数据库已存在"
 fi
@@ -73,7 +73,7 @@ done
 echo "   使用端口: $BACKEND_PORT"
 
 # 启动后端 (后台运行)
-API_PORT=$BACKEND_PORT python run_api_server.py &
+API_PORT=$BACKEND_PORT python scripts/run_api_server.py &
 BACKEND_PID=$!
 
 # 等待后端启动
@@ -124,7 +124,7 @@ echo "✅ 前端服务已启动 (PID: $FRONTEND_PID, 端口: $FRONTEND_PORT)"
 echo ""
 echo "🔍 运行服务状态检查..."
 sleep 2
-python check_services.py
+python scripts/check_services.py
 
 # 显示服务信息
 echo ""
@@ -141,8 +141,8 @@ echo "   停止命令: kill $BACKEND_PID $FRONTEND_PID"
 echo ""
 echo "💡 提示:"
 echo "   - 使用 Ctrl+C 停止此脚本"
-echo "   - 使用 python check_services.py 检查服务状态"
-echo "   - 使用 python database_manager.py status 检查数据库"
+echo "   - 使用 python scripts/check_services.py 检查服务状态"
+echo "   - 使用 python scripts/database_manager.py status 检查数据库"
 
 # 保存PID到文件
 echo $BACKEND_PID > .backend.pid

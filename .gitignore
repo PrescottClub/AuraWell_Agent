@@ -165,4 +165,17 @@ build/
 .next/
 out/
 
-# Development tools - keep .vite for frontend development 
+# Development tools - keep .vite for frontend development
+
+# Process ID files
+*.pid
+.backend.pid
+.frontend.pid
+
+# Database backup files (additional patterns)
+*.db.backup_*
+*.backup_*
+
+# Archive and temporary documentation
+docs/archive/
+temp_docs/
