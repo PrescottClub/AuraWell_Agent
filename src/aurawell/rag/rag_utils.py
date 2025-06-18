@@ -6,6 +6,7 @@ from datetime import datetime
 """
 env_reader() 环境变量测试方法，如果能正确读取，则返回True，否则返回False，建议将这个工具文件放置在和rag模组相同的文件夹下。
 process_list(list) 用于处理在文档识别中产生的非预期字符。非预期字符会影响词嵌入模型最终的表现，导致向量生成不准确，所以有必要去除它们。
+get_file_type(file_path) 用于解析文档的后缀，配合阿里云的文档解析服务使用，也可以用于文件合法性审查
 """
 def env_reader() -> bool:
     try:
@@ -110,6 +111,92 @@ def export_strings_to_files(self, raw_text):
     except Exception as e:
         print(f"导出过程中发生错误: {str(e)}")
         return False
+
+def get_file_type(file_path:str)->str:
+    try:
+        # 检查输入是否为空或非字符串
+        if not file_path or not isinstance(file_path, str):
+            return "Unknown"
+
+        # 获取文件扩展名并转为小写
+        _, ext = os.path.splitext(file_path)
+        ext = ext.lower()
+
+        if not ext:
+            return "Unknown"
+
+        # 文件类型映射字典
+        file_type_mapping = {
+            # 文本文件
+            '.txt': 'Text',
+            '.md': 'Markdown',
+            '.rtf': 'Rich Text',
+
+            # 文档文件
+            '.pdf': '.pdf',
+            '.doc': '.doc',
+            '.docx': '.docx',
+            '.odt': 'OpenDocument Text',
+            '.xls': 'Excel Spreadsheet',
+            '.xlsx': 'Excel Spreadsheet',
+            '.ppt': '.ppt',
+            '.pptx': '.pptx',
+
+            # 图像文件
+            '.jpg': 'Image',
+            '.jpeg': 'Image',
+            '.png': 'Image',
+            '.gif': 'Image',
+            '.bmp': 'Image',
+            '.svg': 'Vector Image',
+            '.tiff': 'Image',
+
+            # 音频文件
+            '.mp3': 'Audio',
+            '.wav': 'Audio',
+            '.flac': 'Audio',
+            '.aac': 'Audio',
+            '.ogg': 'Audio',
+
+            # 视频文件
+            '.mp4': 'Video',
+            '.avi': 'Video',
+            '.mov': 'Video',
+            '.mkv': 'Video',
+            '.flv': 'Video',
+
+            # 压缩文件
+            '.zip': 'Archive',
+            '.rar': 'Archive',
+            '.7z': 'Archive',
+            '.tar': 'Archive',
+            '.gz': 'Compressed File',
+
+            # 程序文件
+            '.py': 'Python Script',
+            '.js': 'JavaScript File',
+            '.java': 'Java Source',
+            '.c': 'C Source',
+            '.cpp': 'C++ Source',
+            '.cs': 'C# Source',
+            '.html': 'HTML Document',
+            '.css': 'Stylesheet',
+            '.php': 'PHP Script',
+
+            # 数据文件
+            '.json': 'JSON File',
+            '.xml': 'XML File',
+            '.csv': 'CSV File',
+            '.sql': 'SQL Script',
+            '.db': 'Database',
+        }
+
+        return file_type_mapping.get(ext, "Unknown")
+
+    except IOError:
+        # 捕获所有可能的异常
+        print(f"Can not open this file: {file_path}")
+        return "Can not open this file"
 
 
 if  __name__ == "__main__":
