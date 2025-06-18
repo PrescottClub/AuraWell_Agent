@@ -125,7 +125,7 @@ async def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
     """
-    FastAPI dependency to get current user ID from JWT token
+    FastAPI dependency to get current user ID from JWT token - 集成Token黑名单检查
 
     Args:
         credentials: HTTP Bearer credentials
@@ -141,7 +141,38 @@ async def get_current_user_id(
         logger.info("Using development test token")
         return "dev_user_001"
 
-    return authenticator.get_current_user_id(credentials.credentials)
+    token = credentials.credentials
+
+    try:
+        # 1. 检查Token是否在黑名单中
+        from ..core.token_blacklist import get_token_blacklist_manager
+        blacklist_manager = await get_token_blacklist_manager()
+
+        if await blacklist_manager.is_token_blacklisted(token):
+            logger.warning("Token在黑名单中，拒绝访问")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token已被撤销，请重新登录",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # 2. 验证Token并获取用户ID
+        return authenticator.get_current_user_id(token)
+
+    except ImportError:
+        # 降级处理：如果黑名单模块不可用，只进行基本Token验证
+        logger.warning("Token黑名单模块不可用，使用基本验证")
+        return authenticator.get_current_user_id(token)
+    except HTTPException:
+        # 重新抛出HTTP异常
+        raise
+    except Exception as e:
+        logger.error(f"Token验证异常: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token验证失败",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 async def get_optional_user_id(

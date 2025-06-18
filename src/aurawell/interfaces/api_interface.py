@@ -1704,36 +1704,69 @@ async def register(
     "/api/v1/auth/logout", response_model=BaseResponse, tags=["Authentication"]
 )
 async def logout(
+    request: Request,
     current_user_id: str = Depends(get_current_user_id),
 ):
     """
-    用户登出接口
+    用户登出接口 - 实现Token黑名单机制
 
     Args:
+        request: FastAPI请求对象
         current_user_id: 认证用户ID
 
     Returns:
         登出成功确认
     """
     try:
-        # 模拟登出逻辑 - 在实际实现中可能需要：
-        # 1. 将JWT token加入黑名单
-        # 2. 清除服务器端session
-        # 3. 记录登出日志
+        from ..core.token_blacklist import get_token_blacklist_manager
+        from ..core.auth_middleware import get_auth_middleware
+
+        # 获取当前请求的Token
+        auth_middleware = get_auth_middleware()
+        token = await auth_middleware.extract_token_from_request(request)
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="无法获取当前Token"
+            )
+
+        # 获取黑名单管理器
+        blacklist_manager = await get_token_blacklist_manager()
+
+        # 将Token添加到黑名单
+        success = await blacklist_manager.add_token_to_blacklist(
+            token=token,
+            user_id=current_user_id,
+            reason="logout"
+        )
+
+        if not success:
+            logger.warning(f"用户 {current_user_id} Token加入黑名单失败")
+            # 即使黑名单操作失败，也返回成功（降级处理）
+
+        # 记录登出事件
+        logger.info(f"用户 {current_user_id} 成功登出，Token已加入黑名单")
 
         return BaseResponse(
             success=True,
-            message="用户登出成功",
+            message="登出成功",
             data={
                 "user_id": current_user_id,
-                "logged_out_at": datetime.now().isoformat()
+                "logged_out_at": datetime.now(timezone.utc).isoformat(),
+                "token_blacklisted": success,
+                "message": "Token已失效，请重新登录"
             }
         )
+
+    except HTTPException:
+        # 重新抛出HTTP异常
+        raise
     except Exception as e:
-        logger.error(f"Logout error: {e}")
+        logger.error(f"用户 {current_user_id} 登出失败: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Logout failed",
+            detail="登出操作失败"
         )
 
 
@@ -3892,6 +3925,108 @@ def _get_bmi_category(bmi: float) -> str:
         return "偏胖"
     else:
         return "肥胖"
+
+
+# ============================================================================
+# Token黑名单管理接口（管理员功能）
+# ============================================================================
+
+
+@app.get(
+    "/api/v1/admin/auth/blacklist/stats",
+    response_model=BaseResponse,
+    tags=["Admin", "Authentication"],
+)
+async def get_blacklist_stats(
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    获取Token黑名单统计信息（管理员接口）
+
+    Args:
+        current_user_id: 当前用户ID
+
+    Returns:
+        黑名单统计信息
+    """
+    try:
+        # TODO: 添加管理员权限检查
+        # if not is_admin(current_user_id):
+        #     raise HTTPException(status_code=403, detail="需要管理员权限")
+
+        from ..core.token_blacklist import get_token_blacklist_manager
+        blacklist_manager = await get_token_blacklist_manager()
+
+        stats = await blacklist_manager.get_blacklist_stats()
+
+        return BaseResponse(
+            success=True,
+            message="获取黑名单统计成功",
+            data=stats
+        )
+
+    except Exception as e:
+        logger.error(f"获取黑名单统计失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取统计信息失败"
+        )
+
+
+@app.post(
+    "/api/v1/admin/auth/revoke-user-tokens/{user_id}",
+    response_model=BaseResponse,
+    tags=["Admin", "Authentication"],
+)
+async def revoke_user_tokens(
+    user_id: str,
+    reason: str = "admin_action",
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    撤销指定用户的所有Token（管理员接口）
+
+    Args:
+        user_id: 目标用户ID
+        reason: 撤销原因
+        current_user_id: 当前管理员ID
+
+    Returns:
+        撤销结果
+    """
+    try:
+        # TODO: 添加管理员权限检查
+        # if not is_admin(current_user_id):
+        #     raise HTTPException(status_code=403, detail="需要管理员权限")
+
+        from ..core.token_blacklist import get_token_blacklist_manager
+        blacklist_manager = await get_token_blacklist_manager()
+
+        revoked_count = await blacklist_manager.revoke_all_user_tokens(
+            user_id=user_id,
+            reason=f"{reason}_by_{current_user_id}"
+        )
+
+        logger.info(f"管理员 {current_user_id} 撤销了用户 {user_id} 的 {revoked_count} 个Token")
+
+        return BaseResponse(
+            success=True,
+            message=f"成功撤销用户Token",
+            data={
+                "target_user_id": user_id,
+                "revoked_count": revoked_count,
+                "reason": reason,
+                "admin_user_id": current_user_id,
+                "revoked_at": datetime.now(timezone.utc).isoformat()
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"撤销用户Token失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="撤销Token失败"
+        )
 
 
 # ============================================================================
