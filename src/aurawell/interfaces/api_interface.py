@@ -1732,6 +1732,38 @@ async def get_chat_history(
         )
 
 
+@app.get(
+    "/api/v1/chat/conversations/{conversation_id}/messages",
+    response_model=ChatHistoryResponse,
+    tags=["Chat"]
+)
+async def get_conversation_messages(
+    conversation_id: str,
+    limit: int = Query(50, description="消息数量限制"),
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    获取特定对话的消息历史 - 前端兼容性别名
+    这是 /chat/history 端点的别名，确保前端API调用兼容性
+
+    Args:
+        conversation_id: 对话ID
+        limit: 消息数量限制
+        current_user_id: 认证用户ID
+
+    Returns:
+        对话消息历史
+    """
+    # 创建ChatHistoryRequest对象
+    chat_history_request = ChatHistoryRequest(
+        conversation_id=conversation_id,
+        limit=limit
+    )
+
+    # 调用现有的get_chat_history函数
+    return await get_chat_history(chat_history_request, current_user_id)
+
+
 @app.delete("/api/v1/chat/conversation/{conversation_id}", tags=["Chat"])
 async def delete_conversation(
     conversation_id: str,
@@ -1793,6 +1825,39 @@ async def get_health_suggestions():
 # ============================================================================
 
 # 功能开关相关的API端点已移除，因为我们已完全迁移到LangChain
+
+
+# ============================================================================
+# FRONTEND COMPATIBILITY UTILITIES
+# ============================================================================
+
+
+def adapt_response_for_frontend(response_data: Any, message: str = "操作成功") -> Dict[str, Any]:
+    """
+    将后端标准响应格式适配为前端期望的格式
+    前端期望: {success: bool, data: any, message: str, timestamp: str}
+
+    Args:
+        response_data: 响应数据
+        message: 响应消息
+
+    Returns:
+        前端兼容的响应格式
+    """
+    if hasattr(response_data, 'dict'):
+        # 如果是Pydantic模型，转换为字典
+        data = response_data.dict()
+    elif isinstance(response_data, dict):
+        data = response_data
+    else:
+        data = response_data
+
+    return {
+        "success": True,
+        "data": data,
+        "message": message,
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 # ============================================================================
@@ -2000,6 +2065,76 @@ async def update_user_profile(
 
 
 # ============================================================================
+# FRONTEND COMPATIBILITY ENDPOINTS
+# ============================================================================
+
+
+@app.get(
+    "/api/v1/user/profile/frontend",
+    response_model=Dict[str, Any],
+    tags=["User Profile"]
+)
+async def get_user_profile_frontend_compatible(
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    """
+    获取用户档案 - 前端兼容格式
+    返回前端期望的 {success, data, message, timestamp} 格式
+    """
+    try:
+        # 调用现有的get_user_profile函数
+        profile_response = await get_user_profile(current_user_id, user_repo)
+
+        # 适配为前端期望格式
+        return adapt_response_for_frontend(
+            profile_response.data,
+            "获取用户档案成功"
+        )
+    except Exception as e:
+        logger.error(f"Failed to get user profile: {e}")
+        return {
+            "success": False,
+            "data": None,
+            "message": "获取用户档案失败",
+            "timestamp": datetime.now().isoformat()
+        }
+
+
+@app.put(
+    "/api/v1/user/profile/frontend",
+    response_model=Dict[str, Any],
+    tags=["User Profile"]
+)
+async def update_user_profile_frontend_compatible(
+    profile_update: UserProfileRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    """
+    更新用户档案 - 前端兼容格式
+    返回前端期望的 {success, data, message, timestamp} 格式
+    """
+    try:
+        # 调用现有的update_user_profile函数
+        profile_response = await update_user_profile(profile_update, current_user_id, user_repo)
+
+        # 适配为前端期望格式
+        return adapt_response_for_frontend(
+            profile_response.data,
+            "更新用户档案成功"
+        )
+    except Exception as e:
+        logger.error(f"Failed to update user profile: {e}")
+        return {
+            "success": False,
+            "data": None,
+            "message": "更新用户档案失败",
+            "timestamp": datetime.now().isoformat()
+        }
+
+
+# ============================================================================
 # HEALTH SUMMARY ENDPOINTS
 # ============================================================================
 
@@ -2127,6 +2262,57 @@ async def get_health_summary(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve health summary",
         )
+
+
+@app.get(
+    "/api/v1/health/summary/frontend",
+    response_model=Dict[str, Any],
+    tags=["Health Data"]
+)
+async def get_health_summary_frontend_compatible(
+    days: int = 7,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    获取健康摘要 - 前端兼容格式
+    前端期望字段: {success, activity_summary, sleep_summary, average_heart_rate, weight_trend, key_insights}
+    """
+    try:
+        # 调用现有的get_health_summary函数
+        from ..repositories.health_repository import HealthDataRepository
+        from ..core.health_tools_registry import HealthToolsRegistry
+
+        # 创建依赖实例
+        health_repo = HealthDataRepository(None)  # Mock repository
+        tools_registry = HealthToolsRegistry()
+
+        summary_response = await get_health_summary(days, current_user_id, health_repo, tools_registry)
+
+        # 重新映射字段以匹配前端期望
+        frontend_data = {
+            "success": True,
+            "status": "success",
+            "activity_summary": summary_response.activity_summary.dict() if summary_response.activity_summary else None,
+            "sleep_summary": summary_response.sleep_summary.dict() if summary_response.sleep_summary else None,
+            "average_heart_rate": 72,  # Mock data
+            "weight_trend": "stable",  # Mock data
+            "key_insights": summary_response.key_insights,
+            "period_start": summary_response.period_start.isoformat(),
+            "period_end": summary_response.period_end.isoformat(),
+            "message": summary_response.message,
+            "timestamp": summary_response.timestamp.isoformat()
+        }
+
+        return frontend_data
+
+    except Exception as e:
+        logger.error(f"Failed to get health summary: {e}")
+        return {
+            "success": False,
+            "status": "error",
+            "message": "获取健康摘要失败",
+            "timestamp": datetime.now().isoformat()
+        }
 
 
 # ============================================================================
@@ -2674,6 +2860,92 @@ async def create_user_health_goal(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create health goal",
+        )
+
+
+@app.put(
+    "/api/v1/user/health-goals/{goal_id}",
+    response_model=UserHealthGoalResponse,
+    tags=["User Profile"],
+)
+async def update_user_health_goal(
+    goal_id: str,
+    goal_update: UserHealthGoalRequest,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    更新用户健康目标
+
+    Args:
+        goal_id: 目标ID
+        goal_update: 目标更新数据
+        current_user_id: 认证用户ID
+
+    Returns:
+        更新后的健康目标信息
+    """
+    try:
+        # Calculate updated progress
+        progress = 0.0
+        if goal_update.target_value and goal_update.current_value:
+            progress = min(
+                (goal_update.current_value / goal_update.target_value) * 100, 100.0
+            )
+
+        return UserHealthGoalResponse(
+            id=goal_id,
+            title=goal_update.title,
+            description=goal_update.description,
+            type=goal_update.type,
+            target_value=goal_update.target_value,
+            current_value=goal_update.current_value,
+            unit=goal_update.unit,
+            target_date=goal_update.target_date,
+            status=goal_update.status,
+            progress=progress,
+            created_at=datetime.now() - timedelta(days=1),  # Mock created date
+            updated_at=datetime.now(),
+        )
+    except Exception as e:
+        logger.error(f"Failed to update user health goal: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新健康目标失败"
+        )
+
+
+@app.delete(
+    "/api/v1/user/health-goals/{goal_id}",
+    response_model=BaseResponse,
+    tags=["User Profile"],
+)
+async def delete_user_health_goal(
+    goal_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    删除用户健康目标
+
+    Args:
+        goal_id: 目标ID
+        current_user_id: 认证用户ID
+
+    Returns:
+        删除操作结果
+    """
+    try:
+        # Mock deletion - log the action
+        logger.info(f"Deleting health goal {goal_id} for user {current_user_id}")
+
+        return BaseResponse(
+            message="健康目标删除成功",
+            timestamp=datetime.now(),
+        )
+    except Exception as e:
+        logger.error(f"Failed to delete user health goal: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除健康目标失败"
         )
 
 
