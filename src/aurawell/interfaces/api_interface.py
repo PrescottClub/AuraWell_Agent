@@ -144,6 +144,7 @@ from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 # ChatService已移除，使用agent_router替代
 from ..services.family_service import FamilyService
+from ..services.family_interaction_service import FamilyInteractionService
 from ..services.report_service import HealthReportService
 from ..services.dashboard_service import FamilyDashboardService
 
@@ -1421,36 +1422,65 @@ async def get_family_health_report(
 async def like_family_member(
     member_id: str,
     current_user_id: str = Depends(get_current_user_id),
-    family_service: FamilyService = Depends(get_family_service),
+    family_interaction_service: FamilyInteractionService = Depends(get_family_interaction_service),
 ):
     """
-    为家庭成员点赞
+    为家庭成员点赞/取消点赞
 
     Args:
         member_id: 成员ID
         current_user_id: 认证用户ID
-        family_service: 家庭服务
+        family_interaction_service: 家庭交互服务
 
     Returns:
-        点赞成功确认
+        点赞操作结果
     """
     try:
-        # 模拟点赞逻辑 - 暂时返回成功响应
+        # 首先需要确定用户所在的家庭
+        # 这里假设从用户的活跃家庭中获取，实际可能需要从请求参数中获取
+        user_families = await family_interaction_service.family_repo.get_user_families(current_user_id)
+        if not user_families:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户未加入任何家庭",
+            )
+
+        # 使用第一个活跃家庭（实际应用中可能需要更复杂的逻辑）
+        family_id = user_families[0].family_id
+
+        # 执行点赞操作
+        result = await family_interaction_service.like_family_member(
+            family_id=family_id,
+            member_id=member_id,
+            liker_id=current_user_id,
+            like_type="general",
+            like_reason=None,
+        )
+
         return BaseResponse(
             success=True,
-            message=f"成功为成员 {member_id} 点赞",
+            message=result["message"],
             data={
                 "member_id": member_id,
                 "liked_by": current_user_id,
-                "liked_at": datetime.now().isoformat(),
-                "total_likes": 1  # 模拟数据
+                "action": result["action"],
+                "like_id": result["like_id"],
+                "total_likes": result["total_likes"],
+                "timestamp": datetime.now().isoformat(),
             }
+        )
+
+    except ValueError as ve:
+        logger.warning(f"点赞操作验证失败: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
         )
     except Exception as e:
         logger.error(f"Failed to like family member: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to like family member",
+            detail="点赞操作失败",
         )
 
 
@@ -1461,49 +1491,69 @@ async def like_family_member(
 )
 async def get_family_health_alerts(
     family_id: str,
+    status_filter: Optional[str] = Query(None, description="告警状态过滤"),
+    severity_filter: Optional[str] = Query(None, description="严重程度过滤"),
+    limit: int = Query(50, ge=1, le=100, description="返回数量限制"),
+    offset: int = Query(0, ge=0, description="偏移量"),
     current_user_id: str = Depends(get_current_user_id),
-    family_service: FamilyService = Depends(get_family_service),
+    family_interaction_service: FamilyInteractionService = Depends(get_family_interaction_service),
 ):
     """
     获取家庭健康告警列表
 
     Args:
         family_id: 家庭ID
+        status_filter: 告警状态过滤 (active, acknowledged, resolved, dismissed)
+        severity_filter: 严重程度过滤 (low, medium, high, critical)
+        limit: 返回数量限制
+        offset: 偏移量
         current_user_id: 认证用户ID
-        family_service: 家庭服务
+        family_interaction_service: 家庭交互服务
 
     Returns:
-        健康告警列表
+        健康告警列表和统计信息
     """
     try:
-        # 模拟健康告警数据 - 暂时返回空列表
-        mock_alerts = [
-            {
-                "alert_id": "alert_001",
-                "member_id": "member_001",
-                "member_name": "张三",
-                "alert_type": "blood_pressure",
-                "severity": "medium",
-                "message": "血压偏高，建议关注",
-                "created_at": datetime.now().isoformat(),
-                "status": "active"
-            }
-        ]
+        # 获取家庭健康告警
+        result = await family_interaction_service.get_family_health_alerts(
+            family_id=family_id,
+            requester_id=current_user_id,
+            status=status_filter,
+            severity=severity_filter,
+            limit=limit,
+            offset=offset,
+        )
 
         return BaseResponse(
             success=True,
             message="获取健康告警成功",
             data={
-                "alerts": mock_alerts,
-                "total_count": len(mock_alerts),
-                "family_id": family_id
+                "alerts": result["alerts"],
+                "total_count": result["total_count"],
+                "statistics": result["statistics"],
+                "family_id": family_id,
+                "filters": {
+                    "status": status_filter,
+                    "severity": severity_filter,
+                },
+                "pagination": {
+                    "limit": limit,
+                    "offset": offset,
+                }
             }
+        )
+
+    except ValueError as ve:
+        logger.warning(f"获取健康告警验证失败: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
         )
     except Exception as e:
         logger.error(f"Failed to get family health alerts: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get family health alerts",
+            detail="获取健康告警失败",
         )
 
 
@@ -3842,6 +3892,43 @@ def _get_bmi_category(bmi: float) -> str:
         return "偏胖"
     else:
         return "肥胖"
+
+
+# ============================================================================
+# 家庭交互服务依赖注入
+# ============================================================================
+
+
+async def get_family_interaction_service() -> FamilyInteractionService:
+    """获取家庭交互服务实例"""
+    try:
+        from ..repositories.family_interaction_repository import FamilyInteractionRepository
+        from ..repositories.family_repository import FamilyRepository
+        from ..repositories.user_repository import UserRepository
+        from ..database import get_database_manager
+
+        # 获取数据库会话
+        db_manager = get_database_manager()
+        session = await db_manager.get_session()
+
+        # 创建仓库实例
+        interaction_repo = FamilyInteractionRepository(session)
+        family_repo = FamilyRepository(session)
+        user_repo = UserRepository(session)
+
+        # 创建服务实例
+        return FamilyInteractionService(
+            interaction_repo=interaction_repo,
+            family_repo=family_repo,
+            user_repo=user_repo,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to create family interaction service: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="服务初始化失败",
+        )
 
 
 @app.get(
