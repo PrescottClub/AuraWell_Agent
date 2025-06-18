@@ -1883,3 +1883,20 @@ class CreateChallengeResponse(SuccessResponse[CreateChallengeData]):
     """Create challenge response"""
 
     pass
+
+
+# ==================== RAG Models (v1.1 特种作战装备) ====================
+
+class RAGQueryRequest(BaseModel):
+    """RAG渗透任务请求"""
+
+    user_query: str = Field(..., min_length=1, max_length=1000, description="渗透目标（用户问题）")
+    k: int = Field(default=3, ge=1, le=10, description="情报份数（返回文档数）")
+
+
+class RAGQueryResponse(BaseResponse):
+    """渗透任务战果报告"""
+
+    results: List[str] = Field(default_factory=list, description="捕获的核心情报列表")
+    query: str = Field(..., description="原始渗透目标")
+    total_found: int = Field(default=0, description="发现的情报总数")

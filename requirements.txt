@@ -30,3 +30,8 @@ langchain-openai>=0.0.5
 
 # Redis for caching
 redis>=4.0.0
+
+# Alibaba Cloud Function Compute SDK for RAG integration
+alibabacloud_fc20230330
+alibabacloud_credentials
+alibabacloud_tea_openapi

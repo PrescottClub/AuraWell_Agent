@@ -107,6 +107,9 @@ from ..models.api_models import (
     SwitchMemberRequest,
     SwitchMemberResponse,
     EnhancedHealthChatRequest,
+    # RAG Models (v1.1 特种作战装备)
+    RAGQueryRequest,
+    RAGQueryResponse,
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -151,6 +154,9 @@ from ..services.dashboard_service import FamilyDashboardService
 # Import LangChain Agent components
 from ..langchain_agent.services.health_advice_service import HealthAdviceService
 from ..langchain_agent.tools.health_advice_tool import HealthAdviceTool
+
+# Import RAG Service (v1.1 特种突击队)
+from ..services.rag_service import get_rag_service
 
 # Import WebSocket interface
 from .websocket_interface import websocket_router
@@ -230,6 +236,7 @@ app = FastAPI(
         {"name": "Health Reports", "description": "Family health report generation"},
         {"name": "System", "description": "System health and monitoring"},
         {"name": "Health Advice", "description": "Health advice generation"},
+        {"name": "RAG", "description": "RAG document retrieval and knowledge search"},
         {"name": "WebSocket", "description": "Real-time streaming chat interface"},
     ],
 )
@@ -836,6 +843,91 @@ async def generate_quick_health_advice(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"生成快速建议时发生错误: {str(e)}",
+        )
+
+
+# ==================== RAG Endpoints (v1.1 特种作战接口) ====================
+
+@app.post(
+    "/api/v1/rag/retrieve",
+    response_model=RAGQueryResponse,
+    tags=["RAG"],
+    summary="RAG文档检索",
+    description="使用RAG模块检索相关医疗健康文档"
+)
+async def retrieve_rag_documents(
+    request: RAGQueryRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    rag_service = Depends(get_rag_service)
+):
+    """
+    RAG文档检索端点 - 特种突击任务
+
+    根据用户查询从RAG知识库中检索相关文档。
+    支持医疗健康相关的问题检索。
+    """
+    try:
+        logger.info(f"RAG检索请求 - 用户: {current_user_id}, 查询: {request.user_query[:50]}...")
+
+        # 执行RAG检索
+        results = await rag_service.retrieve_from_rag(
+            user_query=request.user_query,
+            k=request.k
+        )
+
+        # 构造响应
+        response = RAGQueryResponse(
+            success=True,
+            message="RAG检索成功",
+            results=results,
+            query=request.user_query,
+            total_found=len(results)
+        )
+
+        logger.info(f"RAG检索成功 - 用户: {current_user_id}, 返回文档数: {len(results)}")
+        return response
+
+    except HTTPException:
+        # 重新抛出HTTP异常
+        raise
+    except Exception as e:
+        logger.error(f"RAG检索失败 - 用户: {current_user_id}, 错误: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG检索服务异常: {str(e)}"
+        )
+
+
+@app.get(
+    "/api/v1/rag/status",
+    response_model=BaseResponse,
+    tags=["RAG"],
+    summary="RAG服务状态",
+    description="检查RAG服务的运行状态"
+)
+async def get_rag_status(
+    current_user_id: str = Depends(get_current_user_id),
+    rag_service = Depends(get_rag_service)
+):
+    """
+    RAG服务状态检查端点
+
+    返回RAG服务的当前状态和配置信息。
+    """
+    try:
+        status_info = rag_service.get_status()
+
+        return BaseResponse(
+            success=True,
+            message="RAG服务状态获取成功",
+            data=status_info
+        )
+
+    except Exception as e:
+        logger.error(f"获取RAG状态失败: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"获取RAG状态失败: {str(e)}"
         )
 
 

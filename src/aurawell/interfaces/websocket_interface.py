@@ -25,6 +25,8 @@ from ..models.api_models import (
 from ..langchain_agent.services.health_advice_service import HealthAdviceService
 from ..services.family_service import FamilyService
 from ..core.agent_router import agent_router
+# RAG Service (v1.1 特种突击队)
+from ..services.rag_service import get_rag_service
 
 logger = logging.getLogger(__name__)
 
@@ -323,6 +325,9 @@ async def websocket_chat_endpoint(
                 elif message.type == "general_chat":
                     await handle_general_chat(user_id, message)
 
+                elif message.type == "rag_query":
+                    await handle_rag_query(user_id, message)
+
                 elif message.type == "switch_member":
                     await handle_member_switch(user_id, message, family_service)
 
@@ -476,6 +481,71 @@ async def handle_general_chat(
         logger.error(f"Error in general chat for user {user_id}: {e}")
         await websocket_manager.send_status_update(
             user_id, "error", f"聊天处理失败: {str(e)}"
+        )
+
+
+async def handle_rag_query(user_id: str, message: WebSocketMessage):
+    """Handle RAG document retrieval queries - 特种突击任务"""
+    try:
+        # 提取查询参数
+        query = message.data.get("query", "")
+        k = message.data.get("k", 3)
+
+        if not query:
+            await websocket_manager.send_status_update(
+                user_id, "error", "查询内容不能为空"
+            )
+            return
+
+        # 获取RAG服务
+        rag_service = get_rag_service()
+
+        # 更新状态
+        await websocket_manager.send_status_update(
+            user_id, "searching", f"正在检索相关文档..."
+        )
+
+        # 执行RAG检索
+        results = await rag_service.retrieve_from_rag(
+            user_query=query,
+            k=k
+        )
+
+        # 流式发送结果
+        await websocket_manager.send_status_update(
+            user_id, "streaming", "检索完成，正在发送结果..."
+        )
+
+        # 逐个发送文档
+        for i, doc in enumerate(results):
+            doc_message = {
+                "type": "rag_document",
+                "index": i + 1,
+                "total": len(results),
+                "content": doc,
+                "timestamp": datetime.now().isoformat(),
+            }
+            await websocket_manager.send_personal_message(user_id, doc_message)
+            await asyncio.sleep(0.1)  # 小延迟以模拟流式传输
+
+        # 发送完成状态
+        await websocket_manager.send_status_update(
+            user_id,
+            "done",
+            f"RAG检索完成，共找到 {len(results)} 个相关文档",
+            {
+                "query": query,
+                "total_found": len(results),
+                "results": results
+            }
+        )
+
+        logger.info(f"RAG查询成功 - 用户: {user_id}, 查询: {query[:50]}, 结果数: {len(results)}")
+
+    except Exception as e:
+        logger.error(f"RAG查询失败 - 用户: {user_id}, 错误: {e}")
+        await websocket_manager.send_status_update(
+            user_id, "error", f"RAG检索失败: {str(e)}"
         )
 
 
