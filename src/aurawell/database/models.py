@@ -337,6 +337,7 @@ class ConversationDB(Base):
     # Additional metadata (stored as JSON)
     extra_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -345,6 +346,8 @@ class ConversationDB(Base):
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     user = relationship("UserProfileDB")
     messages = relationship(
@@ -379,11 +382,14 @@ class MessageDB(Base):
     # Additional message metadata (stored as JSON)
     extra_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     conversation = relationship("ConversationDB", back_populates="messages")
 
@@ -422,6 +428,7 @@ class UserHealthProfileDB(Base):
         JSON, default=dict
     )  # encrypted sensitive data
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -430,6 +437,8 @@ class UserHealthProfileDB(Base):
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     user = relationship("UserProfileDB")
 
@@ -463,6 +472,7 @@ class HealthPlanDB(Base):
     goals: Mapped[List[str]] = mapped_column(JSON, default=list)
     preferences: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -471,6 +481,8 @@ class HealthPlanDB(Base):
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     user = relationship("UserProfileDB", back_populates="health_plans")
     modules = relationship(
@@ -520,6 +532,7 @@ class HealthPlanModuleDB(Base):
     )  # active, paused, completed
     progress: Mapped[float] = mapped_column(Float, default=0.0)  # 0.0 to 100.0
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -528,6 +541,8 @@ class HealthPlanModuleDB(Base):
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     plan = relationship("HealthPlanDB", back_populates="modules")
 
@@ -561,11 +576,14 @@ class HealthPlanProgressDB(Base):
     metrics: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     notes: Mapped[Optional[str]] = mapped_column(Text)
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     plan = relationship("HealthPlanDB", back_populates="progress_records")
 
@@ -608,6 +626,7 @@ class HealthPlanFeedbackDB(Base):
         String(50), default="pending"
     )  # pending, reviewed, implemented
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -616,6 +635,8 @@ class HealthPlanFeedbackDB(Base):
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Relationships
     plan = relationship("HealthPlanDB", back_populates="feedback_records")
 
@@ -656,6 +677,7 @@ class HealthPlanTemplateDB(Base):
     usage_count: Mapped[int] = mapped_column(Integer, default=0)
     rating: Mapped[Optional[float]] = mapped_column(Float)  # Average user rating
 
+<<<<<<< HEAD:src/aurawell/database/models.py
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -664,6 +686,8 @@ class HealthPlanTemplateDB(Base):
         DateTime(timezone=True), nullable=False
     )
 
+=======
+>>>>>>> 61b1930 (Local test for index.py can reduce CU consumption which is caused by invalid request):aurawell/database/models.py
     # Constraints
     __table_args__ = (
         Index("idx_health_plan_template_category", "category"),
