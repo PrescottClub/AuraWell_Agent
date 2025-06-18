@@ -67,14 +67,21 @@ class AgentRouter:
         if agent_key not in self._agent_cache:
             try:
                 # 动态导入LangChain Agent（避免循环导入）
-                from ..langchain_agent.agent import LangChainAgent
+                from ..langchain_agent.agent_v2 import TrueLangChainAgent
 
-                agent = LangChainAgent(user_id)
-                logger.info(f"为用户 {user_id} 创建 LangChain Agent")
+                agent = TrueLangChainAgent(user_id)
+                logger.info(f"为用户 {user_id} 创建真正的LangChain Agent")
             except Exception as e:
-                logger.error(f"LangChain Agent 创建失败: {e}")
-                # 创建一个最基本的Agent实例作为最后的回退
-                agent = self._create_fallback_agent(user_id)
+                logger.error(f"真正LangChain Agent 创建失败: {e}")
+                # 尝试创建备用Agent
+                try:
+                    from ..langchain_agent.agent import HealthAdviceAgent
+                    agent = HealthAdviceAgent(user_id)
+                    logger.warning(f"为用户 {user_id} 创建备用Agent")
+                except Exception as fallback_error:
+                    logger.error(f"备用Agent创建也失败: {fallback_error}")
+                    # 创建一个最基本的Agent实例作为最后的回退
+                    agent = self._create_fallback_agent(user_id)
 
             self._agent_cache[agent_key] = agent
 
@@ -161,7 +168,7 @@ class AgentRouter:
             "success": response.get("success", True),
             "message": response.get("message", response.get("response", "")),
             "data": response.get("data", response),
-            "agent_type": response.get("agent_type", "traditional"),
+            "agent_type": response.get("agent_type", "true_langchain_agent"),
         }
 
     async def get_conversation_history(self, user_id: str, limit: int = 10) -> list:

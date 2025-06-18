@@ -1,0 +1,560 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# MCP工具集成指南 - AuraWell智能自动化 🤖⚡
+
+## MCP工具栈概览
+AuraWell集成了13个智能MCP服务器，实现健康管理的全自动化工作流。
+
+## 🔧 核心MCP服务器详解
+
+### 1. 📊 database-sqlite - 健康数据中心
+**功能**: 用户健康数据存储、查询、分析
+**配置文件路径**: 已配置到项目数据库 `aurawell.db`
+```python
+# 健康档案查询
+await database_sqlite.execute("""
+    SELECT height, weight, bmi, created_at 
+    FROM health_profiles 
+    WHERE user_id = ? 
+    ORDER BY created_at DESC
+""", [user_id])
+```
+
+### 2. 🧮 calculator - 健康指标计算引擎  
+**功能**: 自动计算BMI、基础代谢率、卡路里消耗等
+```python
+# BMI计算示例
+bmi_result = await calculator.calculate("70 / (1.75 ** 2)")  # 22.86
+
+# 基础代谢率计算（男性）
+bmr = await calculator.calculate("88.362 + (13.397 * 70) + (4.799 * 175) - (5.677 * 30)")
+```
+
+### 3. 📈 quickchart - 智能数据可视化
+**功能**: 生成健康趋势图表、进度追踪图
+```python
+# 体重趋势图生成
+chart_config = {
+    "type": "line",
+    "data": {
+        "labels": dates,
+        "datasets": [{
+            "label": "体重变化",
+            "data": weights,
+            "borderColor": "rgb(59, 130, 246)"
+        }]
+    }
+}
+chart_url = await quickchart.generate_chart(chart_config)
+```
+
+### 4. 🧠 sequential-thinking - 深度健康分析AI
+**功能**: 多步骤推理分析、个性化建议生成
+```python
+# 综合健康评估分析
+health_analysis = await sequential_thinking.analyze("""
+分析用户健康状况：
+- 当前体重: 70kg, 身高: 175cm
+- 运动频率: 每周3次
+- 饮食偏好: 低碳水化合物
+- 目标: 减脂增肌
+请给出个性化建议
+""")
+```
+
+### 5. 🔍 brave-search - 健康科学研究引擎
+**功能**: 搜索最新健康研究、营养信息、运动科学
+```python
+# 搜索最新营养研究
+search_results = await brave_search.search(
+    "高蛋白低碳水饮食 减脂效果 最新研究 2024"
+)
+```
+
+### 6. 🧠 memory - 用户健康画像管理
+**功能**: 构建用户健康知识图谱、存储偏好习惯
+```python
+# 创建用户健康画像
+await memory.create_entities([{
+    "name": f"用户{user_id}健康画像",
+    "entityType": "HealthProfile",
+    "observations": [
+        "目标: 减重10kg",
+        "运动偏好: 力量训练 + 有氧",
+        "饮食限制: 乳糖不耐受"
+    ]
+}])
+```
+
+### 7. 🌤️ weather - 运动环境检查
+**功能**: 获取天气信息，优化户外运动建议
+```python
+# 检查今日运动适宜度
+weather_info = await weather.get_current_weather("Beijing")
+if weather_info["temperature"] > 25 and weather_info["humidity"] < 70:
+    recommend_outdoor_exercise = True
+```
+
+### 8. ⏰ time - 智能时间调度
+**功能**: 时间管理、作息优化、提醒安排
+```python
+# 获取最佳运动时间
+current_time = await time.get_current_time()
+if 17 <= current_time.hour <= 19:
+    suggestion = "现在是最佳力量训练时间"
+```
+
+### 9. 🌐 fetch - 健康资源获取
+**功能**: 抓取健康网站、营养数据、运动指南
+```python
+# 获取食物营养成分
+nutrition_data = await fetch.get_content(
+    "https://api.nutrition.gov/foods/search?query=chicken_breast"
+)
+```
+
+### 10. 📁 filesystem - 健康文档管理
+**功能**: 管理健康报告、运动计划、饮食日记
+```python
+# 保存用户健康报告
+await filesystem.write_file(
+    f"health_reports/user_{user_id}_monthly_report.pdf",
+    report_content
+)
+```
+
+### 11. 🐙 github - 项目代码管理
+**功能**: 版本控制、代码审查、功能更新
+```python
+# 检查最新健康算法更新
+latest_commits = await github.get_recent_commits(
+    "AuraWell_Agent", 
+    path="src/aurawell/utils/health_calculations.py"
+)
+```
+
+### 12. 🎨 figma - UI设计资源
+**功能**: 获取最新健康界面设计、图标资源
+```python
+# 获取健康仪表盘设计
+design_assets = await figma.get_file_components(
+    "health_dashboard_design_id"
+)
+```
+
+### 13. 🐍 run-python - 高级健康算法
+**功能**: 执行复杂健康计算、机器学习模型
+```python
+# 运行个性化营养需求算法
+algorithm_code = """
+import numpy as np
+def calculate_personalized_nutrition(age, weight, height, activity_level):
+    # 复杂营养需求计算算法
+    bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
+    tdee = bmr * activity_level
+    return {
+        'calories': tdee,
+        'protein': weight * 2.2,  # g
+        'carbs': tdee * 0.45 / 4,  # g
+        'fat': tdee * 0.25 / 9     # g
+    }
+
+result = calculate_personalized_nutrition(30, 70, 175, 1.6)
+print(result)
+"""
+nutrition_plan = await run_python.execute(algorithm_code)
+```
+
+## 🚀 智能自动化工作流
+
+### 工作流 1: 全面健康评估
+**触发关键词**: "健康评估", "分析数据", "健康状况"
+```python
+async def comprehensive_health_assessment(user_id: int):
+    """全面健康评估自动工作流"""
+    
+    # Step 1: 并行获取基础数据
+    user_profile = await memory.search_nodes(f"用户{user_id}健康画像")
+    health_data = await database_sqlite.execute(
+        "SELECT * FROM health_profiles WHERE user_id = ?", [user_id]
+    )
+    
+    # Step 2: 计算健康指标
+    if health_data:
+        bmi = await calculator.calculate(f"{health_data.weight} / ({health_data.height/100} ** 2)")
+        bmr = await calculator.calculate(f"88.362 + (13.397 * {health_data.weight}) + (4.799 * {health_data.height}) - (5.677 * {health_data.age})")
+    
+    # Step 3: 生成可视化报告
+    chart = await quickchart.generate_chart({
+        "type": "radar",
+        "data": {
+            "labels": ["BMI", "体脂率", "肌肉量", "心率", "睡眠质量"],
+            "datasets": [{
+                "label": "健康指标",
+                "data": [bmi, 18, 35, 65, 85]
+            }]
+        }
+    })
+    
+    # Step 4: AI深度分析
+    analysis = await sequential_thinking.analyze(f"""
+    用户健康数据分析：
+    - BMI: {bmi}
+    - 基础代谢率: {bmr}
+    - 用户画像: {user_profile}
+    请提供综合健康评估和改善建议
+    """)
+    
+    return {
+        "health_score": calculate_health_score(bmi, bmr),
+        "visualization": chart,
+        "ai_analysis": analysis,
+        "recommendations": generate_recommendations(analysis)
+    }
+```
+
+### 工作流 2: 智能营养规划
+**触发关键词**: "营养计划", "饮食建议", "营养需求"
+```python
+async def intelligent_nutrition_planning(user_id: int, goals: List[str]):
+    """智能营养规划工作流"""
+    
+    # Step 1: 搜索最新营养科学
+    research = await brave_search.search("个性化营养 最新研究 2024")
+    
+    # Step 2: 获取用户数据和偏好
+    user_data = await database_sqlite.execute(
+        "SELECT * FROM users WHERE id = ?", [user_id]
+    )
+    preferences = await memory.search_nodes(f"用户{user_id}饮食偏好")
+    
+    # Step 3: 计算营养需求
+    nutrition_calc = await run_python.execute(f"""
+    def calculate_macro_needs(weight, height, age, activity, goals):
+        bmr = 88.362 + (13.397 * {user_data.weight}) + (4.799 * {user_data.height}) - (5.677 * {user_data.age})
+        tdee = bmr * {user_data.activity_level}
+        
+        if '减重' in {goals}:
+            calories = tdee * 0.8
+            protein = {user_data.weight} * 2.5
+        elif '增肌' in {goals}:
+            calories = tdee * 1.1
+            protein = {user_data.weight} * 2.2
+        else:
+            calories = tdee
+            protein = {user_data.weight} * 1.8
+            
+        return {{
+            'calories': calories,
+            'protein': protein,
+            'carbs': calories * 0.4 / 4,
+            'fat': calories * 0.3 / 9
+        }}
+    
+    result = calculate_macro_needs({user_data.weight}, {user_data.height}, {user_data.age}, {user_data.activity_level}, {goals})
+    """)
+    
+    # Step 4: 生成营养图表
+    nutrition_chart = await quickchart.generate_chart({
+        "type": "doughnut",
+        "data": {
+            "labels": ["蛋白质", "碳水化合物", "脂肪"],
+            "datasets": [{
+                "data": [nutrition_calc['protein'] * 4, nutrition_calc['carbs'] * 4, nutrition_calc['fat'] * 9]
+            }]
+        }
+    })
+    
+    # Step 5: AI个性化建议
+    recommendations = await sequential_thinking.analyze(f"""
+    基于用户数据和营养需求：
+    - 目标: {goals}
+    - 营养需求: {nutrition_calc}
+    - 饮食偏好: {preferences}
+    - 最新研究: {research[:500]}
+    
+    请生成详细的个性化营养计划和食谱建议
+    """)
+    
+    # Step 6: 保存计划到数据库
+    await database_sqlite.execute("""
+        INSERT INTO nutrition_plans (user_id, goals, calories, protein, carbs, fat, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    """, [user_id, ','.join(goals), nutrition_calc['calories'], nutrition_calc['protein'], 
+          nutrition_calc['carbs'], nutrition_calc['fat']])
+    
+    return {
+        "nutrition_needs": nutrition_calc,
+        "chart": nutrition_chart,
+        "personalized_plan": recommendations,
+        "scientific_basis": research
+    }
+```
+
+### 工作流 3: 运动计划优化
+**触发关键词**: "运动计划", "健身建议", "训练安排"
+```python
+async def optimize_exercise_plan(user_id: int):
+    """运动计划优化工作流"""
+    
+    # Step 1: 检查天气和时间
+    weather_info = await weather.get_current_weather()
+    current_time = await time.get_current_time()
+    
+    # Step 2: 获取用户运动历史
+    exercise_history = await database_sqlite.execute("""
+        SELECT exercise_type, duration, intensity, calories_burned, created_at
+        FROM exercise_logs 
+        WHERE user_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 30
+    """, [user_id])
+    
+    # Step 3: 分析运动模式
+    pattern_analysis = await sequential_thinking.analyze(f"""
+    分析用户运动模式：
+    - 运动历史: {exercise_history}
+    - 当前时间: {current_time}
+    - 天气条件: {weather_info}
+    
+    识别运动习惯、偏好和改进空间
+    """)
+    
+    # Step 4: 搜索最新运动科学
+    exercise_research = await brave_search.search("高效训练方法 运动科学 2024")
+    
+    # Step 5: 计算个性化运动方案
+    exercise_plan = await run_python.execute(f"""
+import math
+
+def generate_exercise_plan(user_data, goals, fitness_level):
+    plan = {{}}
+    
+    if '减脂' in goals:
+        plan['cardio_frequency'] = 5  # 每周次数
+        plan['cardio_duration'] = 45  # 分钟
+        plan['strength_frequency'] = 3
+        plan['strength_duration'] = 60
+        plan['target_heart_rate'] = (220 - user_data['age']) * 0.7
+    elif '增肌' in goals:
+        plan['cardio_frequency'] = 2
+        plan['cardio_duration'] = 20
+        plan['strength_frequency'] = 4
+        plan['strength_duration'] = 75
+        plan['target_heart_rate'] = (220 - user_data['age']) * 0.65
+    
+    return plan
+
+user_data = {{'age': 30, 'fitness_level': 'intermediate'}}
+goals = ['减脂', '增肌']
+plan = generate_exercise_plan(user_data, goals, 'intermediate')
+print(plan)
+    """)
+    
+    # Step 6: 生成运动进度图表
+    progress_chart = await quickchart.generate_chart({
+        "type": "line",
+        "data": {
+            "labels": [f"第{i}周" for i in range(1, 13)],
+            "datasets": [{
+                "label": "运动强度进展",
+                "data": [60, 65, 70, 75, 80, 82, 85, 87, 90, 92, 95, 97]
+            }]
+        }
+    })
+    
+    return {
+        "personalized_plan": exercise_plan,
+        "weather_recommendation": weather_info,
+        "progress_chart": progress_chart,
+        "scientific_insights": exercise_research
+    }
+```
+
+## 🎯 MCP工具触发规则
+
+### 自动触发关键词映射
+```python
+MCP_TRIGGER_KEYWORDS = {
+    # 健康分析类
+    "健康分析": [database_sqlite, calculator, quickchart, sequential_thinking],
+    "数据统计": [database_sqlite, calculator, quickchart],
+    "趋势分析": [database_sqlite, quickchart, sequential_thinking],
+    
+    # 信息搜索类
+    "最新研究": [brave_search, fetch, memory],
+    "营养信息": [brave_search, fetch, calculator],
+    "运动科学": [brave_search, memory, sequential_thinking],
+    
+    # 个性化建议类
+    "个人建议": [memory, database_sqlite, sequential_thinking],
+    "定制计划": [memory, calculator, sequential_thinking, database_sqlite],
+    
+    # 环境检查类
+    "运动时间": [time, weather, sequential_thinking],
+    "户外运动": [weather, time, memory],
+    
+    # 开发调试类
+    "测试功能": [run_python, github, filesystem],
+    "代码验证": [run_python, github]
+}
+```
+
+### 智能工具选择算法
+```python
+async def select_mcp_tools(user_query: str, context: dict) -> List[str]:
+    """基于用户查询智能选择MCP工具"""
+    
+    selected_tools = []
+    query_lower = user_query.lower()
+    
+    # 分析查询类型
+    if any(keyword in query_lower for keyword in ["分析", "统计", "数据", "趋势"]):
+        selected_tools.extend([database_sqlite, calculator, quickchart])
+        
+    if any(keyword in query_lower for keyword in ["搜索", "研究", "最新", "信息"]):
+        selected_tools.extend([brave_search, fetch])
+        
+    if any(keyword in query_lower for keyword in ["建议", "计划", "个性化", "定制"]):
+        selected_tools.extend([memory, sequential_thinking])
+        
+    if any(keyword in query_lower for keyword in ["运动", "健身", "锻炼"]):
+        selected_tools.extend([weather, time])
+        
+    if any(keyword in query_lower for keyword in ["计算", "算法", "公式"]):
+        selected_tools.extend([calculator, run_python])
+    
+    # 去重并返回
+    return list(set(selected_tools))
+```
+
+## 🛠️ MCP工具配置管理
+
+### 环境变量配置
+```bash
+# .env 文件配置
+DATABASE_PATH="/absolute/path/to/aurawell.db"
+BRAVE_API_KEY="your_brave_search_api_key"
+DEEPSEEK_API_KEY="your_deepseek_api_key"
+GITHUB_TOKEN="your_github_token"
+FIGMA_TOKEN="your_figma_token"
+```
+
+### MCP服务器连接配置
+```python
+# src/aurawell/mcp/config.py
+MCP_SERVERS_CONFIG = {
+    "database-sqlite": {
+        "path": os.getenv("DATABASE_PATH", "./aurawell.db"),
+        "timeout": 10,
+        "retry_attempts": 3
+    },
+    "calculator": {
+        "precision": 4,
+        "timeout": 5
+    },
+    "quickchart": {
+        "api_url": "https://quickchart.io/chart",
+        "timeout": 15,
+        "max_chart_size": "500x300"
+    },
+    "brave-search": {
+        "api_key": os.getenv("BRAVE_API_KEY"),
+        "safe_search": "moderate",
+        "timeout": 15
+    }
+}
+```
+
+## 🔧 故障排除与监控
+
+### MCP工具健康检查
+```python
+async def check_mcp_tools_health():
+    """检查所有MCP工具的健康状态"""
+    
+    tools_status = {}
+    
+    try:
+        # 测试database-sqlite
+        await database_sqlite.execute("SELECT 1")
+        tools_status["database-sqlite"] = "healthy"
+    except Exception as e:
+        tools_status["database-sqlite"] = f"error: {e}"
+    
+    try:
+        # 测试calculator
+        result = await calculator.calculate("2 + 2")
+        tools_status["calculator"] = "healthy" if result == 4 else "error"
+    except Exception as e:
+        tools_status["calculator"] = f"error: {e}"
+    
+    # ... 其他工具检查
+    
+    return tools_status
+```
+
+### 性能监控指标
+- **响应时间**: 每个MCP工具调用的平均响应时间
+- **成功率**: 工具调用成功率统计
+- **错误类型**: 常见错误类型和频率
+- **并发处理**: 同时处理的MCP调用数量
+
+## 📈 MCP工具使用最佳实践
+
+### 1. 并行调用优化
+```python
+# ✅ 好的做法：并行调用相关工具
+async def parallel_health_analysis():
+    tasks = [
+        database_sqlite.query("SELECT * FROM health_profiles"),
+        weather.get_current_weather(),
+        time.get_current_time()
+    ]
+    results = await asyncio.gather(*tasks)
+    return results
+
+# ❌ 避免：串行调用
+async def sequential_calls():  # 避免这种做法
+    data = await database_sqlite.query("SELECT * FROM health_profiles")
+    weather = await weather.get_current_weather()
+    time = await time.get_current_time()
+```
+
+### 2. 错误处理策略
+```python
+async def robust_mcp_call(tool_func, *args, **kwargs):
+    """带重试和降级的MCP工具调用"""
+    
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            return await tool_func(*args, **kwargs)
+        except TimeoutError:
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 ** attempt)  # 指数退避
+                continue
+            else:
+                return {"error": "Tool timeout after retries"}
+        except Exception as e:
+            logger.error(f"MCP tool error: {e}")
+            return {"error": str(e)}
+```
+
+### 3. 缓存策略
+```python
+from functools import lru_cache
+import time
+
+@lru_cache(maxsize=100)
+async def cached_health_calculation(user_id: str, data_hash: str):
+    """缓存健康计算结果"""
+    # 只有当数据hash变化时才重新计算
+    return await calculator.calculate_health_metrics(user_id)
+```
+
+记住：MCP工具的强大在于智能协作，让AuraWell能够自动化处理复杂的健康管理任务！🚀
+

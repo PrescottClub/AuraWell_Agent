@@ -260,11 +260,11 @@ async def get_user_from_websocket(websocket: WebSocket, token: str) -> str:
         payload = authenticator.verify_token(token)
         user_id = payload.get("sub")
         if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
         return user_id
     except Exception as e:
         logger.error(f"WebSocket authentication failed: {e}")
-        raise HTTPException(status_code=401, detail="Authentication failed")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
 
 
 @websocket_router.websocket("/ws/chat/{user_id}")

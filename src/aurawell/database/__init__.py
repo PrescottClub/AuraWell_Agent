@@ -21,6 +21,13 @@ from .models import (
     HealthPlanFeedbackDB,
     HealthPlanTemplateDB,
 )
+from .family_models import (
+    FamilyDB,
+    FamilyMemberDB,
+    FamilyInvitationDB,
+    FamilyActivityLogDB,
+    FamilyPermissionDB,
+)
 
 # 移除循环导入 - 对话模型将在需要时单独导入
 
@@ -40,4 +47,9 @@ __all__ = [
     "HealthPlanProgressDB",
     "HealthPlanFeedbackDB",
     "HealthPlanTemplateDB",
+    "FamilyDB",
+    "FamilyMemberDB",
+    "FamilyInvitationDB",
+    "FamilyActivityLogDB",
+    "FamilyPermissionDB",
 ]

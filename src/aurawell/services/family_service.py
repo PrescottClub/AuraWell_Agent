@@ -42,6 +42,7 @@ from ..core.exceptions import (
 )
 from ..database import get_database_manager
 from ..repositories.family_repository import FamilyRepository
+from ..repositories.family_repository_real import RealFamilyRepository
 from ..repositories.user_repository import UserRepository
 
 logger = logging.getLogger(__name__)
@@ -50,10 +51,11 @@ logger = logging.getLogger(__name__)
 class FamilyService:
     """Service class for family management operations with database integration"""
 
-    def __init__(self, db_session: Optional[Session] = None):
+    def __init__(self, db_session: Optional[Session] = None, use_real_repository: bool = True):
         """Initialize family service with database session"""
         self.db_session = db_session
         self.db_manager = get_database_manager()
+        self.use_real_repository = use_real_repository
 
         # Import constants locally to avoid circular imports
         try:
@@ -84,7 +86,12 @@ class FamilyService:
         for attempt in range(self.max_retry_attempts):
             try:
                 async with await self._get_session() as session:
-                    family_repo = FamilyRepository(session)
+                    # 选择使用真正的仓库还是Mock仓库
+                    if self.use_real_repository:
+                        family_repo = RealFamilyRepository(session)
+                    else:
+                        family_repo = FamilyRepository(session)
+
                     user_repo = UserRepository(session)
 
                     result = await operation(family_repo, user_repo, *args, **kwargs)

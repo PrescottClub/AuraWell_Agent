@@ -56,9 +56,46 @@ class AppleHealthClient(GenericHealthAPIClient):
         # for any cloud sync service
         rate_limit = RateLimitInfo(requests_per_minute=30, requests_per_hour=500)
 
-        super().__init__(base_url, credentials, rate_limit)
+        # Store credentials for later use
+        self.credentials = credentials
+
+        super().__init__(base_url, credentials, rate_limit=rate_limit)
 
         logger.info("Apple Health client initialized")
+
+    def ensure_authenticated(self) -> bool:
+        """
+        Ensure the client is authenticated, refreshing token if needed
+
+        Returns:
+            True if authenticated, False otherwise
+        """
+        if self.is_token_valid():
+            return True
+
+        logger.info("Token expired or invalid, attempting to refresh...")
+
+        if self.credentials.refresh_token:
+            if self.refresh_access_token():
+                return True
+
+        logger.info("Refresh failed, attempting full authentication...")
+        return self.authenticate()
+
+    def is_token_valid(self) -> bool:
+        """
+        Check if the current access token is valid
+
+        Returns:
+            True if token is valid
+        """
+        if not self.credentials.access_token:
+            return False
+
+        if self.credentials.token_expires_at:
+            return datetime.now() < self.credentials.token_expires_at
+
+        return True
 
     def authenticate(self) -> bool:
         """

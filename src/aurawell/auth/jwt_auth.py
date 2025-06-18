@@ -137,9 +137,7 @@ async def get_current_user_id(
         HTTPException: If authentication fails
     """
     # 开发环境特殊处理
-    if credentials.credentials == "dev-test-token":
-        logger.info("Using development test token")
-        return "dev_user_001"
+    # 硬编码认证后门已移除 - 凤凰计划安全修复
 
     return authenticator.get_current_user_id(credentials.credentials)
 

@@ -1,0 +1,319 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# AuraWell Agent - Cursor 开发规则 🏥🤖
+
+## 项目概览
+AuraWell是一个超个性化健康生活方式编排AI Agent，集成了13个MCP服务器，提供智能健康管理和生活方式建议。
+
+## 核心技术栈与架构
+
+### 后端架构
+- **核心框架**: Python + FastAPI + SQLAlchemy
+- **AI引擎**: DeepSeek API (preferably deepseek-r1 for reasoning)
+- **主入口**: [run_api_server.py](mdc:run_api_server.py)
+- **核心模块**: [src/aurawell/](mdc:src/aurawell)
+- **数据库**: SQLite + Alembic migrations
+
+### 前端架构  
+- **框架**: Vue 3 + TypeScript + Vite
+- **样式**: Tailwind CSS
+- **主目录**: [frontend/](mdc:frontend)
+- **入口文件**: [frontend/src/main.js](mdc:frontend/src/main.js)
+
+### 关键配置文件
+- **依赖管理**: [requirements.txt](mdc:requirements.txt) (后端), [frontend/package.json](mdc:frontend/package.json) (前端)
+- **环境配置**: [env.example](mdc:env.example)
+- **数据库配置**: [alembic.ini](mdc:alembic.ini)
+
+## 核心模块指南
+
+### 🎯 Agent核心 - [src/aurawell/agent/](mdc:src/aurawell/agent)
+- **主要工具**: [health_tools.py](mdc:src/aurawell/agent/health_tools.py)
+- **工具注册**: [tools_registry.py](mdc:src/aurawell/agent/tools_registry.py)
+- **兼容层**: [health_tools_compat.py](mdc:src/aurawell/agent/health_tools_compat.py)
+
+### 🧠 核心引擎 - [src/aurawell/core/](mdc:src/aurawell/core)
+- **AI客户端**: [deepseek_client.py](mdc:src/aurawell/core/deepseek_client.py)
+- **编排器**: [orchestrator_v2.py](mdc:src/aurawell/core/orchestrator_v2.py)
+- **路由**: [agent_router.py](mdc:src/aurawell/core/agent_router.py)
+
+### 📊 数据模型 - [src/aurawell/database/](mdc:src/aurawell/database)
+- **基础模型**: [models.py](mdc:src/aurawell/database/models.py)
+- **家庭模型**: [family_models.py](mdc:src/aurawell/database/family_models.py)
+- **数据库连接**: [connection.py](mdc:src/aurawell/database/connection.py)
+
+### 🔌 集成接口 - [src/aurawell/integrations/](mdc:src/aurawell/integrations)
+- **苹果健康**: [apple_health_client.py](mdc:src/aurawell/integrations/apple_health_client.py)
+- **小米健康**: [xiaomi_health_client.py](mdc:src/aurawell/integrations/xiaomi_health_client.py)
+- **薄荷健康**: [bohe_health_client.py](mdc:src/aurawell/integrations/bohe_health_client.py)
+
+## 开发规范
+
+### Python编码标准
+```python
+# 类型提示必须
+def calculate_bmi(weight: float, height: float) -> float:
+    """计算BMI指数"""
+    return weight / (height ** 2)
+
+# 异常处理
+try:
+    result = await health_service.get_data()
+except HealthAPIError as e:
+    logger.error(f"健康API调用失败: {e}")
+    raise HTTPException(status_code=500, detail="健康数据获取失败")
+```
+
+### Vue组件规范
+```vue
+<!-- 组件命名：PascalCase -->
+<template>
+  <div class="health-card">
+    <!-- Tailwind CSS类名 -->
+  </div>
+</template>
+
+<script setup lang="ts">
+// TypeScript必须，组合式API优先
+import { ref, computed } from 'vue'
+import type { HealthData } from '@/types/health'
+</script>
+```
+
+### 文件组织原则
+- **单一职责**: 每个文件专注一个功能
+- **模块化**: 使用 `__init__.py` 控制导入
+- **类型安全**: 所有公共API使用类型提示
+
+## MCP工具集成规范
+
+### 🔧 MCP服务器配置
+项目集成13个MCP服务器，自动化健康管理工作流：
+
+#### 核心MCP工具链
+1. **database-sqlite** - 健康数据存储查询
+2. **calculator** - 健康指标计算  
+3. **quickchart** - 数据可视化
+4. **sequential-thinking** - AI推理分析
+5. **brave-search** - 健康信息搜索
+6. **memory** - 用户画像管理
+7. **weather** - 运动环境检查
+8. **time** - 时间调度管理
+
+### 🚀 自动化工作流触发规则
+
+#### 健康数据分析场景
+```python
+# 触发词: "分析数据", "健康统计", "查看趋势"
+async def auto_health_analysis():
+    # 并行调用MCP工具
+    tasks = [
+        database_sqlite.query("SELECT * FROM user_health_profiles"),
+        calculator.calculate("BMI, 体脂率, 基础代谢"),
+        quickchart.generate_chart("健康趋势图"),
+        sequential_thinking.analyze("综合健康评估")
+    ]
+    return await asyncio.gather(*tasks)
+```
+
+## API开发指南
+
+### FastAPI路由规范
+```python
+# 路径参数验证
+@router.get("/users/{user_id}/health")
+async def get_user_health(
+    user_id: int = Path(..., gt=0),
+    db: Session = Depends(get_db)
+) -> HealthResponse:
+    """获取用户健康数据"""
+    pass
+
+# 异常处理中间件
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "数据验证失败", "errors": exc.errors()}
+    )
+```
+
+### API模型定义
+参考 [src/aurawell/models/api_models.py](mdc:src/aurawell/models/api_models.py):
+```python
+class HealthPlanRequest(BaseModel):
+    user_id: int
+    health_goals: List[str]
+    dietary_preferences: Optional[List[str]] = None
+    exercise_preferences: Optional[List[str]] = None
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+```
+
+## 数据库操作规范
+
+### SQLAlchemy模型
+参考 [src/aurawell/database/models.py](mdc:src/aurawell/database/models.py):
+```python
+class HealthProfile(Base):
+    __tablename__ = "health_profiles"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 关系定义
+    user = relationship("User", back_populates="health_profile")
+```
+
+### 数据库迁移
+```bash
+# 创建迁移
+alembic revision --autogenerate -m "添加健康档案表"
+
+# 执行迁移  
+alembic upgrade head
+```
+
+## 测试规范
+
+### 单元测试
+```python
+# tests/test_health_calculations.py
+import pytest
+from aurawell.utils.health_calculations import calculate_bmi
+
+def test_calculate_bmi():
+    """测试BMI计算"""
+    assert calculate_bmi(70, 1.75) == pytest.approx(22.86, rel=1e-2)
+```
+
+### API测试
+参考 [test_family_api.py](mdc:test_family_api.py):
+```python
+def test_create_health_plan():
+    response = client.post("/api/health-plans", json={
+        "user_id": 1,
+        "health_goals": ["减重", "增肌"]
+    })
+    assert response.status_code == 201
+```
+
+## 部署与运维
+
+### 开发环境启动
+```bash
+# 后端启动
+python run_api_server.py
+
+# 前端启动  
+cd frontend && npm run dev
+```
+
+### 生产环境配置
+参考 [deployment/serverless.yml](mdc:deployment/serverless.yml):
+- 使用Serverless框架
+- 环境变量管理
+- 数据库连接池配置
+
+## 安全与性能
+
+### 数据加密
+参考 [src/aurawell/utils/encryption_utils.py](mdc:src/aurawell/utils/encryption_utils.py):
+```python
+def encrypt_health_data(data: str) -> str:
+    """加密健康敏感数据"""
+    # 使用AES加密算法
+    pass
+```
+
+### 性能优化
+- **缓存策略**: 使用 [src/aurawell/utils/cache.py](mdc:src/aurawell/utils/cache.py)
+- **异步处理**: 参考 [src/aurawell/utils/async_tasks.py](mdc:src/aurawell/utils/async_tasks.py)
+- **数据库索引**: 在频繁查询字段上建立索引
+
+## 错误处理与日志
+
+### 日志配置
+参考 [src/aurawell/config/logging_config.py](mdc:src/aurawell/config/logging_config.py):
+```python
+import logging
+
+# 健康数据处理日志
+health_logger = logging.getLogger("aurawell.health")
+health_logger.setLevel(logging.INFO)
+```
+
+### 错误码定义
+参考 [src/aurawell/models/error_codes.py](mdc:src/aurawell/models/error_codes.py):
+```python
+class HealthErrorCodes:
+    INVALID_HEALTH_DATA = "HEALTH_001"
+    API_CONNECTION_FAILED = "HEALTH_002" 
+    CALCULATION_ERROR = "HEALTH_003"
+```
+
+## 文档与版本管理
+
+### 文档结构
+- **API文档**: [docs/API.md](mdc:docs/API.md)
+- **架构文档**: [docs/ARCHITECTURE_SUMMARY.md](mdc:docs/ARCHITECTURE_SUMMARY.md)
+- **部署文档**: [docs/DEPLOYMENT.md](mdc:docs/DEPLOYMENT.md)
+- **开发指南**: [AURAWELL_DEVELOPMENT_GUIDE.md](mdc:AURAWELL_DEVELOPMENT_GUIDE.md)
+
+### 版本发布
+使用 [scripts/release.py](mdc:scripts/release.py) 进行版本管理:
+```bash
+python scripts/release.py --version 1.2.0 --changelog "新增家庭健康管理功能"
+```
+
+## 🎯 开发最佳实践
+
+### 1. MCP工具优先
+- 健康相关查询自动触发MCP工具链
+- 数据分析必须包含可视化图表
+- 所有建议基于科学数据支撑
+
+### 2. 类型安全
+- 所有函数使用类型提示
+- API模型继承Pydantic BaseModel
+- 前端使用TypeScript接口
+
+### 3. 错误处理
+- 网络请求必须有超时和重试
+- 数据库操作使用事务
+- 用户输入严格验证
+
+### 4. 性能监控
+- 关键API响应时间 < 3秒
+- 数据库查询使用索引
+- 静态资源使用CDN
+
+### 5. 安全原则
+- 健康数据加密存储
+- API使用JWT认证
+- 输入数据防注入攻击
+
+## 🚀 快速开始模板
+
+### 新增健康功能
+1. 在 `src/aurawell/agent/health_tools.py` 添加工具函数
+2. 在 `src/aurawell/models/` 定义数据模型
+3. 在 `src/aurawell/services/` 实现业务逻辑
+4. 在 `src/aurawell/interfaces/api_interface.py` 添加API端点
+5. 在 `frontend/src/views/` 创建前端页面
+
+### 新增MCP集成
+1. 在 `src/aurawell/agent/tools_registry.py` 注册工具
+2. 在 `src/aurawell/core/orchestrator_v2.py` 添加工作流
+3. 测试MCP工具调用链
+4. 更新文档和示例
+
+记住：AuraWell的核心价值在于通过智能MCP工具协作，为用户提供个性化、科学化的健康生活方式编排! 🎉
+

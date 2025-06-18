@@ -669,7 +669,7 @@ class HealthAdviceService:
             prompt = topic_prompts.get(topic, f"关于{topic}的健康建议")
 
             if self.deepseek_client:
-                response = self.deepseek_client.get_deepseek_response(
+                response = await self.deepseek_client.get_deepseek_response(
                     messages=[{"role": "user", "content": prompt}],
                     model_name=MODEL_CONFIG["chat_tasks"],  # 快速建议使用对话模型
                     temperature=0.3,
@@ -762,9 +762,9 @@ class HealthAdviceService:
 
         for attempt in range(max_retries + 1):
             try:
-                response = self.deepseek_client.get_deepseek_response(
+                response = await self.deepseek_client.get_deepseek_response(
                     messages=messages,
-                    model_name=model_name,
+                    model=model_name,
                     temperature=temperature,
                     max_tokens=max_tokens,
                 )

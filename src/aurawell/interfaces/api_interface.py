@@ -118,6 +118,14 @@ from ..middleware.error_handler import (
     validation_exception_handler,
     general_exception_handler,
 )
+from ..core.exceptions import (
+    ValidationError,
+    ConflictError,
+    AuthorizationError,
+    DatabaseError,
+    NotFoundError,
+    BusinessLogicError,
+)
 from ..auth import (
     get_current_user_id,
     get_optional_user_id,
@@ -668,9 +676,17 @@ async def get_family_service() -> FamilyService:
     """Get family service instance"""
     global _family_service
     if _family_service is None:
-        # Create family service with mock session
-        # In production, this should use proper database session
-        _family_service = FamilyService(db_session=None)
+        try:
+            # 尝试获取数据库管理器
+            db_manager = await get_db_manager()
+            # 使用真正的仓库实现
+            _family_service = FamilyService(db_session=None, use_real_repository=True)
+            logger.info("Family service initialized successfully with real repository")
+        except Exception as e:
+            logger.error(f"Failed to initialize family service: {e}")
+            # 创建带有错误处理的服务实例，使用Mock仓库作为后备
+            _family_service = FamilyService(db_session=None, use_real_repository=False)
+            logger.warning("Using mock repository as fallback")
     return _family_service
 
 
@@ -906,21 +922,32 @@ async def create_family(
             data=family_info, message="Family created successfully"
         )
 
+    except ValidationError as e:
+        logger.error(f"Validation error creating family: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {str(e)}",
+        )
+    except ConflictError as e:
+        logger.error(f"Conflict error creating family: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
+    except AuthorizationError as e:
+        logger.error(f"Authorization error creating family: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )
+    except DatabaseError as e:
+        logger.error(f"Database error creating family: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}",
+        )
     except Exception as e:
-        logger.error(f"Error creating family: {e}")
-        if hasattr(e, "error_code"):
-            raise HTTPException(
-                status_code=(
-                    status.HTTP_400_BAD_REQUEST
-                    if e.error_code == "VALIDATION_ERROR"
-                    else (
-                        status.HTTP_409_CONFLICT
-                        if e.error_code == "CONFLICT"
-                        else status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
-                ),
-                detail=str(e),
-            )
+        logger.error(f"Unexpected error creating family: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create family",

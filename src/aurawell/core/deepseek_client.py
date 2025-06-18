@@ -1,352 +1,344 @@
 """
-DeepSeek API Client for AuraWell
+DeepSeek API Client - 异步重构版本
+=============================
 
-This module provides a client interface for interacting with the DeepSeek API,
-specifically optimized for health lifestyle orchestration tasks.
+完全异步的DeepSeek API客户端，解决事件循环阻塞问题。
+支持真正的并发调用和流式响应。
+
+重构日期：2024-12-28
+重构人：凤凰计划第二阶段
 """
 
-import os
+import asyncio
 import json
 import logging
-from typing import Dict, List, Optional, Any, Union, AsyncGenerator
-from dataclasses import dataclass
-from openai import OpenAI
-from pydantic import BaseModel
+import os
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
-# Configure logging
+import httpx
+from openai import AsyncOpenAI
+
+from .exceptions import ExternalServiceError
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class APIUsage:
-    """Data class to track API usage statistics"""
-
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-    model: str
-
-
-class DeepSeekResponse(BaseModel):
-    """Pydantic model for DeepSeek API response"""
-
-    content: str
-    tool_calls: Optional[List[Dict[str, Any]]] = None
-    usage: Optional[APIUsage] = None
-    model: str
-    finish_reason: str
 
 
 class DeepSeekClient:
     """
-    Client for interacting with DeepSeek API
-
-    Uses OpenAI library with DeepSeek's base URL for API calls.
-    Prioritizes deepseek-reasoner model for reasoning and planning tasks.
+    异步DeepSeek API客户端 - 重构版本
+    
+    特性：
+    - 完全异步，不阻塞事件循环
+    - 支持真正的并发调用
+    - 异步流式响应
+    - 连接池和超时管理
+    - 详细的错误处理
     """
 
     def __init__(self, api_key: Optional[str] = None) -> None:
         """
-        Initialize DeepSeek client
-
+        初始化异步DeepSeek客户端
+        
         Args:
-            api_key: DeepSeek API key. If None, will read from DEEPSEEK_API_KEY env var
-
-        Raises:
-            ValueError: If API key is not provided or found in environment
+            api_key: DeepSeek API密钥，如未提供将从环境变量读取
         """
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         if not self.api_key:
-            raise ValueError(
-                "DeepSeek API key not provided. Set DEEPSEEK_API_KEY environment variable."
-            )
+            raise ExternalServiceError("DEEPSEEK_API_KEY is required")
 
-        self.client = OpenAI(
-            api_key=self.api_key, base_url="https://api.deepseek.com/v1"
+        # 配置异步HTTP客户端
+        self.http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0),  # 30秒超时
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5)
         )
+        
+        # 配置异步OpenAI客户端
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url="https://api.deepseek.com",
+            http_client=self.http_client
+        )
+        
+        self.model = "deepseek-reasoner"
+        logger.info("DeepSeek异步客户端初始化成功")
 
-        logger.info("DeepSeek client initialized successfully")
+    async def __aenter__(self):
+        """异步上下文管理器入口"""
+        return self
 
-    def get_deepseek_response(
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步上下文管理器退出"""
+        await self.close()
+
+    async def close(self):
+        """关闭异步客户端连接"""
+        if self.http_client:
+            await self.http_client.aclose()
+        logger.info("DeepSeek异步客户端连接已关闭")
+
+    async def get_deepseek_response(
         self,
         messages: List[Dict[str, str]],
-        model_name: str = "deepseek-reasoner",
-        tools: Optional[List[Dict[str, Any]]] = None,
+        model: Optional[str] = None,
+        max_tokens: int = 4000,
         temperature: float = 0.7,
-        max_tokens: int = 1024,
-    ) -> DeepSeekResponse:
+        **kwargs
+    ) -> str:
         """
-        Get response from DeepSeek API
-
+        获取DeepSeek响应 - 真正的异步实现
+        
         Args:
-            messages: List of message dicts with 'role' and 'content'
-            model_name: DeepSeek model name (default: deepseek-reasoner for reasoning)
-            tools: Optional list of function tool definitions for function calling
-            temperature: Sampling temperature (0.0 to 1.0)
-            max_tokens: Maximum tokens in response
-
+            messages: 消息列表
+            model: 模型名称
+            max_tokens: 最大token数
+            temperature: 温度参数
+            **kwargs: 其他参数
+            
         Returns:
-            DeepSeekResponse object containing the API response
-
-        Raises:
-            Exception: For API errors, network issues, or authentication failures
+            API响应内容
         """
         try:
-            # Prepare API call parameters
+            logger.info(f"发起异步DeepSeek API调用，模型: {model or self.model}")
+            
+            # 准备API参数
             api_params = {
-                "model": model_name,
+                "model": model or self.model,
                 "messages": messages,
-                "temperature": temperature,
                 "max_tokens": max_tokens,
+                "temperature": temperature,
+                **kwargs
             }
-
-            # Add tools if provided
-            if tools:
-                api_params["tools"] = tools
-                api_params["tool_choice"] = "auto"
-
-            logger.info(f"Making API call to DeepSeek with model: {model_name}")
-            logger.debug(f"Messages: {json.dumps(messages, ensure_ascii=False)}")
-
-            # Make API call
-            response = self.client.chat.completions.create(**api_params)
-
-            # Extract response data
-            message = response.choices[0].message
-            content = message.content or ""
-            tool_calls = None
-
-            # Process tool calls if present
-            if hasattr(message, "tool_calls") and message.tool_calls:
-                tool_calls = []
-                for tool_call in message.tool_calls:
-                    tool_calls.append(
-                        {
-                            "id": tool_call.id,
-                            "type": tool_call.type,
-                            "function": {
-                                "name": tool_call.function.name,
-                                "arguments": tool_call.function.arguments,
-                            },
-                        }
-                    )
-                logger.info(
-                    f"Function calls requested: {[tc['function']['name'] for tc in tool_calls]}"
-                )
-
-            # Track usage
-            usage = None
-            if response.usage:
-                usage = APIUsage(
-                    prompt_tokens=response.usage.prompt_tokens,
-                    completion_tokens=response.usage.completion_tokens,
-                    total_tokens=response.usage.total_tokens,
-                    model=model_name,
-                )
-                logger.info(
-                    f"Token usage - Prompt: {usage.prompt_tokens}, "
-                    f"Completion: {usage.completion_tokens}, "
-                    f"Total: {usage.total_tokens}"
-                )
-
-            return DeepSeekResponse(
-                content=content,
-                tool_calls=tool_calls,
-                usage=usage,
-                model=model_name,
-                finish_reason=response.choices[0].finish_reason,
-            )
-
+            
+            # 真正的异步调用
+            response = await self.client.chat.completions.create(**api_params)
+            
+            if response.choices and response.choices[0].message:
+                content = response.choices[0].message.content
+                logger.info("DeepSeek异步API调用成功")
+                return content or ""
+            else:
+                raise ExternalServiceError("DeepSeek API返回空响应")
+                
         except Exception as e:
-            logger.error(f"DeepSeek API call failed: {str(e)}")
-            raise Exception(f"DeepSeek API error: {str(e)}")
+            logger.error(f"DeepSeek异步API调用失败: {e}")
+            raise ExternalServiceError(f"DeepSeek API error: {e}", service_name="deepseek")
 
     async def get_streaming_response(
         self,
         messages: List[Dict[str, str]],
-        model_name: str = "deepseek-reasoner",
-        tools: Optional[List[Dict[str, Any]]] = None,
+        model: Optional[str] = None,
+        max_tokens: int = 4000,
         temperature: float = 0.7,
-        max_tokens: int = 1024,
+        **kwargs
     ) -> AsyncGenerator[str, None]:
         """
-        Get streaming response from DeepSeek API
-
+        获取流式响应 - 真正的异步流
+        
         Args:
-            messages: List of message dicts with 'role' and 'content'
-            model_name: DeepSeek model name (default: deepseek-reasoner for reasoning)
-            tools: Optional list of function tool definitions for function calling
-            temperature: Sampling temperature (0.0 to 1.0)
-            max_tokens: Maximum tokens in response
-
+            messages: 消息列表
+            model: 模型名称
+            max_tokens: 最大token数
+            temperature: 温度参数
+            **kwargs: 其他参数
+            
         Yields:
-            str: Token chunks from the streaming response
-
-        Raises:
-            Exception: For API errors, network issues, or authentication failures
+            响应内容片段
         """
         try:
-            # Prepare API call parameters
+            logger.info(f"发起异步DeepSeek流式API调用，模型: {model or self.model}")
+            
+            # 准备API参数
             api_params = {
-                "model": model_name,
+                "model": model or self.model,
                 "messages": messages,
-                "temperature": temperature,
                 "max_tokens": max_tokens,
-                "stream": True,  # Enable streaming
+                "temperature": temperature,
+                "stream": True,
+                **kwargs
             }
-
-            # Add tools if provided
-            if tools:
-                api_params["tools"] = tools
-                api_params["tool_choice"] = "auto"
-
-            logger.info(
-                f"Making streaming API call to DeepSeek with model: {model_name}"
-            )
-            logger.debug(f"Messages: {json.dumps(messages, ensure_ascii=False)}")
-
-            # Make streaming API call
-            stream = self.client.chat.completions.create(**api_params)
-
-            # Process streaming response
-            full_content = ""
-            for chunk in stream:
-                if chunk.choices and len(chunk.choices) > 0:
-                    delta = chunk.choices[0].delta
-                    if hasattr(delta, "content") and delta.content:
-                        token = delta.content
-                        full_content += token
-                        yield token
-
-            logger.info(
-                f"Streaming response completed. Total length: {len(full_content)}"
-            )
-
+            
+            # 真正的异步流式调用
+            async_stream = await self.client.chat.completions.create(**api_params)
+            
+            async for chunk in async_stream:
+                if chunk.choices and chunk.choices[0].delta:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+                        
         except Exception as e:
-            logger.error(f"DeepSeek streaming API call failed: {str(e)}")
-            raise Exception(f"DeepSeek streaming API error: {str(e)}")
+            logger.error(f"DeepSeek异步流式API调用失败: {e}")
+            raise ExternalServiceError(f"DeepSeek streaming API error: {e}", service_name="deepseek")
+
+    async def generate_health_advice(
+        self,
+        user_query: str,
+        user_context: Optional[Dict[str, Any]] = None,
+        max_tokens: int = 2000
+    ) -> str:
+        """
+        生成健康建议 - 异步版本
+        
+        Args:
+            user_query: 用户查询
+            user_context: 用户上下文信息
+            max_tokens: 最大token数
+            
+        Returns:
+            健康建议内容
+        """
+        try:
+            # 构建消息
+            messages = [
+                {
+                    "role": "system",
+                    "content": "你是AuraWell的专业健康顾问，请根据用户的问题提供科学、实用的健康建议。"
+                },
+                {
+                    "role": "user", 
+                    "content": user_query
+                }
+            ]
+            
+            # 如果有用户上下文，添加到消息中
+            if user_context:
+                context_msg = f"用户背景信息：{json.dumps(user_context, ensure_ascii=False)}"
+                messages.insert(1, {"role": "system", "content": context_msg})
+            
+            # 异步获取响应
+            response = await self.get_deepseek_response(
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=0.7
+            )
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"生成健康建议失败: {e}")
+            raise ExternalServiceError(f"Health advice generation failed: {e}")
+
+    async def analyze_health_data(
+        self,
+        health_data: Dict[str, Any],
+        analysis_type: str = "comprehensive"
+    ) -> Dict[str, Any]:
+        """
+        分析健康数据 - 异步版本
+        
+        Args:
+            health_data: 健康数据
+            analysis_type: 分析类型
+            
+        Returns:
+            分析结果
+        """
+        try:
+            # 构建分析提示
+            prompt = f"""
+            请分析以下健康数据，提供{analysis_type}分析：
+            
+            健康数据：{json.dumps(health_data, ensure_ascii=False)}
+            
+            请从以下角度进行分析：
+            1. 数据趋势分析
+            2. 健康风险评估  
+            3. 改进建议
+            4. 行动计划
+            
+            请以JSON格式返回结构化结果。
+            """
+            
+            messages = [
+                {"role": "system", "content": "你是专业的健康数据分析师，擅长从健康数据中提取有价值的洞察。"},
+                {"role": "user", "content": prompt}
+            ]
+            
+            # 异步获取分析结果
+            response = await self.get_deepseek_response(
+                messages=messages,
+                max_tokens=3000,
+                temperature=0.3  # 较低温度以获得更稳定的分析结果
+            )
+            
+            # 尝试解析JSON响应
+            try:
+                analysis_result = json.loads(response)
+            except json.JSONDecodeError:
+                # 如果不是JSON格式，包装成标准格式
+                analysis_result = {
+                    "analysis_type": analysis_type,
+                    "raw_analysis": response,
+                    "structured": False
+                }
+            
+            return analysis_result
+            
+        except Exception as e:
+            logger.error(f"健康数据分析失败: {e}")
+            raise ExternalServiceError(f"Health data analysis failed: {e}")
 
 
+# 工具函数和健康相关功能
 def create_health_tools() -> List[Dict[str, Any]]:
-    """
-    Create tool definitions for DeepSeek function calling
-
-    Defines tools for health data orchestration and calendar integration.
-
-    Returns:
-        List of tool definitions for DeepSeek API
-    """
-    tools = [
+    """创建健康工具定义"""
+    return [
         {
             "type": "function",
             "function": {
-                "name": "get_user_calendar_events",
-                "description": "获取用户指定日期的日历事件",
+                "name": "analyze_user_health_data",
+                "description": "分析用户的健康数据，包括运动、饮食、睡眠等",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "date": {
-                            "type": "string",
-                            "description": "日期格式 YYYY-MM-DD",
-                        },
-                        "time_window": {
-                            "type": "string",
-                            "enum": ["morning", "afternoon", "evening", "all_day"],
-                            "description": "时间段过滤器，可选",
-                        },
+                        "data_type": {"type": "string", "enum": ["exercise", "nutrition", "sleep", "all"]},
+                        "time_range": {"type": "string", "description": "时间范围，如'7days', '1month'"}
                     },
-                    "required": ["date"],
-                },
-            },
+                    "required": ["data_type"]
+                }
+            }
         },
         {
-            "type": "function",
+            "type": "function", 
             "function": {
-                "name": "get_wearable_data",
-                "description": "获取用户在指定健康平台的特定类型数据",
+                "name": "generate_health_plan",
+                "description": "基于用户数据生成个性化健康计划",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "platform_name": {
-                            "type": "string",
-                            "enum": ["XiaomiHealth", "AppleHealth", "BoheHealth"],
-                            "description": "健康数据平台名称",
-                        },
-                        "data_type": {
-                            "type": "string",
-                            "enum": [
-                                "steps",
-                                "sleep_summary",
-                                "heart_rate",
-                                "workout",
-                                "nutrition",
-                            ],
-                            "description": "数据类型",
-                        },
-                        "start_date": {
-                            "type": "string",
-                            "description": "开始日期 YYYY-MM-DD",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "结束日期 YYYY-MM-DD",
-                        },
+                        "goals": {"type": "array", "items": {"type": "string"}},
+                        "constraints": {"type": "array", "items": {"type": "string"}},
+                        "duration": {"type": "string", "description": "计划持续时间"}
                     },
-                    "required": [
-                        "platform_name",
-                        "data_type",
-                        "start_date",
-                        "end_date",
-                    ],
-                },
-            },
-        },
+                    "required": ["goals"]
+                }
+            }
+        }
     ]
 
-    return tools
 
-
-def demo_function_calling():
-    """
-    Demonstration of DeepSeek function calling capabilities
-
-    This function shows how to use the client with health-related tools
-    """
-    # This is a demo function that shows tool call output
-    client = DeepSeekClient()
-    tools = create_health_tools()
-
-    messages = [
-        {
-            "role": "system",
-            "content": "你是AuraWell健康助手，专注于个性化健康建议。根据用户的健康数据和日程安排提供建议。",
-        },
-        {
-            "role": "user",
-            "content": "我想了解一下今天的健康状况，请帮我获取步数和睡眠数据，日期是2024-01-15",
-        },
-    ]
-
+async def demo_async_function_calling():
+    """演示异步函数调用"""
     try:
-        response = client.get_deepseek_response(
-            messages=messages, tools=tools, model_name="deepseek-reasoner"
-        )
-
-        print(f"Response: {response.content}")
-
-        if response.tool_calls:
-            print("\nFunction calls requested:")
-            for tool_call in response.tool_calls:
-                print(f"Function: {tool_call['function']['name']}")
-                print(f"Arguments: {tool_call['function']['arguments']}")
-
-        return response
-
+        async with DeepSeekClient() as client:
+            # 示例：并发健康查询
+            tasks = [
+                client.generate_health_advice("如何改善睡眠质量？"),
+                client.generate_health_advice("适合办公室的运动有哪些？"),
+                client.analyze_health_data({"sleep_hours": 6, "exercise_minutes": 30})
+            ]
+            
+            # 真正的并发执行
+            results = await asyncio.gather(*tasks)
+            
+            print("🎉 异步并发调用完成！")
+            for i, result in enumerate(results):
+                print(f"结果 {i+1}: {result[:100]}...")
+                
     except Exception as e:
-        logger.error(f"Demo failed: {e}")
-        return None
+        print(f"❌ 异步演示失败: {e}")
 
 
 if __name__ == "__main__":
-    # Demo usage
-    demo_function_calling()
+    # 测试异步实现
+    asyncio.run(demo_async_function_calling())

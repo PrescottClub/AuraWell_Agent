@@ -68,3 +68,7 @@ asyncio-mqtt>=0.13.0
 # apple-health-connector
 # xiaomi-health-connector
 # bohe-health-connector
+
+# Phase 3 异步依赖
+aioredis==2.0.1
+aiofiles==23.2.1

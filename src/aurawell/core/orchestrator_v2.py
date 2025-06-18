@@ -52,6 +52,21 @@ class HealthInsight:
     expires_at: Optional[datetime] = None
 
 
+@dataclass
+class ComprehensiveHealthReport:
+    """Complete health analysis report with insights and recommendations"""
+    
+    user_id: str
+    generated_at: datetime
+    data_summary: Dict[str, Any]
+    insights: List[HealthInsight]
+    health_plan: Optional[HealthPlan]
+    ai_analysis: str
+    recommendations: List[Dict[str, Any]]
+    risk_factors: List[str]
+    confidence_score: float
+
+
 # Note: HealthPlan model is now imported from api_models to maintain consistency
 # This dataclass is kept for backward compatibility but should be migrated to use the API model
 
@@ -64,12 +79,13 @@ class AuraWellOrchestrator:
     and personalized recommendation generation.
     """
 
-    def __init__(self, deepseek_client=None):
+    def __init__(self, deepseek_client=None, apple_health_client=None):
         """
         Initialize the orchestrator
 
         Args:
             deepseek_client: Optional DeepSeek client instance
+            apple_health_client: Optional AsyncAppleHealthClient instance
         """
         # Lazy import to avoid circular dependencies
         if deepseek_client is None:
@@ -83,12 +99,465 @@ class AuraWellOrchestrator:
         else:
             self.deepseek_client = deepseek_client
 
+        # Initialize Apple Health client
+        if apple_health_client is None:
+            try:
+                from ..integrations.apple_health_client import AsyncAppleHealthClient
+                self.apple_health_client = AsyncAppleHealthClient()
+            except Exception as e:
+                logger.warning(f"Failed to initialize Apple Health client: {e}")
+                self.apple_health_client = None
+        else:
+            self.apple_health_client = apple_health_client
+
         self.insights_cache: Dict[str, List[HealthInsight]] = {}
         self.plans_cache: Dict[str, HealthPlan] = {}
 
-        logger.info("AuraWell Orchestrator v2 initialized")
+        logger.info("AuraWell Orchestrator v2 initialized with Apple Health integration")
 
-    def analyze_user_health_data(
+    async def analyze_user_comprehensive_health(
+        self,
+        user_id: str,
+        days_back: int = 7,
+        include_ai_analysis: bool = True,
+        generate_health_plan: bool = True
+    ) -> ComprehensiveHealthReport:
+        """
+        Perform comprehensive health analysis by fetching real data from Apple Health
+        and generating AI-powered insights and recommendations.
+        
+        This is the main E2E method that connects all components:
+        Data Fetching → Analysis → AI Insights → Health Plan → Final Report
+        
+        Args:
+            user_id: User identifier
+            days_back: Number of days to fetch historical data
+            include_ai_analysis: Whether to include DeepSeek AI analysis
+            generate_health_plan: Whether to generate a personalized health plan
+            
+        Returns:
+            ComprehensiveHealthReport with all analysis results
+        """
+        logger.info(f"Starting comprehensive health analysis for user {user_id}")
+        
+        try:
+            # Step 1: Fetch real health data from Apple Health
+            health_data = await self._fetch_comprehensive_health_data(user_id, days_back)
+            
+            # Step 2: Analyze the data and generate insights
+            insights = await self.analyze_user_health_data(
+                user_profile=health_data["user_profile"],
+                activity_data=health_data.get("activity_data", []),
+                sleep_data=health_data.get("sleep_data", []),
+                heart_rate_data=health_data.get("heart_rate_data", []),
+                nutrition_data=health_data.get("nutrition_data", [])
+            )
+            
+            # Step 3: Generate AI analysis if requested
+            ai_analysis = ""
+            if include_ai_analysis and self.deepseek_client:
+                ai_analysis = await self._generate_comprehensive_ai_analysis(
+                    health_data, insights
+                )
+            
+            # Step 4: Extract recommendations and risk factors
+            recommendations = self._extract_actionable_recommendations(insights)
+            risk_factors = self._identify_risk_factors(health_data, insights)
+            
+            # Step 5: Generate personalized health plan if requested
+            health_plan = None
+            if generate_health_plan:
+                user_preferences = health_data.get("user_preferences", {})
+                health_plan = await self.create_personalized_health_plan(
+                    user_profile=health_data["user_profile"],
+                    user_preferences=user_preferences,
+                    recent_insights=insights
+                )
+            
+            # Step 6: Calculate overall confidence score
+            confidence_score = self._calculate_confidence_score(health_data, insights)
+            
+            # Step 7: Create comprehensive report
+            report = ComprehensiveHealthReport(
+                user_id=user_id,
+                generated_at=datetime.now(timezone.utc),
+                data_summary=self._create_data_summary(health_data),
+                insights=insights,
+                health_plan=health_plan,
+                ai_analysis=ai_analysis,
+                recommendations=recommendations,
+                risk_factors=risk_factors,
+                confidence_score=confidence_score
+            )
+            
+            logger.info(f"Comprehensive health analysis completed for user {user_id}")
+            logger.info(f"Generated {len(insights)} insights, {len(recommendations)} recommendations")
+            
+            return report
+            
+        except Exception as e:
+            logger.error(f"Failed to perform comprehensive health analysis: {e}")
+            raise
+    
+    async def _fetch_comprehensive_health_data(
+        self, user_id: str, days_back: int
+    ) -> Dict[str, Any]:
+        """
+        Fetch comprehensive health data from Apple Health
+        
+        Args:
+            user_id: User identifier
+            days_back: Number of days to fetch historical data
+            
+        Returns:
+            Dictionary containing all fetched health data
+        """
+        if not self.apple_health_client:
+            raise ValueError("Apple Health client not available")
+            
+        # Calculate date range
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        
+        logger.info(f"Fetching health data from {start_date} to {end_date}")
+        
+        try:
+            # Fetch all types of health data in parallel
+            tasks = [
+                self.apple_health_client.get_user_profile(user_id),
+                self.apple_health_client.get_activity_data(user_id, start_date, end_date),
+                self.apple_health_client.get_sleep_analysis(user_id, start_date, end_date),
+                self.apple_health_client.get_health_samples(
+                    user_id, "HKQuantityTypeIdentifierHeartRate", start_date, end_date
+                ),
+                self.apple_health_client.get_workouts(user_id, start_date, end_date),
+                self.apple_health_client.get_health_summary(
+                    user_id, start_date, end_date, include_workouts=True, include_sleep=True
+                )
+            ]
+            
+            # Execute all requests concurrently
+            import asyncio
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results
+            user_profile = results[0] if not isinstance(results[0], Exception) else {}
+            activity_data = results[1] if not isinstance(results[1], Exception) else {}
+            sleep_data = results[2] if not isinstance(results[2], Exception) else {}
+            heart_rate_data = results[3] if not isinstance(results[3], Exception) else {}
+            workouts = results[4] if not isinstance(results[4], Exception) else {}
+            health_summary = results[5] if not isinstance(results[5], Exception) else {}
+            
+            # Transform data into the format expected by analysis methods
+            formatted_data = {
+                "user_profile": self._format_user_profile(user_profile),
+                "activity_data": self._format_activity_data(activity_data),
+                "sleep_data": self._format_sleep_data(sleep_data),
+                "heart_rate_data": self._format_heart_rate_data(heart_rate_data),
+                "nutrition_data": [],  # Will be populated when nutrition API is available
+                "workouts": self._format_workouts(workouts),
+                "health_summary": health_summary,
+                "user_preferences": self._extract_user_preferences(user_profile)
+            }
+            
+            logger.info("Successfully fetched and formatted comprehensive health data")
+            return formatted_data
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch comprehensive health data: {e}")
+            # Return minimal data structure to prevent total failure
+            return {
+                "user_profile": {"user_id": user_id, "age": "未知", "gender": "未知"},
+                "activity_data": [],
+                "sleep_data": [],
+                "heart_rate_data": [],
+                "nutrition_data": [],
+                "workouts": [],
+                "health_summary": {},
+                "user_preferences": {}
+            }
+
+    async def _generate_comprehensive_ai_analysis(
+        self, health_data: Dict[str, Any], insights: List[HealthInsight]
+    ) -> str:
+        """
+        Generate comprehensive AI analysis using DeepSeek with real health data
+        
+        Args:
+            health_data: Complete health data dictionary
+            insights: Generated health insights
+            
+        Returns:
+            Comprehensive AI analysis text
+        """
+        if not self.deepseek_client:
+            return "AI分析暂不可用"
+            
+        try:
+            # Prepare comprehensive context for AI
+            context = {
+                "user_profile": health_data["user_profile"],
+                "data_summary": self._create_detailed_data_summary(health_data),
+                "insights_summary": [
+                    {
+                        "type": insight.insight_type.value,
+                        "priority": insight.priority.value,
+                        "title": insight.title,
+                        "description": insight.description
+                    }
+                    for insight in insights
+                ],
+                "health_metrics": self._extract_key_metrics(health_data)
+            }
+            
+            # Create comprehensive AI prompt
+            messages = [
+                {
+                    "role": "system",
+                    "content": """你是AuraWell的高级健康分析专家。基于用户的真实健康数据，提供专业、个性化的健康分析报告。
+
+请提供：
+1. 整体健康状况评估
+2. 关键健康指标分析
+3. 潜在风险因素识别
+4. 个性化改善建议
+5. 长期健康目标建议
+
+请用专业但易懂的语言，提供实用的健康指导。"""
+                },
+                {
+                    "role": "user",
+                    "content": f"""请对以下用户的健康数据进行综合分析：
+
+用户档案：{context['user_profile']}
+
+数据摘要：{context['data_summary']}
+
+关键指标：{context['health_metrics']}
+
+已识别洞察：{context['insights_summary']}
+
+请提供详细的健康分析报告。"""
+                }
+            ]
+            
+            # Get comprehensive AI response
+            response = await self.deepseek_client.get_deepseek_response(
+                messages=messages,
+                model="deepseek-reasoner",
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            logger.info("Generated comprehensive AI analysis")
+            return response.content
+            
+        except Exception as e:
+            logger.error(f"Failed to generate AI analysis: {e}")
+            return f"AI分析过程中出现错误：{str(e)}"
+
+    def _format_user_profile(self, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Format user profile data for analysis"""
+        return {
+            "user_id": profile_data.get("user_id", "unknown"),
+            "age": profile_data.get("age", "未知"),
+            "gender": profile_data.get("gender", "未知"),
+            "height": profile_data.get("height", 0),
+            "weight": profile_data.get("weight", 0),
+            "bmi": profile_data.get("bmi", 0),
+            "daily_steps_goal": profile_data.get("daily_steps_goal", 10000),
+            "sleep_duration_goal_hours": profile_data.get("sleep_duration_goal_hours", 8.0)
+        }
+
+    def _format_activity_data(self, activity_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Format activity data for analysis"""
+        if not activity_data or "samples" not in activity_data:
+            return []
+        
+        formatted = []
+        for sample in activity_data.get("samples", []):
+            formatted.append({
+                "date": sample.get("date", ""),
+                "steps": sample.get("value", 0),
+                "distance": sample.get("distance", 0),
+                "calories": sample.get("calories_burned", 0),
+                "active_minutes": sample.get("active_minutes", 0)
+            })
+        
+        return formatted
+
+    def _format_sleep_data(self, sleep_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Format sleep data for analysis"""
+        if not sleep_data or "sessions" not in sleep_data:
+            return []
+        
+        formatted = []
+        for session in sleep_data.get("sessions", []):
+            formatted.append({
+                "date": session.get("date", ""),
+                "duration_hours": session.get("duration_hours", 0),
+                "efficiency": session.get("efficiency", 0),
+                "deep_sleep_minutes": session.get("deep_sleep_minutes", 0),
+                "rem_sleep_minutes": session.get("rem_sleep_minutes", 0),
+                "wake_ups": session.get("wake_ups", 0)
+            })
+        
+        return formatted
+
+    def _format_heart_rate_data(self, hr_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Format heart rate data for analysis"""
+        if not hr_data or "samples" not in hr_data:
+            return []
+        
+        formatted = []
+        for sample in hr_data.get("samples", []):
+            formatted.append({
+                "timestamp": sample.get("timestamp", ""),
+                "value": sample.get("value", 0),
+                "context": sample.get("context", "resting")
+            })
+        
+        return formatted
+
+    def _format_workouts(self, workouts_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Format workouts data for analysis"""
+        if not workouts_data or "workouts" not in workouts_data:
+            return []
+        
+        return workouts_data.get("workouts", [])
+
+    def _extract_user_preferences(self, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract user preferences from profile data"""
+        return {
+            "fitness_goals": profile_data.get("fitness_goals", []),
+            "dietary_preferences": profile_data.get("dietary_preferences", []),
+            "exercise_preferences": profile_data.get("exercise_preferences", []),
+            "health_concerns": profile_data.get("health_concerns", [])
+        }
+
+    def _create_data_summary(self, health_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a summary of the health data for the report"""
+        return {
+            "data_sources": ["Apple Health"],
+            "data_types_collected": [
+                key for key in health_data.keys() 
+                if health_data[key] and key != "user_profile"
+            ],
+            "date_range": self._get_data_date_range(health_data),
+            "total_data_points": self._count_total_data_points(health_data)
+        }
+
+    def _create_detailed_data_summary(self, health_data: Dict[str, Any]) -> str:
+        """Create detailed data summary for AI analysis"""
+        summary_parts = []
+        
+        # Activity summary
+        activity_data = health_data.get("activity_data", [])
+        if activity_data:
+            avg_steps = sum(data.get("steps", 0) for data in activity_data) / len(activity_data)
+            summary_parts.append(f"最近{len(activity_data)}天平均步数: {int(avg_steps)}步")
+        
+        # Sleep summary
+        sleep_data = health_data.get("sleep_data", [])
+        if sleep_data:
+            avg_sleep = sum(data.get("duration_hours", 0) for data in sleep_data) / len(sleep_data)
+            summary_parts.append(f"最近{len(sleep_data)}天平均睡眠: {avg_sleep:.1f}小时")
+        
+        # Heart rate summary
+        hr_data = health_data.get("heart_rate_data", [])
+        if hr_data:
+            avg_hr = sum(data.get("value", 0) for data in hr_data) / len(hr_data)
+            summary_parts.append(f"平均心率: {int(avg_hr)}次/分")
+        
+        return "; ".join(summary_parts) if summary_parts else "数据收集中"
+
+    def _extract_key_metrics(self, health_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract key health metrics for AI analysis"""
+        metrics = {}
+        
+        # Calculate key metrics from the data
+        activity_data = health_data.get("activity_data", [])
+        if activity_data:
+            metrics["avg_daily_steps"] = sum(d.get("steps", 0) for d in activity_data) / len(activity_data)
+            metrics["avg_daily_calories"] = sum(d.get("calories", 0) for d in activity_data) / len(activity_data)
+        
+        sleep_data = health_data.get("sleep_data", [])
+        if sleep_data:
+            metrics["avg_sleep_duration"] = sum(d.get("duration_hours", 0) for d in sleep_data) / len(sleep_data)
+            metrics["avg_sleep_efficiency"] = sum(d.get("efficiency", 0) for d in sleep_data) / len(sleep_data)
+        
+        return metrics
+
+    def _extract_actionable_recommendations(self, insights: List[HealthInsight]) -> List[Dict[str, Any]]:
+        """Extract actionable recommendations from insights"""
+        recommendations = []
+        
+        for insight in insights:
+            for rec in insight.recommendations:
+                recommendations.append({
+                    "category": insight.insight_type.value,
+                    "priority": insight.priority.value,
+                    "action": rec,
+                    "confidence": insight.confidence_score
+                })
+        
+        return recommendations
+
+    def _identify_risk_factors(self, health_data: Dict[str, Any], insights: List[HealthInsight]) -> List[str]:
+        """Identify potential health risk factors"""
+        risk_factors = []
+        
+        # Check for activity-related risks
+        activity_data = health_data.get("activity_data", [])
+        if activity_data:
+            avg_steps = sum(d.get("steps", 0) for d in activity_data) / len(activity_data)
+            if avg_steps < 5000:
+                risk_factors.append("日常活动量不足")
+        
+        # Check for sleep-related risks
+        sleep_data = health_data.get("sleep_data", [])
+        if sleep_data:
+            avg_sleep = sum(d.get("duration_hours", 0) for d in sleep_data) / len(sleep_data)
+            if avg_sleep < 6:
+                risk_factors.append("睡眠不足")
+            elif avg_sleep > 9:
+                risk_factors.append("睡眠过多")
+        
+        return risk_factors
+
+    def _calculate_confidence_score(self, health_data: Dict[str, Any], insights: List[HealthInsight]) -> float:
+        """Calculate overall confidence score for the analysis"""
+        scores = []
+        
+        # Data completeness score
+        data_types = ["activity_data", "sleep_data", "heart_rate_data"]
+        completeness = sum(1 for dt in data_types if health_data.get(dt)) / len(data_types)
+        scores.append(completeness)
+        
+        # Insights confidence scores
+        if insights:
+            avg_insight_confidence = sum(i.confidence_score for i in insights) / len(insights)
+            scores.append(avg_insight_confidence)
+        
+        return sum(scores) / len(scores) if scores else 0.5
+
+    def _get_data_date_range(self, health_data: Dict[str, Any]) -> Dict[str, str]:
+        """Get the date range of the collected data"""
+        # This is a simplified implementation
+        return {
+            "start_date": "7天前",
+            "end_date": "今天"
+        }
+
+    def _count_total_data_points(self, health_data: Dict[str, Any]) -> int:
+        """Count total data points collected"""
+        count = 0
+        for key, value in health_data.items():
+            if isinstance(value, list):
+                count += len(value)
+        return count
+
+    async def analyze_user_health_data(
         self,
         user_profile: Dict[str, Any],
         activity_data: List[Dict[str, Any]] = None,
@@ -134,11 +603,10 @@ class AuraWellOrchestrator:
 
         # Generate AI insights if client is available
         if self.deepseek_client:
-            insights.extend(
-                self._generate_ai_insights(
-                    user_profile, activity_data, sleep_data, nutrition_data
-                )
+            ai_insights = await self._generate_ai_insights(
+                user_profile, activity_data, sleep_data, nutrition_data
             )
+            insights.extend(ai_insights)
 
         # Cache insights
         self.insights_cache[user_id] = insights
@@ -146,7 +614,7 @@ class AuraWellOrchestrator:
         logger.info(f"Generated {len(insights)} insights for user {user_id}")
         return insights
 
-    def create_personalized_health_plan(
+    async def create_personalized_health_plan(
         self,
         user_profile: Dict[str, Any],
         user_preferences: Dict[str, Any] = None,
@@ -170,7 +638,7 @@ class AuraWellOrchestrator:
 
         # Generate AI-powered health plan if client is available
         if self.deepseek_client and user_preferences and recent_insights:
-            plan_content = self._generate_ai_health_plan(
+            plan_content = await self._generate_ai_health_plan(
                 user_profile, user_preferences, recent_insights
             )
         else:
@@ -479,7 +947,7 @@ class AuraWellOrchestrator:
 
         return insights
 
-    def _generate_ai_insights(
+    async def _generate_ai_insights(
         self,
         user_profile: Dict[str, Any],
         activity_data: List[Dict[str, Any]],
@@ -508,8 +976,8 @@ class AuraWellOrchestrator:
             ]
 
             # Get AI response
-            response = self.deepseek_client.get_deepseek_response(
-                messages=messages, model_name="deepseek-reasoner", temperature=0.3
+            response = await self.deepseek_client.get_deepseek_response(
+                messages=messages, model="deepseek-reasoner", temperature=0.3
             )
 
             # Parse AI insights (simplified)
@@ -536,7 +1004,7 @@ class AuraWellOrchestrator:
 
         return insights
 
-    def _generate_ai_health_plan(
+    async def _generate_ai_health_plan(
         self,
         user_profile: Dict[str, Any],
         user_preferences: Dict[str, Any],
@@ -566,8 +1034,8 @@ class AuraWellOrchestrator:
                 {"role": "user", "content": f"请为以下用户制定健康计划：\n{context}"},
             ]
 
-            response = self.deepseek_client.get_deepseek_response(
-                messages=messages, model_name="deepseek-reasoner", temperature=0.5
+            response = await self.deepseek_client.get_deepseek_response(
+                messages=messages, model="deepseek-reasoner", temperature=0.5
             )
 
             # Return structured plan (simplified)

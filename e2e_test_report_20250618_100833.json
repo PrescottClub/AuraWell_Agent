@@ -1,0 +1,71 @@
+{
+  "test_start_time": "2025-06-18T02:04:56.118917+00:00",
+  "test_status": "SUCCESS",
+  "phases": {
+    "component_initialization": {
+      "status": "SUCCESS",
+      "timestamp": "2025-06-18T02:04:56.637540+00:00",
+      "details": "所有核心组件成功初始化"
+    },
+    "data_fetching": {
+      "status": "FAILED",
+      "timestamp": "2025-06-18T02:04:56.638550+00:00",
+      "error": "数据获取测试失败: Authentication required for user profile access"
+    },
+    "ai_analysis": {
+      "status": "FAILED",
+      "timestamp": "2025-06-18T02:06:29.517622+00:00",
+      "error": "AI分析测试失败: DeepSeek API error: Request timed out."
+    },
+    "comprehensive_analysis": {
+      "status": "SUCCESS",
+      "timestamp": "2025-06-18T02:08:33.419192+00:00",
+      "total_analysis_time_seconds": 123.89847,
+      "insights_generated": 0,
+      "recommendations_generated": 0,
+      "risk_factors_identified": 0,
+      "confidence_score": 0.0,
+      "validation_results": {
+        "has_user_id": true,
+        "has_data_summary": true,
+        "has_insights": false,
+        "has_ai_analysis": true,
+        "has_recommendations": false,
+        "has_health_plan": true,
+        "has_confidence_score": true
+      },
+      "details": "完整E2E健康分析成功"
+    }
+  },
+  "final_report": {
+    "user_id": "test_user_phoenix",
+    "generated_at": "2025-06-18T02:08:33.416258+00:00",
+    "insights_count": 0,
+    "recommendations_count": 0,
+    "risk_factors_count": 0,
+    "confidence_score": 0.0,
+    "has_health_plan": true,
+    "ai_analysis_preview": "AI分析过程中出现错误：DeepSeek API error: Request timed out.",
+    "data_summary": {
+      "data_sources": [
+        "Apple Health"
+      ],
+      "data_types_collected": [],
+      "date_range": {
+        "start_date": "7天前",
+        "end_date": "今天"
+      },
+      "total_data_points": 0
+    }
+  },
+  "errors": [
+    "数据获取测试失败: Authentication required for user profile access",
+    "AI分析测试失败: DeepSeek API error: Request timed out."
+  ],
+  "performance_metrics": {
+    "total_analysis_time": 123.89847,
+    "total_test_time": 217.29968
+  },
+  "test_end_time": "2025-06-18T02:08:33.419704+00:00",
+  "total_test_time_seconds": 217.29968
+}

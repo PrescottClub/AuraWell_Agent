@@ -14,6 +14,9 @@ from ..core.deepseek_client import DeepSeekClient
 # DeepSeek LLM integration - using direct client instead of LangChain wrapper
 from .services.health_advice_service import HealthAdviceService
 
+# 新增：导入迁移后的健康工具函数适配器
+from .tools.health_functions_adapter import get_health_functions_adapter
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,6 +53,9 @@ class HealthAdviceAgent(BaseAgent):
 
         # 对话历史
         self._conversation_history = []
+
+        # 新增：健康工具函数适配器
+        self.health_functions_adapter = get_health_functions_adapter(user_id)
 
         # 初始化组件
         self._initialize_components()
@@ -798,6 +804,89 @@ class HealthAdviceAgent(BaseAgent):
         except Exception as e:
             logger.error(f"健康建议生成失败: {e}")
             return f"健康建议生成失败: {str(e)}"
+
+    # 新增：使用迁移后的健康工具函数的方法
+    async def _call_health_function(self, function_name: str, **kwargs) -> str:
+        """
+        调用迁移后的健康工具函数
+
+        Args:
+            function_name: 函数名称
+            **kwargs: 函数参数
+
+        Returns:
+            函数执行结果的字符串表示
+        """
+        try:
+            result = await self.health_functions_adapter.call_function(function_name, **kwargs)
+
+            if result.get("success"):
+                return f"✅ {function_name} 执行成功：{result.get('result')}"
+            else:
+                return f"❌ {function_name} 执行失败：{result.get('error')}"
+
+        except Exception as e:
+            logger.error(f"调用健康工具函数失败 {function_name}: {e}")
+            return f"❌ 调用 {function_name} 时发生错误：{str(e)}"
+
+    async def get_enhanced_health_summary(self) -> Dict[str, Any]:
+        """
+        获取增强的健康摘要（使用迁移后的工具函数）
+
+        Returns:
+            增强的健康摘要数据
+        """
+        try:
+            # 使用新的健康工具函数适配器
+            summary_result = await self.health_functions_adapter.health_summary()
+
+            if summary_result.get("success"):
+                return {
+                    "success": True,
+                    "message": "健康摘要生成成功",
+                    "data": summary_result.get("data"),
+                    "data_quality": summary_result.get("data_quality"),
+                    "source": "migrated_health_functions",
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "健康摘要生成失败",
+                    "error": summary_result.get("error"),
+                    "source": "migrated_health_functions",
+                }
+
+        except Exception as e:
+            logger.error(f"获取增强健康摘要失败: {e}")
+            return {
+                "success": False,
+                "message": "获取健康摘要时发生错误",
+                "error": str(e),
+                "source": "migrated_health_functions",
+            }
+
+    def get_migration_info(self) -> Dict[str, Any]:
+        """
+        获取工具函数迁移信息
+
+        Returns:
+            迁移状态和适配器信息
+        """
+        try:
+            adapter_info = self.health_functions_adapter.get_adapter_info()
+            return {
+                "agent_version": "2.1.0",
+                "migration_completed": True,
+                "adapter_info": adapter_info,
+                "available_functions": self.health_functions_adapter.get_available_functions(),
+            }
+        except Exception as e:
+            logger.error(f"获取迁移信息失败: {e}")
+            return {
+                "agent_version": "2.1.0",
+                "migration_completed": False,
+                "error": str(e),
+            }
 
 
 # 为了保持兼容性，创建别名
