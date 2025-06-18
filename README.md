@@ -305,10 +305,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env 文件，添加你的 DeepSeek API Key
 
-# 4. 启动服务 (使用便捷脚本)
-./start.sh
-# 或者直接运行
-python scripts/run_api_server.py
+# 4. 启动服务
+python run_api_server.py
 
 # 5. 打开浏览器访问
 # http://localhost:8000/docs - API文档
@@ -405,41 +403,27 @@ s deploy
 ### 📁 **项目结构一览**
 
 ```
-AuraWell_Agent/
-├── 📁 src/aurawell/             # 核心源代码
-│   ├── 🤖 langchain_agent/      # AI智能体核心
-│   │   ├── agent.py             # 主要的AI对话逻辑
-│   │   ├── tools/               # AI可以使用的工具
-│   │   └── services/            # 健康建议生成服务
-│   ├── 🏠 services/             # 业务功能
-│   │   ├── family_service.py    # 家庭管理
-│   │   ├── dashboard_service.py # 健康仪表盘
-│   │   └── report_service.py    # 报告生成
-│   ├── 🔌 interfaces/           # 对外接口
-│   │   ├── api_interface.py     # REST API
-│   │   └── websocket_interface.py # 实时对话
-│   ├── 📊 models/               # 数据模型
-│   │   ├── family_models.py     # 家庭相关数据
-│   │   └── health_models.py     # 健康相关数据
-│   ├── ⚙️ config/               # 配置管理
-│   │   ├── settings.py          # 应用配置
-│   │   └── health_constants.py  # 健康常量
-│   └── 🔧 core/                 # 核心组件
-│       ├── agent_router.py      # 智能路由
-│       └── deepseek_client.py   # AI客户端
-├── 🛠️ scripts/                  # 管理脚本
-│   ├── run_api_server.py        # 启动API服务器
-│   ├── init_database.py         # 初始化数据库
-│   ├── database_manager.py      # 数据库管理工具
-│   ├── check_services.py        # 服务状态检查
-│   ├── start_services.sh        # 启动所有服务
-│   └── stop_services.sh         # 停止所有服务
-├── 🌐 frontend/                 # 前端界面
-├── 📚 docs/                     # 项目文档
-│   └── archive/                 # 归档文档
-├── 🧪 tests/                    # 测试文件
-├── start.sh                     # 便捷启动脚本
-└── stop.sh                      # 便捷停止脚本
+src/aurawell/
+├── 🤖 langchain_agent/          # AI智能体核心
+│   ├── agent.py                 # 主要的AI对话逻辑
+│   ├── tools/                   # AI可以使用的工具
+│   └── services/                # 健康建议生成服务
+├── 🏠 services/                 # 业务功能
+│   ├── family_service.py        # 家庭管理
+│   ├── dashboard_service.py     # 健康仪表盘
+│   └── report_service.py        # 报告生成
+├── 🔌 interfaces/               # 对外接口
+│   ├── api_interface.py         # REST API
+│   └── websocket_interface.py   # 实时对话
+├── 📊 models/                   # 数据模型
+│   ├── family_models.py         # 家庭相关数据
+│   └── health_models.py         # 健康相关数据
+├── ⚙️ config/                   # 配置管理
+│   ├── settings.py              # 应用配置
+│   └── health_constants.py      # 健康常量
+└── 🔧 core/                     # 核心组件
+    ├── agent_router.py          # 智能路由
+    └── deepseek_client.py       # AI客户端
 ```
 
 

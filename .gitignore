@@ -34,8 +34,6 @@ user_profiles/
 *.db
 *.sqlite
 *.sqlite3
-*.db-wal
-*.db-shm
 data/
 
 # Logs and temporary files
@@ -165,17 +163,4 @@ build/
 .next/
 out/
 
-# Development tools - keep .vite for frontend development
-
-# Process ID files
-*.pid
-.backend.pid
-.frontend.pid
-
-# Database backup files (additional patterns)
-*.db.backup_*
-*.backup_*
-
-# Archive and temporary documentation
-docs/archive/
-temp_docs/
+# Development tools - keep .vite for frontend development 
