@@ -7,8 +7,15 @@ import 'ant-design-vue/dist/reset.css'
 import VChart from 'vue-echarts'
 import { createPinia } from 'pinia'
 
+// 初始化Mock数据系统
+import { initMockData } from './mock/index.js'
+import './mock/devTools.js' // 加载开发工具
+
 const app = createApp(App)
 const pinia = createPinia()
+
+// 初始化Mock数据
+initMockData()
 
 app.component('v-chart', VChart)
 app.use(router)

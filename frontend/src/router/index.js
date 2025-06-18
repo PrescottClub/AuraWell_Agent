@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import App from '../App.vue';
 import BasicLayout from '../layout/BasicLayout.vue';
 import Login from '../views/Login.vue';
 
@@ -45,7 +44,51 @@ const routes = [
         name: 'HealthPlan',
         component: () => import('../views/user/HealthPlan.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'health-report',
+        name: 'HealthReport',
+        component: () => import('../views/user/HealthReport.vue'),
+        meta: { requiresAuth: true }
+      },
+      // 家庭管理路由
+      {
+        path: 'family',
+        name: 'FamilyDashboard',
+        component: () => import('../views/user/FamilyDashboard.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'family/members',
+        name: 'FamilyMembers',
+        component: () => import('../views/user/FamilyMembers.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'family/member/:memberId/health',
+        name: 'MemberHealth',
+        component: () => import('../views/user/MemberHealth.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'family/challenges',
+        name: 'FamilyChallenges',
+        component: () => import('../views/user/FamilyChallenges.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'family/alerts',
+        name: 'FamilyAlerts',
+        component: () => import('../views/user/FamilyAlerts.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'family/settings',
+        name: 'FamilySettings',
+        component: () => import('../views/user/FamilySettings.vue'),
+        meta: { requiresAuth: true }
       }
+
     ]
   },
   {
