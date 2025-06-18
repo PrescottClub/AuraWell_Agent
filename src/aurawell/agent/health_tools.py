@@ -1189,7 +1189,10 @@ def _generate_nutrition_recommendations(
 
     return recommendations
 
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
 
+=======
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
 async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
     """
     获取营养建议 - 基于用户档案和最近的饮食数据
@@ -1223,9 +1226,13 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
 
             # 获取用户档案
             user_profile_db = await user_repo.get_user_by_id(user_id)
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
             user_profile = (
                 user_repo.to_pydantic(user_profile_db) if user_profile_db else None
             )
+=======
+            user_profile = user_repo.to_pydantic(user_profile_db) if user_profile_db else None
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
 
             if not user_profile:
                 return {
@@ -1240,8 +1247,13 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
                         "保持均衡饮食，多吃蔬菜水果",
                         "适量摄入优质蛋白质",
                         "控制糖分和盐分摄入",
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
                         "保证充足的水分摄入",
                     ],
+=======
+                        "保证充足的水分摄入"
+                    ]
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
                 }
 
             # 计算营养需求
@@ -1253,6 +1265,7 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
             # 基于用户档案的个性化建议
             age = user_profile.age
             gender = user_profile.gender.value if user_profile.gender else "other"
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
             activity_level = (
                 user_profile.activity_level.value
                 if user_profile.activity_level
@@ -1284,6 +1297,25 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
                 recommendations.append(
                     "久坐人群应控制总热量摄入，增加膳食纤维，多吃蔬菜水果"
                 )
+=======
+            activity_level = user_profile.activity_level.value if user_profile.activity_level else "moderately_active"
+
+            # 年龄相关建议
+            if age < 30:
+                recommendations.append("年轻人需要充足的蛋白质支持肌肉发育，建议每餐包含优质蛋白质")
+            elif age >= 50:
+                recommendations.append("中老年人应注意钙质和维生素D的补充，多吃奶制品和深绿色蔬菜")
+
+            # 性别相关建议
+            if gender == "female":
+                recommendations.append("女性应注意铁质补充，多吃瘦肉、菠菜等富含铁质的食物")
+
+            # 活动水平相关建议
+            if activity_level in ["very_active", "extremely_active"]:
+                recommendations.append("高强度运动者需要更多碳水化合物和蛋白质，运动后及时补充营养")
+            elif activity_level == "sedentary":
+                recommendations.append("久坐人群应控制总热量摄入，增加膳食纤维，多吃蔬菜水果")
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
 
             # 通用营养建议
             general_tips = [
@@ -1291,7 +1323,11 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
                 "选择全谷物食品替代精制谷物",
                 "适量摄入坚果和种子类食品",
                 "减少加工食品和含糖饮料的摄入",
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
                 f"每日饮水量建议：{nutrition_needs.get('water_ml', 2000)}ml",
+=======
+                f"每日饮水量建议：{nutrition_needs.get('water_ml', 2000)}ml"
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
             ]
 
             return {
@@ -1305,20 +1341,39 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
                     "breakfast": [
                         "燕麦粥配水果和坚果",
                         "全麦面包配鸡蛋和牛奶",
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
                         "酸奶配浆果和燕麦",
+=======
+                        "酸奶配浆果和燕麦"
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
                     ],
                     "lunch": [
                         "糙米饭配瘦肉和蔬菜",
                         "全麦意面配鸡胸肉和蔬菜",
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
                         "藜麦沙拉配豆类和蔬菜",
+=======
+                        "藜麦沙拉配豆类和蔬菜"
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
                     ],
                     "dinner": [
                         "蒸鱼配蔬菜和红薯",
                         "鸡胸肉配西兰花和糙米",
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
                         "豆腐配蔬菜和小米粥",
                     ],
                     "snacks": ["苹果配杏仁", "胡萝卜配鹰嘴豆泥", "酸奶配蓝莓"],
                 },
+=======
+                        "豆腐配蔬菜和小米粥"
+                    ],
+                    "snacks": [
+                        "苹果配杏仁",
+                        "胡萝卜配鹰嘴豆泥",
+                        "酸奶配蓝莓"
+                    ]
+                }
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
             }
 
     except Exception as e:
@@ -1333,6 +1388,7 @@ async def get_nutrition_recommendations(user_id: str, date: str = None) -> dict:
                 "保持均衡饮食",
                 "多吃蔬菜水果",
                 "适量运动",
+<<<<<<< HEAD:src/aurawell/agent/health_tools.py
                 "保证充足睡眠",
             ],
         }
@@ -1344,6 +1400,14 @@ async def generate_exercise_plan(
     duration_weeks: int = 4,
     fitness_level: str = "beginner",
 ) -> dict:
+=======
+                "保证充足睡眠"
+            ]
+        }
+
+async def generate_exercise_plan(user_id: str, goal_type: str, duration_weeks: int = 4,
+                               fitness_level: str = "beginner") -> dict:
+>>>>>>> abba31b (🔧 修复健康计划生成功能并优化数据渲染):aurawell/agent/health_tools.py
     """
     运动计划生成工具 - 基于用户目标生成个性化运动计划
 

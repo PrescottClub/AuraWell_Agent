@@ -31,17 +31,11 @@ class HealthDataRepository:
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.activity_repo = BaseRepository[ActivitySummaryDB](
-            session, ActivitySummaryDB
-        )
+        self.activity_repo = BaseRepository[ActivitySummaryDB](session, ActivitySummaryDB)
         self.sleep_repo = BaseRepository[SleepSessionDB](session, SleepSessionDB)
-        self.heart_rate_repo = BaseRepository[HeartRateSampleDB](
-            session, HeartRateSampleDB
-        )
-        self.nutrition_repo = BaseRepository[NutritionEntryDB](
-            session, NutritionEntryDB
-        )
-
+        self.heart_rate_repo = BaseRepository[HeartRateSampleDB](session, HeartRateSampleDB)
+        self.nutrition_repo = BaseRepository[NutritionEntryDB](session, NutritionEntryDB)
+    
     # Activity Data Methods
     async def save_activity_summary(
         self, user_id: str, activity: UnifiedActivitySummary
