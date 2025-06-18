@@ -53,19 +53,20 @@ request.interceptors.response.use(
                 case 400:
                     message.error(error.response.data?.message || '请求参数错误');
                     break;
-                case 401:
+                case 401: {
                     message.error(error.response.data?.message || '未授权，请重新登录');
                     const authStore = useAuthStore();
                     authStore.clearToken();
                     window.location.href = '/login';
                     break;
+                }
                 case 403:
                     message.error('拒绝访问');
                     break;
                 case 404:
                     message.error('请求的资源不存在');
                     break;
-                case 422:
+                case 422: {
                     // 处理验证错误
                     const validationErrors = error.response.data?.detail;
                     if (validationErrors && Array.isArray(validationErrors)) {
@@ -80,6 +81,7 @@ request.interceptors.response.use(
                         message.error('输入数据格式错误，请检查您的输入');
                     }
                     break;
+                }
                 case 500:
                     message.error('服务器错误');
                     break;

@@ -1,7 +1,8 @@
-import request from '../utils/request'
+// 使用Mock API替代真实API调用
+import { chatAPI as mockChatAPI } from '../mock/api.js'
 
 /**
- * 健康管理聊天API服务
+ * 健康管理聊天API服务 - Mock版本
  */
 export class HealthChatAPI {
   /**
@@ -12,21 +13,27 @@ export class HealthChatAPI {
    */
   static async sendMessage(message, conversationId = null) {
     try {
-      // 使用新的健康聊天API端点
-      const response = await request.post('/chat/message', {
-        message: message.trim(),
-        conversation_id: conversationId,
-        context: {
-          timestamp: new Date().toISOString(),
-          platform: 'web'
-        }
-      })
-      return response
-    } catch (error) {
-      console.warn('真实API调用失败，使用模拟响应:', error)
+      // 如果没有对话ID，先创建一个新对话
+      if (!conversationId) {
+        const newSession = await mockChatAPI.createChatSession('健康咨询')
+        conversationId = newSession.data.session_id
+      }
 
-      // 模拟AI响应
-      return this.getMockResponse(message)
+      // 发送消息并获取AI回复
+      const response = await mockChatAPI.sendMessage(conversationId, message)
+      return {
+        data: {
+          reply: response.data.aiMessage.content,
+          content: response.data.aiMessage.content,
+          conversation_id: conversationId,
+          timestamp: response.data.aiMessage.timestamp,
+          suggestions: this.generateSuggestions(message),
+          quickReplies: this.generateQuickReplies(message)
+        }
+      }
+    } catch (error) {
+      console.error('发送消息失败:', error)
+      throw error
     }
   }
 
@@ -243,13 +250,14 @@ export class HealthChatAPI {
    */
   static async getConversationHistory(conversationId, limit = 50) {
     try {
-      const response = await request.get('/chat/history', {
-        params: {
+      const response = await mockChatAPI.getChatSession(conversationId)
+      return {
+        data: {
+          messages: response.data.messages.slice(-limit),
           conversation_id: conversationId,
-          limit
+          total_count: response.data.messages.length
         }
-      })
-      return response
+      }
     } catch (error) {
       console.error('获取对话历史失败:', error)
       throw error
@@ -262,26 +270,18 @@ export class HealthChatAPI {
    */
   static async createConversation() {
     try {
-      const response = await request.post('/chat/conversation', {
-        type: 'health_consultation',
-        metadata: {
-          created_at: new Date().toISOString(),
-          platform: 'web'
-        }
-      })
-      return response
-    } catch (error) {
-      console.warn('创建对话API失败，使用模拟模式:', error)
-
-      // 返回模拟对话
+      const response = await mockChatAPI.createChatSession('健康咨询对话')
       return {
         data: {
-          conversation_id: `mock_conv_${Date.now()}`,
+          conversation_id: response.data.session_id,
           type: 'health_consultation',
-          created_at: new Date().toISOString(),
-          title: '健康咨询对话'
+          created_at: response.data.created_at,
+          title: response.data.title
         }
       }
+    } catch (error) {
+      console.error('创建对话失败:', error)
+      throw error
     }
   }
 
@@ -291,50 +291,45 @@ export class HealthChatAPI {
    */
   static async getConversations() {
     try {
-      const response = await request.get('/chat/conversations')
-      return response
-    } catch (error) {
-      console.warn('获取对话列表API失败，使用模拟数据:', error)
-
-      // 返回模拟对话列表
+      const response = await mockChatAPI.getChatSessions()
       return {
         data: {
-          conversations: [
-            {
-              id: 'mock_conv_1',
-              title: '减重计划咨询',
-              last_message: '我为您制定了个性化的减重方案...',
-              date: '今天',
-              created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30分钟前
-              updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-              message_count: 15,
-              status: 'active'
-            },
-            {
-              id: 'mock_conv_2',
-              title: '睡眠质量改善',
-              last_message: '根据您的作息情况，建议...',
-              date: '昨天',
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1天前
-              updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-              message_count: 8,
-              status: 'active'
-            }
-          ]
+          conversations: response.data.map(session => ({
+            id: session.session_id,
+            title: session.title,
+            last_message: session.messages.length > 0
+              ? session.messages[session.messages.length - 1].content.substring(0, 50) + '...'
+              : '暂无消息',
+            date: this.formatDate(session.updated_at),
+            created_at: session.created_at,
+            updated_at: session.updated_at,
+            message_count: session.messages.length,
+            status: 'active'
+          }))
         }
       }
+    } catch (error) {
+      console.error('获取对话列表失败:', error)
+      throw error
     }
   }
 
   /**
-   * 删除对话
+   * 删除对话 - Mock实现
    * @param {string} conversationId - 对话ID
    * @returns {Promise} 删除结果
    */
   static async deleteConversation(conversationId) {
     try {
-      const response = await request.delete(`/chat/conversation/${conversationId}`)
-      return response
+      // 模拟删除操作
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        message: '对话删除成功',
+        data: null,
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       console.error('删除对话失败:', error)
       throw error
@@ -347,19 +342,131 @@ export class HealthChatAPI {
    */
   static async getHealthSuggestions() {
     try {
-      const response = await request.get('/chat/suggestions')
-      return response
-    } catch (error) {
-      console.error('获取健康建议失败:', error)
+      // 模拟获取建议模板
+      await new Promise(resolve => setTimeout(resolve, 200))
+
       return {
         data: [
           "我想制定一个减重计划",
           "如何改善我的睡眠质量？",
           "请帮我分析我的运动数据",
           "我需要营养饮食建议",
-          "如何建立健康的作息习惯？"
+          "如何建立健康的作息习惯？",
+          "我想了解心血管健康",
+          "如何缓解工作压力？",
+          "请推荐适合的运动方案"
         ]
       }
+    } catch (error) {
+      console.error('获取健康建议失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 生成建议内容
+   * @param {string} message - 用户消息
+   * @returns {Array} 建议列表
+   */
+  static generateSuggestions(message) {
+    const lowerMessage = message.toLowerCase()
+
+    if (lowerMessage.includes('减重') || lowerMessage.includes('减肥')) {
+      return [
+        {
+          title: '科学减重原理',
+          content: '健康减重的核心是创造热量缺口，建议每周减重0.5-1公斤。'
+        },
+        {
+          title: '运动建议',
+          content: '结合有氧运动和力量训练，有氧运动燃烧脂肪，力量训练保持肌肉量。'
+        }
+      ]
+    } else if (lowerMessage.includes('睡眠')) {
+      return [
+        {
+          title: '睡眠卫生原则',
+          content: '保持规律作息、创造良好睡眠环境、避免睡前刺激性活动。'
+        },
+        {
+          title: '放松技巧',
+          content: '尝试深呼吸、渐进性肌肉放松或冥想来帮助入睡。'
+        }
+      ]
+    } else if (lowerMessage.includes('运动')) {
+      return [
+        {
+          title: '运动频率建议',
+          content: '建议每周至少150分钟中等强度有氧运动，加上2次力量训练。'
+        },
+        {
+          title: '循序渐进原则',
+          content: '从低强度开始，逐步增加运动量和强度，避免运动伤害。'
+        }
+      ]
+    }
+
+    return []
+  }
+
+  /**
+   * 生成快速回复
+   * @param {string} message - 用户消息
+   * @returns {Array} 快速回复列表
+   */
+  static generateQuickReplies(message) {
+    const lowerMessage = message.toLowerCase()
+
+    if (lowerMessage.includes('减重') || lowerMessage.includes('减肥')) {
+      return [
+        { text: '我身高170cm，体重75kg' },
+        { text: '我想在3个月内减重10kg' },
+        { text: '我平时很少运动' },
+        { text: '我没有特殊饮食限制' }
+      ]
+    } else if (lowerMessage.includes('睡眠')) {
+      return [
+        { text: '我通常12点睡觉，7点起床' },
+        { text: '入睡很困难，要1小时以上' },
+        { text: '睡前会看手机' },
+        { text: '卧室比较吵闹' }
+      ]
+    } else if (lowerMessage.includes('运动')) {
+      return [
+        { text: '我想减重和提高体能' },
+        { text: '我是运动新手' },
+        { text: '每周能运动3-4次' },
+        { text: '我喜欢跑步和游泳' }
+      ]
+    }
+
+    return [
+      { text: '我想制定减重计划' },
+      { text: '如何改善睡眠质量？' },
+      { text: '请推荐运动方案' },
+      { text: '我需要饮食建议' }
+    ]
+  }
+
+  /**
+   * 格式化日期
+   * @param {string} dateString - 日期字符串
+   * @returns {string} 格式化后的日期
+   */
+  static formatDate(dateString) {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = Math.abs(now - date)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 1) {
+      return '今天'
+    } else if (diffDays === 2) {
+      return '昨天'
+    } else if (diffDays <= 7) {
+      return `${diffDays - 1}天前`
+    } else {
+      return date.toLocaleDateString()
     }
   }
 }
