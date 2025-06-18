@@ -3,11 +3,13 @@ RAG Service - 特种突击队
 用于与阿里云函数计算RAG模块进行快速、精准的情报获取作战
 """
 
-import os
 import json
 import logging
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
+
+# 导入统一配置系统
+from ..config.settings import get_settings
 
 # 阿里云FC SDK
 try:
@@ -25,48 +27,50 @@ logger = logging.getLogger(__name__)
 
 class RAGService:
     """RAG特种突击队 - 专注于快速、精准的文档检索任务"""
-    
+
     def __init__(self):
         """初始化突击队装备"""
         self.fc_client = None
-        self.function_name = None
-        self.endpoint = None
+        self.config = None
+        self.settings = get_settings()
         self._initialize_equipment()
     
     def _initialize_equipment(self):
         """装备检查和初始化"""
         try:
-            # 从环境变量获取作战指令
-            access_key_id = os.getenv('RAG_ACCESS_KEY_ID') or os.getenv('ALIBABA_CLOUD_ACCESS_KEY_ID')
-            access_key_secret = os.getenv('RAG_ACCESS_KEY_SECRET') or os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET')
-            self.endpoint = os.getenv('RAG_FC_ENDPOINT', '1535508388697445.cn-hangzhou.fc.aliyuncs.com')
-            self.function_name = os.getenv('RAG_FC_FUNCTION_NAME', 'RAGmoudle')
-            
-            if not access_key_id or not access_key_secret:
+            # 从统一配置系统获取RAG配置
+            self.config = self.settings.get_rag_config()
+
+            # 验证必需配置
+            if not self.config.get('access_key_id') or not self.config.get('access_key_secret'):
                 logger.warning("RAG服务凭证未配置，将在实际调用时报错")
                 return
-            
+
+            if not self.config.get('endpoint'):
+                logger.warning("RAG服务端点未配置，将在实际调用时报错")
+                return
+
             if FC20230330Client is None:
                 logger.error("阿里云SDK未安装，RAG服务不可用")
                 return
-            
+
             # 初始化凭证
             cred_config = cred_models.Config(
                 type='access_key',
-                access_key_id=access_key_id,
-                access_key_secret=access_key_secret
+                access_key_id=self.config['access_key_id'],
+                access_key_secret=self.config['access_key_secret']
             )
             cred_client = CredClient(cred_config)
-            
+
             # 初始化FC客户端
             config = open_api_models.Config(
                 credential=cred_client,
-                endpoint=f'https://{self.endpoint}'
+                endpoint=f"https://{self.config['endpoint']}"
             )
             self.fc_client = FC20230330Client(config)
-            
-            logger.info(f"RAG突击队装备就绪，目标函数: {self.function_name}")
-            
+
+            logger.info(f"RAG突击队装备就绪，目标函数: {self.config['function_name']}")
+
         except Exception as e:
             logger.error(f"RAG突击队装备初始化失败: {e}")
             self.fc_client = None
@@ -109,7 +113,7 @@ class RAGService:
                 body=json.dumps(payload).encode('utf-8')
             )
             
-            response = self.fc_client.invoke_function(self.function_name, invoke_request)
+            response = self.fc_client.invoke_function(self.config['function_name'], invoke_request)
             
             # 解析战果
             if response.status_code != 200:
@@ -154,9 +158,12 @@ class RAGService:
         """获取突击队状态报告"""
         return {
             "service_ready": self.health_check(),
-            "endpoint": self.endpoint,
-            "function_name": self.function_name,
-            "sdk_available": FC20230330Client is not None
+            "endpoint": self.config.get('endpoint') if self.config else None,
+            "function_name": self.config.get('function_name') if self.config else None,
+            "sdk_available": FC20230330Client is not None,
+            "config_loaded": self.config is not None,
+            "timeout": self.config.get('timeout') if self.config else None,
+            "max_retries": self.config.get('max_retries') if self.config else None
         }
 
 

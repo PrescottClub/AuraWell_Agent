@@ -106,6 +106,14 @@ class AuraWellSettings:
     WEATHER_API_KEY: Optional[str] = os.getenv("WEATHER_API_KEY")
     TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
 
+    # --- RAG Service Configuration ---
+    ALIBABA_CLOUD_FC_ENDPOINT: Optional[str] = os.getenv("ALIBABA_CLOUD_FC_ENDPOINT")
+    ALIBABA_CLOUD_ACCESS_KEY_ID: Optional[str] = os.getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")
+    ALIBABA_CLOUD_ACCESS_KEY_SECRET: Optional[str] = os.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
+    RAG_FC_FUNCTION_NAME: str = os.getenv("RAG_FC_FUNCTION_NAME", "RAGmoudle")
+    RAG_REQUEST_TIMEOUT: int = int(os.getenv("RAG_REQUEST_TIMEOUT", "30"))
+    RAG_MAX_RETRIES: int = int(os.getenv("RAG_MAX_RETRIES", "3"))
+
     @classmethod
     def validate_required_settings(cls) -> List[str]:
         """
@@ -120,7 +128,13 @@ class AuraWellSettings:
         if not cls.DEEPSEEK_API_KEY:
             missing_settings.append("DEEPSEEK_API_KEY")
 
-        # Add other critical checks as needed
+        # Check RAG service settings
+        if not cls.ALIBABA_CLOUD_FC_ENDPOINT:
+            missing_settings.append("ALIBABA_CLOUD_FC_ENDPOINT")
+        if not cls.ALIBABA_CLOUD_ACCESS_KEY_ID:
+            missing_settings.append("ALIBABA_CLOUD_ACCESS_KEY_ID")
+        if not cls.ALIBABA_CLOUD_ACCESS_KEY_SECRET:
+            missing_settings.append("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
 
         return missing_settings
 
@@ -154,6 +168,23 @@ class AuraWellSettings:
         }
 
         return platform_configs.get(platform_name.lower(), {})
+
+    @classmethod
+    def get_rag_config(cls) -> Dict[str, Any]:
+        """
+        Get RAG service configuration
+
+        Returns:
+            Dictionary with RAG service configuration
+        """
+        return {
+            "endpoint": cls.ALIBABA_CLOUD_FC_ENDPOINT,
+            "access_key_id": cls.ALIBABA_CLOUD_ACCESS_KEY_ID,
+            "access_key_secret": cls.ALIBABA_CLOUD_ACCESS_KEY_SECRET,
+            "function_name": cls.RAG_FC_FUNCTION_NAME,
+            "timeout": cls.RAG_REQUEST_TIMEOUT,
+            "max_retries": cls.RAG_MAX_RETRIES,
+        }
 
     @classmethod
     def to_dict(cls) -> Dict[str, Any]:
