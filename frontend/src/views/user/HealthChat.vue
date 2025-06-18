@@ -101,6 +101,7 @@
       <!-- 输入提示 -->
       <div class="input-hints">
         <span class="hint-text">💡 提示：您可以询问关于运动、饮食、睡眠、健康目标等任何问题</span>
+        <span class="hint-text">🔍 输入 "/rag" 开头可以使用RAG文档检索功能</span>
       </div>
     </div>
 
@@ -254,26 +255,16 @@ const sendMessage = async () => {
   isTyping.value = true
 
   try {
-    // 发送消息到后端
-    const response = await HealthChatAPI.sendMessage(messageText, currentConversationId.value)
-    
-    // 模拟延迟以显示打字效果
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // 添加AI回复
-    const aiMessage = {
-      id: Date.now() + 1,
-      sender: 'agent',
-      content: response.reply || response.data?.reply || response.data?.content || '抱歉，我现在无法处理您的请求，请稍后再试。',
-      timestamp: new Date().toISOString(),
-      suggestions: response.suggestions || response.data?.suggestions || [],
-      quickReplies: response.quick_replies || response.data?.quickReplies || []
+    // 🔍 检查是否为RAG查询
+    if (messageText.startsWith('/rag ')) {
+      await handleRAGQuery(messageText.substring(5).trim())
+    } else {
+      // 普通聊天消息
+      await handleNormalChat(messageText)
     }
-
-    messages.value.push(aiMessage)
   } catch (error) {
     console.error('发送消息失败:', error)
-    
+
     // 添加错误消息
     const errorMessage = {
       id: Date.now() + 1,
@@ -281,12 +272,85 @@ const sendMessage = async () => {
       content: '抱歉，我现在遇到了一些技术问题。请稍后再试，或者尝试重新描述您的问题。',
       timestamp: new Date().toISOString()
     }
-    
+
     messages.value.push(errorMessage)
     antMessage.error('发送消息失败，请检查网络连接')
   } finally {
     isTyping.value = false
   }
+}
+
+// RAG查询处理函数
+const handleRAGQuery = async (query) => {
+  try {
+    console.log('🔍 执行RAG查询:', query)
+
+    // 调用RAG API
+    const response = await HealthChatAPI.retrieveRAGDocuments(query, 3)
+
+    // 模拟延迟
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // 构造RAG响应消息
+    let content = `🔍 **RAG文档检索结果**\n\n`
+    content += `**查询**: ${query}\n`
+    content += `**找到文档**: ${response.data.total_found} 个\n\n`
+
+    if (response.data.results && response.data.results.length > 0) {
+      content += `**相关文档**:\n`
+      response.data.results.forEach((doc, index) => {
+        content += `${index + 1}. ${doc}\n\n`
+      })
+    } else {
+      content += `抱歉，没有找到与"${query}"相关的文档。`
+    }
+
+    const aiMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      content: content,
+      timestamp: new Date().toISOString(),
+      type: 'rag_result'
+    }
+
+    messages.value.push(aiMessage)
+    antMessage.success(`RAG检索完成，找到 ${response.data.total_found} 个相关文档`)
+
+  } catch (error) {
+    console.error('RAG查询失败:', error)
+
+    const errorMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      content: `🔍 **RAG检索失败**\n\n抱歉，RAG文档检索服务暂时不可用。\n\n错误信息: ${error.message || '未知错误'}`,
+      timestamp: new Date().toISOString(),
+      type: 'rag_error'
+    }
+
+    messages.value.push(errorMessage)
+    antMessage.error('RAG检索失败')
+  }
+}
+
+// 普通聊天处理函数
+const handleNormalChat = async (messageText) => {
+  // 发送消息到后端
+  const response = await HealthChatAPI.sendMessage(messageText, currentConversationId.value)
+
+  // 模拟延迟以显示打字效果
+  await new Promise(resolve => setTimeout(resolve, 1000))
+
+  // 添加AI回复
+  const aiMessage = {
+    id: Date.now() + 1,
+    sender: 'agent',
+    content: response.reply || response.data?.reply || response.data?.content || '抱歉，我现在无法处理您的请求，请稍后再试。',
+    timestamp: new Date().toISOString(),
+    suggestions: response.suggestions || response.data?.suggestions || [],
+    quickReplies: response.quick_replies || response.data?.quickReplies || []
+  }
+
+  messages.value.push(aiMessage)
 }
 
 const sendQuickMessage = (suggestionText) => {

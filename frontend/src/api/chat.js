@@ -155,6 +155,52 @@ export class HealthChatAPI {
   }
 
   /**
+   * RAG文档检索 - 特种突击任务
+   * @param {string} userQuery - 用户查询
+   * @param {number} k - 返回文档数量
+   * @returns {Promise} RAG检索结果
+   */
+  static async retrieveRAGDocuments(userQuery, k = 3) {
+    try {
+      console.log(`🔍 RAG检索请求: ${userQuery}`)
+
+      const response = await request.post('/api/v1/rag/retrieve', {
+        user_query: userQuery,
+        k: k
+      })
+
+      return {
+        success: true,
+        data: {
+          results: response.results || [],
+          query: response.query || userQuery,
+          total_found: response.total_found || 0
+        }
+      }
+    } catch (error) {
+      console.error('RAG检索失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取RAG服务状态
+   * @returns {Promise} RAG服务状态
+   */
+  static async getRAGStatus() {
+    try {
+      const response = await request.get('/api/v1/rag/status')
+      return {
+        success: true,
+        data: response.data || {}
+      }
+    } catch (error) {
+      console.error('获取RAG状态失败:', error)
+      throw error
+    }
+  }
+
+  /**
    * 格式化日期
    * @param {string} dateString - 日期字符串
    * @returns {string} 格式化后的日期
@@ -165,7 +211,7 @@ export class HealthChatAPI {
     const now = new Date()
     const diff = now - date
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
+
     if (days === 0) return '今天'
     if (days === 1) return '昨天'
     if (days < 7) return `${days}天前`
