@@ -34,8 +34,6 @@ user_profiles/
 *.db
 *.sqlite
 *.sqlite3
-*.db-wal
-*.db-shm
 data/
 
 # Logs and temporary files

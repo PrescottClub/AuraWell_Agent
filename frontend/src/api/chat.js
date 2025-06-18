@@ -67,7 +67,7 @@ export class HealthChatAPI {
    */
   static async createConversation() {
     try {
-      const response = await request.post('/chat/conversations', {
+      const response = await request.post('/chat/conversation', {
         type: 'health_consultation',
         title: '健康咨询对话'
       })
