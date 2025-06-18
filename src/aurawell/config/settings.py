@@ -76,7 +76,14 @@ class AuraWellSettings:
 
     # Security
     ENCRYPTION_KEY: Optional[str] = os.getenv("ENCRYPTION_KEY")
-    JWT_SECRET: Optional[str] = os.getenv("JWT_SECRET")
+    JWT_SECRET: Optional[str] = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+    # Redis Configuration
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_PASSWORD: Optional[str] = os.getenv("REDIS_PASSWORD")
+    REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
 
     # Database (if needed)
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
@@ -174,6 +181,15 @@ class AuraWellSettings:
 
 # Create global settings instance
 settings = AuraWellSettings()
+
+
+def get_settings() -> AuraWellSettings:
+    """获取设置实例"""
+    return settings
+
+
+# 为了兼容性，添加redis_url属性
+AuraWellSettings.redis_url = property(lambda self: self.REDIS_URL)
 
 # Health platform specific configurations
 HEALTH_PLATFORM_CONFIGS = {

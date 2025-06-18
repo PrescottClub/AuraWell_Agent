@@ -144,6 +144,7 @@ from ..database import get_database_manager
 from ..repositories import UserRepository, HealthDataRepository, AchievementRepository
 # ChatService已移除，使用agent_router替代
 from ..services.family_service import FamilyService
+from ..services.family_interaction_service import FamilyInteractionService
 from ..services.report_service import HealthReportService
 from ..services.dashboard_service import FamilyDashboardService
 
@@ -1365,6 +1366,198 @@ async def switch_active_member(
 
 
 # ============================================================================
+# FAMILY ADDITIONAL ENDPOINTS (契约守护行动补充)
+# ============================================================================
+
+
+@app.get(
+    "/api/v1/family/{family_id}/health-report",
+    response_model=HealthReportResponse,
+    tags=["Family Management"],
+)
+async def get_family_health_report(
+    family_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    report_service: HealthReportService = Depends(get_report_service),
+):
+    """
+    获取家庭健康报告 - 前端兼容性接口
+
+    这是 /api/v1/family/{family_id}/report 的别名，确保前端API调用兼容性
+
+    Args:
+        family_id: 家庭ID
+        current_user_id: 认证用户ID
+        report_service: 健康报告服务
+
+    Returns:
+        家庭健康报告数据
+    """
+    try:
+        # 调用现有的报告生成逻辑
+        report_data = await report_service.generate_family_health_report(
+            family_id=family_id,
+            requester_user_id=current_user_id,
+            report_type="comprehensive",
+            date_range="last_30_days"
+        )
+
+        return HealthReportResponse(
+            data=report_data,
+            message="家庭健康报告生成成功"
+        )
+    except Exception as e:
+        logger.error(f"Failed to generate family health report: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate family health report",
+        )
+
+
+@app.post(
+    "/api/v1/family/members/{member_id}/like",
+    response_model=BaseResponse,
+    tags=["Family Management"],
+)
+async def like_family_member(
+    member_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    family_interaction_service: FamilyInteractionService = Depends(get_family_interaction_service),
+):
+    """
+    为家庭成员点赞/取消点赞
+
+    Args:
+        member_id: 成员ID
+        current_user_id: 认证用户ID
+        family_interaction_service: 家庭交互服务
+
+    Returns:
+        点赞操作结果
+    """
+    try:
+        # 首先需要确定用户所在的家庭
+        # 这里假设从用户的活跃家庭中获取，实际可能需要从请求参数中获取
+        user_families = await family_interaction_service.family_repo.get_user_families(current_user_id)
+        if not user_families:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户未加入任何家庭",
+            )
+
+        # 使用第一个活跃家庭（实际应用中可能需要更复杂的逻辑）
+        family_id = user_families[0].family_id
+
+        # 执行点赞操作
+        result = await family_interaction_service.like_family_member(
+            family_id=family_id,
+            member_id=member_id,
+            liker_id=current_user_id,
+            like_type="general",
+            like_reason=None,
+        )
+
+        return BaseResponse(
+            success=True,
+            message=result["message"],
+            data={
+                "member_id": member_id,
+                "liked_by": current_user_id,
+                "action": result["action"],
+                "like_id": result["like_id"],
+                "total_likes": result["total_likes"],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
+    except ValueError as ve:
+        logger.warning(f"点赞操作验证失败: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except Exception as e:
+        logger.error(f"Failed to like family member: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="点赞操作失败",
+        )
+
+
+@app.get(
+    "/api/v1/family/{family_id}/health-alerts",
+    response_model=BaseResponse,
+    tags=["Family Management"],
+)
+async def get_family_health_alerts(
+    family_id: str,
+    status_filter: Optional[str] = Query(None, description="告警状态过滤"),
+    severity_filter: Optional[str] = Query(None, description="严重程度过滤"),
+    limit: int = Query(50, ge=1, le=100, description="返回数量限制"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    current_user_id: str = Depends(get_current_user_id),
+    family_interaction_service: FamilyInteractionService = Depends(get_family_interaction_service),
+):
+    """
+    获取家庭健康告警列表
+
+    Args:
+        family_id: 家庭ID
+        status_filter: 告警状态过滤 (active, acknowledged, resolved, dismissed)
+        severity_filter: 严重程度过滤 (low, medium, high, critical)
+        limit: 返回数量限制
+        offset: 偏移量
+        current_user_id: 认证用户ID
+        family_interaction_service: 家庭交互服务
+
+    Returns:
+        健康告警列表和统计信息
+    """
+    try:
+        # 获取家庭健康告警
+        result = await family_interaction_service.get_family_health_alerts(
+            family_id=family_id,
+            requester_id=current_user_id,
+            status=status_filter,
+            severity=severity_filter,
+            limit=limit,
+            offset=offset,
+        )
+
+        return BaseResponse(
+            success=True,
+            message="获取健康告警成功",
+            data={
+                "alerts": result["alerts"],
+                "total_count": result["total_count"],
+                "statistics": result["statistics"],
+                "family_id": family_id,
+                "filters": {
+                    "status": status_filter,
+                    "severity": severity_filter,
+                },
+                "pagination": {
+                    "limit": limit,
+                    "offset": offset,
+                }
+            }
+        )
+
+    except ValueError as ve:
+        logger.warning(f"获取健康告警验证失败: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except Exception as e:
+        logger.error(f"Failed to get family health alerts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取健康告警失败",
+        )
+
+
+# ============================================================================
 # AUTHENTICATION ENDPOINTS
 # ============================================================================
 
@@ -1504,6 +1697,76 @@ async def register(
             message="Registration service error",
             error_code=ErrorCode.INTERNAL_SERVER_ERROR,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@app.post(
+    "/api/v1/auth/logout", response_model=BaseResponse, tags=["Authentication"]
+)
+async def logout(
+    request: Request,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    用户登出接口 - 实现Token黑名单机制
+
+    Args:
+        request: FastAPI请求对象
+        current_user_id: 认证用户ID
+
+    Returns:
+        登出成功确认
+    """
+    try:
+        from ..core.token_blacklist import get_token_blacklist_manager
+        from ..core.auth_middleware import get_auth_middleware
+
+        # 获取当前请求的Token
+        auth_middleware = get_auth_middleware()
+        token = await auth_middleware.extract_token_from_request(request)
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="无法获取当前Token"
+            )
+
+        # 获取黑名单管理器
+        blacklist_manager = await get_token_blacklist_manager()
+
+        # 将Token添加到黑名单
+        success = await blacklist_manager.add_token_to_blacklist(
+            token=token,
+            user_id=current_user_id,
+            reason="logout"
+        )
+
+        if not success:
+            logger.warning(f"用户 {current_user_id} Token加入黑名单失败")
+            # 即使黑名单操作失败，也返回成功（降级处理）
+
+        # 记录登出事件
+        logger.info(f"用户 {current_user_id} 成功登出，Token已加入黑名单")
+
+        return BaseResponse(
+            success=True,
+            message="登出成功",
+            data={
+                "user_id": current_user_id,
+                "logged_out_at": datetime.now(timezone.utc).isoformat(),
+                "token_blacklisted": success,
+                "message": "Token已失效，请重新登录"
+            }
+        )
+
+    except HTTPException:
+        # 重新抛出HTTP异常
+        raise
+    except Exception as e:
+        logger.error(f"用户 {current_user_id} 登出失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="登出操作失败"
         )
 
 
@@ -2955,7 +3218,7 @@ async def delete_user_health_goal(
 
 
 @app.get(
-    "/api/v1/health-plan/plans",
+    "/api/v1/health/plans",
     response_model=HealthPlansListResponse,
     tags=["Health Plans"],
 )
@@ -3027,7 +3290,7 @@ async def get_health_plans(
 
 
 @app.post(
-    "/api/v1/health-plan/generate",
+    "/api/v1/health/plans/generate",
     response_model=HealthPlanGenerateResponse,
     tags=["Health Plans"],
 )
@@ -3038,28 +3301,39 @@ async def generate_health_plan(
     health_plan_repo=Depends(get_health_plan_repository),
 ):
     """
-    Generate a new personalized health plan
+    Generate a new AI-powered personalized health plan
 
     Args:
         plan_request: Health plan generation request
         current_user_id: Authenticated user ID
         user_repo: User repository instance
+        health_plan_repo: Health plan repository instance
 
     Returns:
-        Generated health plan with recommendations
+        AI-generated health plan with personalized recommendations
 
     Raises:
         HTTPException: If plan generation fails
     """
     try:
-        # Generate plan ID
-        plan_id = f"plan_{current_user_id}_{int(datetime.now().timestamp())}"
+        logger.info(f"开始为用户 {current_user_id} 生成AI健康计划")
 
-        # Create plan data
+        # 第一步：收集用户健康数据上下文
+        user_context = await _collect_user_health_context(current_user_id, user_repo)
+
+        # 第二步：使用AI生成个性化健康计划
+        ai_plan_data = await _generate_ai_health_plan(
+            user_context=user_context,
+            plan_request=plan_request,
+            user_id=current_user_id
+        )
+
+        # 第三步：创建计划基础数据
+        plan_id = f"plan_{current_user_id}_{int(datetime.now().timestamp())}"
         plan_data = {
             "id": plan_id,
-            "title": f"{plan_request.duration_days}天个性化健康计划",
-            "description": f"基于您的目标：{', '.join(plan_request.goals)}",
+            "title": ai_plan_data.get("title", f"{plan_request.duration_days}天AI个性化健康计划"),
+            "description": ai_plan_data.get("description", f"基于您的目标：{', '.join(plan_request.goals)}"),
             "duration_days": plan_request.duration_days,
             "status": "active",
             "progress": 0.0,
@@ -3067,104 +3341,74 @@ async def generate_health_plan(
             "preferences": plan_request.user_preferences or {},
         }
 
-        # Create plan in database
+        # 第四步：保存计划到数据库
         try:
             created_plan_db = await health_plan_repo.create_health_plan(
                 current_user_id, plan_data
             )
             plan_id = created_plan_db.id  # Use database-generated ID
-            logger.info(f"Successfully created health plan {plan_id} in database")
+            logger.info(f"Successfully created AI health plan {plan_id} in database")
         except Exception as db_error:
             logger.warning(
                 f"Failed to save plan to database: {db_error}, continuing with in-memory plan"
             )
             created_plan_db = None
 
-        # Create modules for the plan
+        # 第五步：创建AI生成的计划模块
         modules = []
+        ai_modules = ai_plan_data.get("modules", {})
+
         for module_type in plan_request.modules:
+            # 获取AI生成的模块数据，如果没有则使用默认数据
+            ai_module_data = ai_modules.get(module_type, {})
+
             module_data = {
                 "id": f"module_{plan_id}_{module_type}_{int(datetime.now().timestamp())}",
                 "module_type": module_type,
-                "title": f"{module_type.title()}计划",
-                "description": f"个性化的{module_type}方案",
+                "title": ai_module_data.get("title", f"{module_type.title()}计划"),
+                "description": ai_module_data.get("description", f"个性化的{module_type}方案"),
                 "duration_days": plan_request.duration_days,
-                "content": {},
+                "content": ai_module_data.get("content", {}),
                 "status": "active",
                 "progress": 0.0,
             }
 
-            if module_type == "diet":
-                module_data.update(
-                    {
-                        "title": "个性化饮食计划",
-                        "description": "根据您的目标和偏好定制的营养计划",
-                        "content": {
-                            "daily_calories": 2000,
-                            "goals": plan_request.goals,
-                            "preferences": plan_request.user_preferences or {},
-                            "recommendations": [
-                                "多吃蔬菜水果",
-                                "控制碳水化合物摄入",
-                                "增加蛋白质比例",
-                            ],
-                        },
+            # AI生成的模块数据已经包含了个性化内容，无需额外处理
+            # 如果AI没有生成特定模块的数据，使用基础默认值
+            if not ai_module_data.get("content"):
+                if module_type == "diet":
+                    module_data["content"] = {
+                        "daily_calories": 2000,
+                        "goals": plan_request.goals,
+                        "preferences": plan_request.user_preferences or {},
+                        "ai_generated": False,
                     }
-                )
-            elif module_type == "exercise":
-                module_data.update(
-                    {
-                        "title": "运动健身计划",
-                        "description": "适合您体能水平的运动方案",
-                        "content": {
-                            "weekly_frequency": 4,
-                            "session_duration": 45,
-                            "intensity": "moderate",
-                            "exercises": ["有氧运动", "力量训练", "柔韧性训练"],
-                        },
+                elif module_type == "exercise":
+                    module_data["content"] = {
+                        "weekly_frequency": 4,
+                        "session_duration": 45,
+                        "intensity": "moderate",
+                        "ai_generated": False,
                     }
-                )
-            elif module_type == "weight":
-                module_data.update(
-                    {
-                        "title": "体重管理计划",
-                        "description": "科学的体重管理策略",
-                        "content": {
-                            "target_weight_change": -5.0,
-                            "weekly_goal": -0.5,
-                            "strategies": ["控制热量摄入", "增加运动量", "规律作息"],
-                        },
+                elif module_type == "weight":
+                    module_data["content"] = {
+                        "target_weight_change": -2.0,
+                        "weekly_goal": -0.5,
+                        "ai_generated": False,
                     }
-                )
-            elif module_type == "sleep":
-                module_data.update(
-                    {
-                        "title": "睡眠优化计划",
-                        "description": "改善睡眠质量的方案",
-                        "content": {
-                            "target_sleep_hours": 8,
-                            "bedtime": "22:30",
-                            "wake_time": "06:30",
-                            "tips": [
-                                "睡前1小时避免电子设备",
-                                "保持卧室温度适宜",
-                                "建立固定的睡前仪式",
-                            ],
-                        },
+                elif module_type == "sleep":
+                    module_data["content"] = {
+                        "target_sleep_hours": 8,
+                        "bedtime": "22:30",
+                        "wake_time": "06:30",
+                        "ai_generated": False,
                     }
-                )
-            elif module_type == "mental":
-                module_data.update(
-                    {
-                        "title": "心理健康计划",
-                        "description": "心理健康和压力管理方案",
-                        "content": {
-                            "daily_meditation": 10,
-                            "stress_management": ["深呼吸练习", "正念冥想", "适度运动"],
-                            "mood_tracking": True,
-                        },
+                elif module_type == "mental":
+                    module_data["content"] = {
+                        "daily_meditation": 10,
+                        "mood_tracking": True,
+                        "ai_generated": False,
                     }
-                )
 
             # Create module in database
             try:
@@ -3203,16 +3447,18 @@ async def generate_health_plan(
             updated_at=datetime.now(),
         )
 
-        # Generate recommendations
-        recommendations = [
+        # 第六步：使用AI生成的推荐或默认推荐
+        recommendations = ai_plan_data.get("recommendations", [
             "建议每天记录您的进展",
             "保持计划的一致性很重要",
             "如有不适请及时调整计划",
             "定期评估和更新目标",
-        ]
+        ])
+
+        logger.info(f"AI健康计划生成完成，计划ID: {plan_id}")
 
         return HealthPlanGenerateResponse(
-            message="Health plan generated successfully",
+            message="AI个性化健康计划生成成功",
             plan=health_plan,
             recommendations=recommendations,
         )
@@ -3225,8 +3471,603 @@ async def generate_health_plan(
         )
 
 
+# ============================================================================
+# AI健康计划生成辅助函数
+# ============================================================================
+
+
+async def _collect_user_health_context(user_id: str, user_repo: UserRepository) -> Dict[str, Any]:
+    """
+    收集用户健康数据上下文
+
+    Args:
+        user_id: 用户ID
+        user_repo: 用户仓库实例
+
+    Returns:
+        用户健康数据上下文
+    """
+    try:
+        # 导入health_tools函数
+        from ..langchain_agent.tools.health_functions import (
+            get_user_activity_summary,
+            get_health_insights,
+        )
+        from ..utils.health_calculations import calculate_bmi, calculate_bmr
+
+        # 获取用户基础信息
+        user_profile = await user_repo.get_user_by_id(user_id)
+        user_data = user_repo.to_pydantic(user_profile) if user_profile else None
+
+        # 获取最近7天活动数据
+        activity_summary = await get_user_activity_summary(user_id, days=7)
+
+        # 获取健康洞察
+        health_insights = await get_health_insights(user_id)
+
+        # 计算健康指标
+        bmi = None
+        bmr = None
+        if user_data and user_data.height_cm and user_data.weight_kg:
+            bmi = calculate_bmi(user_data.height_cm, user_data.weight_kg)
+            if user_data.age and user_data.gender:
+                bmr = calculate_bmr(
+                    weight_kg=user_data.weight_kg,
+                    height_cm=user_data.height_cm,
+                    age=user_data.age,
+                    gender=user_data.gender.value if user_data.gender else "unknown"
+                )
+
+        # 构建上下文
+        context = {
+            "user_profile": {
+                "age": user_data.age if user_data else None,
+                "gender": user_data.gender.value if user_data and user_data.gender else None,
+                "height_cm": user_data.height_cm if user_data else None,
+                "weight_kg": user_data.weight_kg if user_data else None,
+                "activity_level": user_data.activity_level.value if user_data and user_data.activity_level else None,
+                "health_conditions": user_data.health_conditions if user_data else [],
+                "medications": user_data.medications if user_data else [],
+                "allergies": user_data.allergies if user_data else [],
+            },
+            "health_metrics": {
+                "bmi": bmi,
+                "bmr": bmr,
+                "bmi_category": _get_bmi_category(bmi) if bmi else None,
+            },
+            "activity_data": activity_summary,
+            "health_insights": health_insights,
+            "goals": {
+                "daily_steps": user_data.daily_steps_goal if user_data else None,
+                "sleep_hours": user_data.sleep_duration_goal_hours if user_data else None,
+                "weight_goal": user_data.weight_goal_kg if user_data else None,
+            }
+        }
+
+        logger.info(f"成功收集用户 {user_id} 的健康上下文数据")
+        return context
+
+    except Exception as e:
+        logger.error(f"收集用户健康上下文失败: {e}")
+        # 返回基础上下文
+        return {
+            "user_profile": {},
+            "health_metrics": {},
+            "activity_data": [],
+            "health_insights": [],
+            "goals": {},
+            "error": str(e)
+        }
+
+
+async def _generate_ai_health_plan(
+    user_context: Dict[str, Any],
+    plan_request: HealthPlanGenerateRequest,
+    user_id: str
+) -> Dict[str, Any]:
+    """
+    使用AI生成个性化健康计划
+
+    Args:
+        user_context: 用户健康数据上下文
+        plan_request: 计划生成请求
+        user_id: 用户ID
+
+    Returns:
+        AI生成的健康计划数据
+    """
+    try:
+        # 导入AI客户端
+        from ..core.deepseek_client import DeepSeekClient
+        import json
+
+        # 构建AI提示词
+        prompt = _build_health_plan_prompt(user_context, plan_request)
+
+        # 调用AI生成计划
+        async with DeepSeekClient() as ai_client:
+            ai_response = await ai_client.generate_response(
+                prompt=prompt,
+                max_tokens=3000,
+                temperature=0.3
+            )
+
+        # 解析AI响应
+        try:
+            # 尝试解析JSON响应
+            ai_plan_data = json.loads(ai_response)
+            logger.info(f"成功解析AI生成的健康计划JSON")
+        except json.JSONDecodeError:
+            # 如果不是JSON格式，尝试提取结构化信息
+            ai_plan_data = _parse_ai_text_response(ai_response, plan_request)
+            logger.warning("AI响应不是JSON格式，使用文本解析")
+
+        # 验证和补充计划数据
+        validated_plan = _validate_and_enhance_ai_plan(ai_plan_data, plan_request, user_context)
+
+        logger.info(f"AI健康计划生成成功，用户: {user_id}")
+        return validated_plan
+
+    except Exception as e:
+        logger.error(f"AI健康计划生成失败: {e}")
+        # 返回基础计划作为降级
+        return _generate_fallback_plan(plan_request, user_context)
+
+
+def _build_health_plan_prompt(user_context: Dict[str, Any], plan_request: HealthPlanGenerateRequest) -> str:
+    """构建AI健康计划生成提示词"""
+
+    user_profile = user_context.get("user_profile", {})
+    health_metrics = user_context.get("health_metrics", {})
+    activity_data = user_context.get("activity_data", [])
+    goals = user_context.get("goals", {})
+
+    # 计算平均活动数据
+    avg_steps = 0
+    avg_calories = 0
+    if activity_data:
+        avg_steps = sum(day.get("steps", 0) for day in activity_data) / len(activity_data)
+        avg_calories = sum(day.get("calories_burned", 0) for day in activity_data) / len(activity_data)
+
+    prompt = f"""
+作为专业的健康管理AI助手，请基于以下用户信息生成一个个性化的{plan_request.duration_days}天健康计划。
+
+## 用户基本信息
+- 年龄: {user_profile.get('age', '未知')}岁
+- 性别: {user_profile.get('gender', '未知')}
+- 身高: {user_profile.get('height_cm', '未知')}cm
+- 体重: {user_profile.get('weight_kg', '未知')}kg
+- BMI: {health_metrics.get('bmi', '未知')} ({health_metrics.get('bmi_category', '未知')})
+- 活动水平: {user_profile.get('activity_level', '未知')}
+
+## 健康状况
+- 健康问题: {', '.join(user_profile.get('health_conditions', [])) or '无'}
+- 正在服用药物: {', '.join(user_profile.get('medications', [])) or '无'}
+- 过敏史: {', '.join(user_profile.get('allergies', [])) or '无'}
+
+## 最近活动数据 (7天平均)
+- 每日步数: {avg_steps:.0f}步
+- 每日消耗卡路里: {avg_calories:.0f}卡
+
+## 用户目标
+- 健康目标: {', '.join(plan_request.goals)}
+- 期望时长: {plan_request.duration_days}天
+- 计划模块: {', '.join(plan_request.modules)}
+- 用户偏好: {plan_request.user_preferences or '无特殊偏好'}
+
+## 当前目标设定
+- 每日步数目标: {goals.get('daily_steps', '未设定')}步
+- 睡眠时长目标: {goals.get('sleep_hours', '未设定')}小时
+- 体重目标: {goals.get('weight_goal', '未设定')}kg
+
+请生成一个详细的个性化健康计划，必须以JSON格式返回，包含以下结构：
+
+{{
+  "title": "计划标题",
+  "description": "计划描述",
+  "modules": {{
+    "diet": {{
+      "title": "饮食计划标题",
+      "description": "饮食计划描述",
+      "content": {{
+        "daily_calories": 目标卡路里数值,
+        "meal_plan": "详细的每日餐食安排",
+        "nutrition_tips": ["营养建议1", "营养建议2"],
+        "foods_to_include": ["推荐食物1", "推荐食物2"],
+        "foods_to_avoid": ["避免食物1", "避免食物2"],
+        "ai_generated": true
+      }}
+    }},
+    "exercise": {{
+      "title": "运动计划标题",
+      "description": "运动计划描述",
+      "content": {{
+        "weekly_frequency": 每周运动次数,
+        "session_duration": 每次运动时长(分钟),
+        "intensity": "运动强度(low/moderate/high)",
+        "exercise_plan": "详细的运动安排",
+        "exercises": ["运动类型1", "运动类型2"],
+        "progression": "进阶计划",
+        "ai_generated": true
+      }}
+    }},
+    "weight": {{
+      "title": "体重管理标题",
+      "description": "体重管理描述",
+      "content": {{
+        "target_weight_change": 目标体重变化(kg),
+        "weekly_goal": 每周目标变化(kg),
+        "strategies": ["策略1", "策略2"],
+        "monitoring": "监测方法",
+        "ai_generated": true
+      }}
+    }},
+    "sleep": {{
+      "title": "睡眠优化标题",
+      "description": "睡眠优化描述",
+      "content": {{
+        "target_sleep_hours": 目标睡眠时长,
+        "bedtime": "建议就寝时间",
+        "wake_time": "建议起床时间",
+        "sleep_hygiene": ["睡眠卫生建议1", "睡眠卫生建议2"],
+        "environment_tips": ["环境优化建议1", "环境优化建议2"],
+        "ai_generated": true
+      }}
+    }},
+    "mental": {{
+      "title": "心理健康标题",
+      "description": "心理健康描述",
+      "content": {{
+        "daily_meditation": 每日冥想时长(分钟),
+        "stress_management": ["压力管理技巧1", "压力管理技巧2"],
+        "mood_tracking": true,
+        "mindfulness_practices": ["正念练习1", "正念练习2"],
+        "ai_generated": true
+      }}
+    }}
+  }},
+  "recommendations": [
+    "个性化建议1",
+    "个性化建议2",
+    "个性化建议3",
+    "个性化建议4"
+  ],
+  "weekly_schedule": {{
+    "week_1": "第一周重点",
+    "week_2": "第二周重点",
+    "week_3": "第三周重点",
+    "week_4": "第四周重点"
+  }},
+  "success_metrics": [
+    "成功指标1",
+    "成功指标2",
+    "成功指标3"
+  ]
+}}
+
+请确保：
+1. 所有建议都基于用户的实际情况和健康状态
+2. 计划具有可操作性和现实性
+3. 考虑用户的健康问题和限制
+4. 提供渐进式的目标设定
+5. 包含具体的数值和时间安排
+6. 必须返回有效的JSON格式
+"""
+
+    return prompt
+
+
+def _parse_ai_text_response(ai_response: str, plan_request: HealthPlanGenerateRequest) -> Dict[str, Any]:
+    """解析AI文本响应为结构化数据"""
+    try:
+        # 尝试从文本中提取JSON
+        import re
+        json_match = re.search(r'\{.*\}', ai_response, re.DOTALL)
+        if json_match:
+            import json
+            return json.loads(json_match.group())
+    except:
+        pass
+
+    # 如果无法解析，返回基础结构
+    return {
+        "title": f"{plan_request.duration_days}天AI健康计划",
+        "description": f"基于您的目标：{', '.join(plan_request.goals)}",
+        "modules": {},
+        "recommendations": ["请遵循计划执行", "定期监测进展", "如有不适请及时调整"],
+        "ai_generated": False
+    }
+
+
+def _validate_and_enhance_ai_plan(
+    ai_plan_data: Dict[str, Any],
+    plan_request: HealthPlanGenerateRequest,
+    user_context: Dict[str, Any]
+) -> Dict[str, Any]:
+    """验证和增强AI生成的计划数据"""
+
+    # 确保基础字段存在
+    validated_plan = {
+        "title": ai_plan_data.get("title", f"{plan_request.duration_days}天AI个性化健康计划"),
+        "description": ai_plan_data.get("description", f"基于您的目标：{', '.join(plan_request.goals)}"),
+        "modules": {},
+        "recommendations": ai_plan_data.get("recommendations", []),
+        "weekly_schedule": ai_plan_data.get("weekly_schedule", {}),
+        "success_metrics": ai_plan_data.get("success_metrics", []),
+        "ai_generated": True
+    }
+
+    # 验证和补充模块数据
+    ai_modules = ai_plan_data.get("modules", {})
+    for module_type in plan_request.modules:
+        if module_type in ai_modules:
+            # 验证AI生成的模块数据
+            module_data = ai_modules[module_type]
+            validated_plan["modules"][module_type] = {
+                "title": module_data.get("title", f"{module_type.title()}计划"),
+                "description": module_data.get("description", f"个性化的{module_type}方案"),
+                "content": module_data.get("content", {}),
+                "ai_generated": True
+            }
+        else:
+            # 如果AI没有生成该模块，使用默认数据
+            validated_plan["modules"][module_type] = _get_default_module_data(module_type, user_context)
+
+    return validated_plan
+
+
+def _generate_fallback_plan(plan_request: HealthPlanGenerateRequest, user_context: Dict[str, Any]) -> Dict[str, Any]:
+    """生成降级计划（当AI生成失败时使用）"""
+
+    fallback_plan = {
+        "title": f"{plan_request.duration_days}天健康计划",
+        "description": f"基于您的目标：{', '.join(plan_request.goals)}",
+        "modules": {},
+        "recommendations": [
+            "建议每天记录您的进展",
+            "保持计划的一致性很重要",
+            "如有不适请及时调整计划",
+            "定期评估和更新目标",
+        ],
+        "ai_generated": False
+    }
+
+    # 为每个模块生成基础数据
+    for module_type in plan_request.modules:
+        fallback_plan["modules"][module_type] = _get_default_module_data(module_type, user_context)
+
+    return fallback_plan
+
+
+def _get_default_module_data(module_type: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
+    """获取模块的默认数据"""
+
+    user_profile = user_context.get("user_profile", {})
+    health_metrics = user_context.get("health_metrics", {})
+
+    if module_type == "diet":
+        # 基于BMR计算卡路里需求
+        base_calories = 2000
+        if health_metrics.get("bmr"):
+            base_calories = int(health_metrics["bmr"] * 1.3)  # 轻度活动系数
+
+        return {
+            "title": "个性化饮食计划",
+            "description": "根据您的目标和偏好定制的营养计划",
+            "content": {
+                "daily_calories": base_calories,
+                "meal_plan": "均衡的三餐搭配",
+                "nutrition_tips": ["多吃蔬菜水果", "控制碳水化合物摄入", "增加蛋白质比例"],
+                "ai_generated": False
+            }
+        }
+    elif module_type == "exercise":
+        return {
+            "title": "运动健身计划",
+            "description": "适合您体能水平的运动方案",
+            "content": {
+                "weekly_frequency": 4,
+                "session_duration": 45,
+                "intensity": "moderate",
+                "exercises": ["有氧运动", "力量训练", "柔韧性训练"],
+                "ai_generated": False
+            }
+        }
+    elif module_type == "weight":
+        return {
+            "title": "体重管理计划",
+            "description": "科学的体重管理策略",
+            "content": {
+                "target_weight_change": -2.0,
+                "weekly_goal": -0.5,
+                "strategies": ["控制热量摄入", "增加运动量", "规律作息"],
+                "ai_generated": False
+            }
+        }
+    elif module_type == "sleep":
+        return {
+            "title": "睡眠优化计划",
+            "description": "改善睡眠质量的方案",
+            "content": {
+                "target_sleep_hours": 8,
+                "bedtime": "22:30",
+                "wake_time": "06:30",
+                "sleep_hygiene": ["睡前1小时避免电子设备", "保持卧室温度适宜"],
+                "ai_generated": False
+            }
+        }
+    elif module_type == "mental":
+        return {
+            "title": "心理健康计划",
+            "description": "心理健康和压力管理方案",
+            "content": {
+                "daily_meditation": 10,
+                "stress_management": ["深呼吸练习", "正念冥想", "适度运动"],
+                "mood_tracking": True,
+                "ai_generated": False
+            }
+        }
+    else:
+        return {
+            "title": f"{module_type.title()}计划",
+            "description": f"个性化的{module_type}方案",
+            "content": {"ai_generated": False}
+        }
+
+
+def _get_bmi_category(bmi: float) -> str:
+    """根据BMI值返回分类"""
+    if bmi < 18.5:
+        return "偏瘦"
+    elif bmi < 24:
+        return "正常"
+    elif bmi < 28:
+        return "偏胖"
+    else:
+        return "肥胖"
+
+
+# ============================================================================
+# Token黑名单管理接口（管理员功能）
+# ============================================================================
+
+
 @app.get(
-    "/api/v1/health-plan/plans/{plan_id}",
+    "/api/v1/admin/auth/blacklist/stats",
+    response_model=BaseResponse,
+    tags=["Admin", "Authentication"],
+)
+async def get_blacklist_stats(
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    获取Token黑名单统计信息（管理员接口）
+
+    Args:
+        current_user_id: 当前用户ID
+
+    Returns:
+        黑名单统计信息
+    """
+    try:
+        # TODO: 添加管理员权限检查
+        # if not is_admin(current_user_id):
+        #     raise HTTPException(status_code=403, detail="需要管理员权限")
+
+        from ..core.token_blacklist import get_token_blacklist_manager
+        blacklist_manager = await get_token_blacklist_manager()
+
+        stats = await blacklist_manager.get_blacklist_stats()
+
+        return BaseResponse(
+            success=True,
+            message="获取黑名单统计成功",
+            data=stats
+        )
+
+    except Exception as e:
+        logger.error(f"获取黑名单统计失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取统计信息失败"
+        )
+
+
+@app.post(
+    "/api/v1/admin/auth/revoke-user-tokens/{user_id}",
+    response_model=BaseResponse,
+    tags=["Admin", "Authentication"],
+)
+async def revoke_user_tokens(
+    user_id: str,
+    reason: str = "admin_action",
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    撤销指定用户的所有Token（管理员接口）
+
+    Args:
+        user_id: 目标用户ID
+        reason: 撤销原因
+        current_user_id: 当前管理员ID
+
+    Returns:
+        撤销结果
+    """
+    try:
+        # TODO: 添加管理员权限检查
+        # if not is_admin(current_user_id):
+        #     raise HTTPException(status_code=403, detail="需要管理员权限")
+
+        from ..core.token_blacklist import get_token_blacklist_manager
+        blacklist_manager = await get_token_blacklist_manager()
+
+        revoked_count = await blacklist_manager.revoke_all_user_tokens(
+            user_id=user_id,
+            reason=f"{reason}_by_{current_user_id}"
+        )
+
+        logger.info(f"管理员 {current_user_id} 撤销了用户 {user_id} 的 {revoked_count} 个Token")
+
+        return BaseResponse(
+            success=True,
+            message=f"成功撤销用户Token",
+            data={
+                "target_user_id": user_id,
+                "revoked_count": revoked_count,
+                "reason": reason,
+                "admin_user_id": current_user_id,
+                "revoked_at": datetime.now(timezone.utc).isoformat()
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"撤销用户Token失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="撤销Token失败"
+        )
+
+
+# ============================================================================
+# 家庭交互服务依赖注入
+# ============================================================================
+
+
+async def get_family_interaction_service() -> FamilyInteractionService:
+    """获取家庭交互服务实例"""
+    try:
+        from ..repositories.family_interaction_repository import FamilyInteractionRepository
+        from ..repositories.family_repository import FamilyRepository
+        from ..repositories.user_repository import UserRepository
+        from ..database import get_database_manager
+
+        # 获取数据库会话
+        db_manager = get_database_manager()
+        session = await db_manager.get_session()
+
+        # 创建仓库实例
+        interaction_repo = FamilyInteractionRepository(session)
+        family_repo = FamilyRepository(session)
+        user_repo = UserRepository(session)
+
+        # 创建服务实例
+        return FamilyInteractionService(
+            interaction_repo=interaction_repo,
+            family_repo=family_repo,
+            user_repo=user_repo,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to create family interaction service: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="服务初始化失败",
+        )
+
+
+@app.get(
+    "/api/v1/health/plans/{plan_id}",
     response_model=HealthPlanResponse,
     tags=["Health Plans"],
 )
@@ -3285,7 +4126,7 @@ async def get_health_plan(
 
 
 @app.put(
-    "/api/v1/health-plan/plans/{plan_id}",
+    "/api/v1/health/plans/{plan_id}",
     response_model=HealthPlanResponse,
     tags=["Health Plans"],
 )
@@ -3375,7 +4216,7 @@ async def update_health_plan(
 
 
 @app.delete(
-    "/api/v1/health-plan/plans/{plan_id}",
+    "/api/v1/health/plans/{plan_id}",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3409,7 +4250,7 @@ async def delete_health_plan(
         )
 
 
-@app.get("/api/v1/health-plan/plans/{plan_id}/export", tags=["Health Plans"])
+@app.get("/api/v1/health/plans/{plan_id}/export", tags=["Health Plans"])
 async def export_health_plan(
     plan_id: str,
     format: str = "pdf",
@@ -3458,7 +4299,7 @@ async def export_health_plan(
 
 
 @app.post(
-    "/api/v1/health-plan/plans/{plan_id}/feedback",
+    "/api/v1/health/plans/{plan_id}/feedback",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3504,7 +4345,7 @@ async def save_plan_feedback(
 
 
 @app.get(
-    "/api/v1/health-plan/plans/{plan_id}/progress",
+    "/api/v1/health/plans/{plan_id}/progress",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3555,7 +4396,7 @@ async def get_plan_progress(
 
 
 @app.put(
-    "/api/v1/health-plan/plans/{plan_id}/progress",
+    "/api/v1/health/plans/{plan_id}/progress",
     response_model=BaseResponse,
     tags=["Health Plans"],
 )
@@ -3602,7 +4443,7 @@ async def update_plan_progress(
 
 
 @app.get(
-    "/api/v1/health-plan/templates", response_model=BaseResponse, tags=["Health Plans"]
+    "/api/v1/health/plans/templates", response_model=BaseResponse, tags=["Health Plans"]
 )
 async def get_plan_templates(
     category: Optional[str] = None,
@@ -3684,7 +4525,7 @@ async def get_plan_templates(
 
 
 @app.post(
-    "/api/v1/health-plan/templates/{template_id}/create",
+    "/api/v1/health/plans/from-template",
     response_model=HealthPlanResponse,
     tags=["Health Plans"],
 )

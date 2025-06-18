@@ -9,8 +9,8 @@ from datetime import datetime, timedelta
 
 from .adapter import HealthToolAdapter, tool_registry
 
-# 注意：这里我们将使用现有的健康工具函数，而不是HealthTools类
-from ...agent import health_tools
+# 使用新的统一核心健康工具模块
+from ...core import health_tools
 
 # Import new health advice tool
 from .health_advice_tool import register_health_advice_tools, HealthAdviceTool
