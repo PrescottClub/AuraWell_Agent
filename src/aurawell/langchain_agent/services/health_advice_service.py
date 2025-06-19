@@ -44,9 +44,9 @@ logger = logging.getLogger(__name__)
 
 # 模型选择配置
 MODEL_CONFIG = {
-    "reasoning_tasks": "deepseek-reasoner",  # 复杂推理任务
-    "chat_tasks": "deepseek-chat",          # 简单对话任务
-    "default": "deepseek-reasoner"          # 默认使用推理模型
+    "reasoning_tasks": "deepseek-r1-0528",  # 复杂推理任务
+    "chat_tasks": "deepseek-r1-0528",       # 简单对话任务
+    "default": "deepseek-r1-0528"           # 默认使用推理模型
 }
 
 
@@ -165,7 +165,7 @@ class HealthAdviceService:
             if self.deepseek_client:
                 async for token in self.deepseek_client.get_streaming_response(
                     messages=messages,
-                    model_name="deepseek-reasoner",
+                    model_name=MODEL_CONFIG["reasoning_tasks"],  # 使用配置中的推理模型
                     temperature=0.3,
                     max_tokens=2048,
                 ):

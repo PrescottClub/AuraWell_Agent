@@ -48,23 +48,23 @@ class DeepSeekClient:
 
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None) -> None:
         """
-        Initialize DeepSeek client
+        Initialize DeepSeek client (via Alibaba Cloud DashScope)
 
         Args:
-            api_key: DeepSeek API key. If None, will read from DEEPSEEK_API_KEY env var
-            base_url: API base URL. If None, will read from DEEPSEEK_BASE_URL env var
+            api_key: DashScope API key. If None, will read from DASHSCOPE_API_KEY env var
+            base_url: API base URL. If None, will read from DASHSCOPE_BASE_URL env var
 
         Raises:
             ValueError: If API key is not provided or found in environment
         """
-        self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+        self.api_key = api_key or os.getenv("DASHSCOPE_API_KEY")
         if not self.api_key:
             raise ValueError(
-                "DeepSeek API key not provided. Set DEEPSEEK_API_KEY environment variable."
+                "DashScope API key not provided. Set DASHSCOPE_API_KEY environment variable."
             )
 
-        # Get base URL from environment or use default
-        self.base_url = base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+        # Get base URL from environment or use default (Alibaba Cloud DashScope)
+        self.base_url = base_url or os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
         self.client = OpenAI(
             api_key=self.api_key, base_url=self.base_url

@@ -290,6 +290,17 @@ const sendMessage = async () => {
     return
   }
 
+  // 🔐 发送消息前确保认证状态
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    console.warn('⚠️ 用户未认证，尝试重新认证...')
+    const isAuthenticated = await authStore.ensureAuthenticated()
+    if (!isAuthenticated) {
+      antMessage.error('认证失败，请刷新页面重试')
+      return
+    }
+  }
+
   const userMessage = {
     id: Date.now(),
     sender: 'user',
@@ -305,8 +316,12 @@ const sendMessage = async () => {
   isTyping.value = true
 
   try {
+    console.log('📤 发送消息到AI引擎:', messageText)
+
     // 发送消息到后端
     const response = await HealthChatAPI.sendMessage(messageText, currentConversationId.value)
+
+    console.log('📥 收到AI回复:', response)
 
     // 模拟延迟以显示打字效果
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -322,19 +337,27 @@ const sendMessage = async () => {
     }
 
     messages.value.push(aiMessage)
+    console.log('✅ 消息发送成功')
   } catch (error) {
     console.error('发送消息失败:', error)
 
-    // 添加错误消息
-    const errorMessage = {
-      id: Date.now() + 1,
-      sender: 'agent',
-      content: '抱歉，我现在遇到了一些技术问题。请稍后再试，或者尝试重新描述您的问题。',
-      timestamp: new Date().toISOString()
-    }
+    // 检查是否是认证错误
+    if (error.response?.status === 401) {
+      console.warn('🔐 认证失败，清除token并提示重新登录')
+      authStore.clearToken()
+      antMessage.error('认证已过期，请刷新页面重新登录')
+    } else {
+      // 添加错误消息
+      const errorMessage = {
+        id: Date.now() + 1,
+        sender: 'agent',
+        content: '抱歉，我现在遇到了一些技术问题。请稍后再试，或者尝试重新描述您的问题。',
+        timestamp: new Date().toISOString()
+      }
 
-    messages.value.push(errorMessage)
-    antMessage.error('发送消息失败，请检查网络连接')
+      messages.value.push(errorMessage)
+      antMessage.error('发送消息失败，请检查网络连接')
+    }
   } finally {
     isTyping.value = false
   }

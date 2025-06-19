@@ -24,11 +24,6 @@ const routes = [
         component: () => import('../views/user/HealthChatDemo.vue')
       },
       {
-        path: 'test',
-        name: 'TestPage',
-        component: () => import('../views/user/TestPage.vue')
-      },
-      {
         path: 'simple-demo',
         name: 'SimpleChatDemo',
         component: () => import('../views/user/SimpleChatDemo.vue')

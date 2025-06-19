@@ -17,7 +17,7 @@ export class HealthChatAPI {
       const response = await request.post('/chat/message', {
         message: message,
         conversation_id: conversationId,
-        user_id: 'dev_user', // 开发模式下的默认用户ID
+        // 移除user_id，让后端从认证token中获取
         family_member_id: null
       })
 
@@ -33,6 +33,14 @@ export class HealthChatAPI {
       }
     } catch (error) {
       console.error('发送消息失败:', error)
+      console.error('错误详情:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      })
       throw error
     }
   }

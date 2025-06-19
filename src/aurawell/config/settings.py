@@ -27,13 +27,13 @@ class AuraWellSettings:
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
-    # DeepSeek AI Configuration
-    DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
+    # Alibaba Cloud DashScope AI Configuration (DeepSeek via DashScope)
+    DEEPSEEK_API_KEY: Optional[str] = os.getenv("DASHSCOPE_API_KEY")
     DEEPSEEK_BASE_URL: str = os.getenv(
-        "DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"
+        "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
     DEEPSEEK_DEFAULT_MODEL: str = os.getenv(
-        "DEEPSEEK_DEFAULT_MODEL", "deepseek-r1-0528"
+        "DASHSCOPE_DEFAULT_MODEL", "deepseek-r1-0528"
     )
     DEEPSEEK_MAX_TOKENS: int = int(os.getenv("DEEPSEEK_MAX_TOKENS", "2048"))
     DEEPSEEK_TEMPERATURE: float = float(os.getenv("DEEPSEEK_TEMPERATURE", "0.7"))
@@ -126,7 +126,7 @@ class AuraWellSettings:
 
         # Check critical settings
         if not cls.DEEPSEEK_API_KEY:
-            missing_settings.append("DEEPSEEK_API_KEY")
+            missing_settings.append("DASHSCOPE_API_KEY")
 
         # Check RAG service settings
         if not cls.ALIBABA_CLOUD_FC_ENDPOINT:

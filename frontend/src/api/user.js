@@ -5,6 +5,35 @@ import request from '../utils/request.js'
  */
 export class UserAPI {
   /**
+   * 用户登录
+   * @param {Object} credentials - 登录凭据 {username, password}
+   * @returns {Promise} 登录响应
+   */
+  static async login(credentials) {
+    try {
+      const response = await request.post('/auth/login', credentials)
+      return response
+    } catch (error) {
+      console.error('登录失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 用户注册
+   * @param {Object} userData - 注册数据
+   * @returns {Promise} 注册响应
+   */
+  static async register(userData) {
+    try {
+      const response = await request.post('/auth/register', userData)
+      return response
+    } catch (error) {
+      console.error('注册失败:', error)
+      throw error
+    }
+  }
+  /**
    * 🔑 验证当前Token是否有效 - 轻量级认证检查
    * 这是专门为解决认证循环问题而设计的函数
    * @returns {Promise<boolean>} Token是否有效

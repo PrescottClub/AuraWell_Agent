@@ -102,10 +102,16 @@ class HealthAdviceAgent(BaseAgent):
                 return None
 
             # 创建LangChain兼容的LLM
+            # 注意：使用ChatOpenAI类是因为阿里云DashScope提供OpenAI兼容的API接口
+            # 实际调用的是阿里云DashScope的DeepSeek服务，而非OpenAI的服务
+            # 参数说明：
+            # - model: DeepSeek模型名称 (deepseek-r1-0528)
+            # - api_key: 阿里云DashScope API密钥
+            # - api_base: 阿里云DashScope兼容模式URL
             llm = ChatOpenAI(
-                model="deepseek-reasoner",
-                openai_api_key=self.deepseek_client.api_key,
-                openai_api_base="https://api.deepseek.com",
+                model="deepseek-r1-0528",
+                openai_api_key=self.deepseek_client.api_key,  # DashScope API Key
+                openai_api_base=self.deepseek_client.base_url,  # DashScope Compatible URL
                 temperature=0.7,
                 max_tokens=1024
             )
@@ -578,7 +584,7 @@ class HealthAdviceAgent(BaseAgent):
 
             # 调用DeepSeek API
             response = self.deepseek_client.get_deepseek_response(
-                messages=messages, model_name="deepseek-chat", temperature=0.7
+                messages=messages, temperature=0.7
             )
 
             return response.content

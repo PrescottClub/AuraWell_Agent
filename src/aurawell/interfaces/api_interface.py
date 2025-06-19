@@ -2104,7 +2104,7 @@ async def get_conversations(
 
 @app.post("/api/v1/chat/message", response_model=HealthChatResponse, tags=["Chat"])
 async def send_health_chat_message(
-    chat_request: EnhancedHealthChatRequest,
+    chat_request: ChatRequest,
     current_user_id: str = Depends(get_current_user_id),
 ):
     """
@@ -2123,8 +2123,6 @@ async def send_health_chat_message(
     try:
         # 使用agent_router处理消息，保持API兼容性
         enhanced_context = chat_request.context or {}
-        if chat_request.member_id:
-            enhanced_context["member_id"] = chat_request.member_id
 
         response = await agent_router.process_message(
             user_id=current_user_id,
@@ -5243,48 +5241,7 @@ async def create_family_challenge(
 # FRONTEND COMPATIBILITY API ENDPOINTS
 # ============================================================================
 
-@app.post("/api/v1/chat/message", response_model=Dict[str, Any], tags=["Chat"])
-async def chat_message_frontend_compatible(
-    request: ChatRequest,
-    current_user_id: str = Depends(get_current_user_id),
-):
-    """
-    发送聊天消息 - 前端兼容端点
-    这是前端期望的主要聊天API端点，映射到健康咨询功能
-    """
-    try:
-        # 创建健康咨询请求
-        health_chat_request = HealthChatRequest(
-            message=request.message,
-            conversation_id=request.conversation_id,
-            user_id=current_user_id,
-            family_member_id=None,
-            context=request.context or {}
-        )
-
-        # 调用现有的健康咨询功能
-        response = await health_chat_consultation(health_chat_request, current_user_id)
-
-        # 适配为前端期望格式
-        return {
-            "reply": response.reply,
-            "conversation_id": response.conversation_id,
-            "timestamp": response.timestamp.isoformat() if response.timestamp else datetime.now().isoformat(),
-            "suggestions": getattr(response, 'suggestions', []),
-            "quick_replies": getattr(response, 'quick_replies', []),
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"Chat message failed: {e}")
-        return {
-            "reply": "抱歉，我现在遇到了一些技术问题。请稍后再试。",
-            "conversation_id": request.conversation_id,
-            "timestamp": datetime.now().isoformat(),
-            "suggestions": [],
-            "quick_replies": [],
-            "status": "error",
-            "error": str(e)
-        }
+# 重复的路由已删除 - 使用第2105行的send_health_chat_message端点
 
 
 @app.get("/api/v1/user/profile", response_model=Dict[str, Any], tags=["User Profile"])
