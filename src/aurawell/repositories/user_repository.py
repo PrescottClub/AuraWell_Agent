@@ -99,6 +99,18 @@ class UserRepository(BaseRepository[UserProfileDB]):
         """
         return await self.get_by_field("email", email)
 
+    async def get_user_by_username(self, username: str) -> Optional[UserProfileDB]:
+        """
+        Get user by username (display_name)
+
+        Args:
+            username: Username/display name
+
+        Returns:
+            UserProfileDB instance or None
+        """
+        return await self.get_by_field("display_name", username)
+
     async def update_user_profile(
         self, user_id: str, **kwargs
     ) -> Optional[UserProfileDB]:

@@ -24,11 +24,6 @@ const routes = [
         component: () => import('../views/user/HealthChatDemo.vue')
       },
       {
-        path: 'test',
-        name: 'TestPage',
-        component: () => import('../views/user/TestPage.vue')
-      },
-      {
         path: 'simple-demo',
         name: 'SimpleChatDemo',
         component: () => import('../views/user/SimpleChatDemo.vue')
@@ -109,17 +104,37 @@ const router = createRouter({
   routes
 });
 
-// 路由守卫
-router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('access_token');
-  const isLoggedIn = !!token;
+// 🔧 统一路由守卫 - 使用认证状态管理
+router.beforeEach(async (to, _from, next) => {
+  // 导入认证状态管理
+  const { useAuthStore } = await import('../stores/auth.js');
+  const authStore = useAuthStore();
 
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    next({
-      path: '/login',
-      query: { redirect: to.fullPath }
-    });
+  // 如果路由需要认证
+  if (to.meta.requiresAuth) {
+    try {
+      // 使用统一的认证检查方法
+      const isAuthenticated = await authStore.ensureAuthenticated();
+
+      if (isAuthenticated) {
+        console.log('✅ 路由守卫：用户已认证，允许访问');
+        next();
+      } else {
+        console.log('🔐 路由守卫：用户未认证，重定向到登录页');
+        next({
+          path: '/login',
+          query: { redirect: to.fullPath }
+        });
+      }
+    } catch (error) {
+      console.error('❌ 路由守卫：认证检查失败', error);
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      });
+    }
   } else {
+    // 不需要认证的路由直接通过
     next();
   }
 });

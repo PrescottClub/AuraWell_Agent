@@ -20,14 +20,14 @@ from ..database.family_models import FamilyMemberDB
 from ..database.models import UserProfileDB
 from ..models.family_models import FamilyMember
 from ..models.api_models import HealthAlert
-from .base_repository import BaseRepository
 
 
-class FamilyInteractionRepository(BaseRepository):
+
+class FamilyInteractionRepository:
     """家庭交互功能仓库"""
 
     def __init__(self, session: Session):
-        super().__init__(session)
+        self.session = session
 
     # ============================================================================
     # 成员点赞功能

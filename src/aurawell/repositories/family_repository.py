@@ -25,9 +25,26 @@ class FamilyRepository:
     async def create_family(self, family_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new family in the database"""
         try:
-            # Mock implementation - in production, use actual SQLAlchemy models
-            logger.info(f"Creating family: {family_data['name']}")
+            from ..database.family_models import FamilyDB
+
+            # 创建家庭数据库记录（简化版本，只包含基本字段）
+            family_db = FamilyDB(
+                family_id=family_data["family_id"],
+                name=family_data["name"],
+                description=family_data.get("description"),
+                owner_id=family_data["owner_id"],
+                created_at=family_data["created_at"],
+                updated_at=family_data["updated_at"],
+                member_count=family_data.get("member_count", 1),
+                is_active=family_data.get("is_active", True)
+            )
+
+            self.session.add(family_db)
+            self.session.flush()  # 确保数据写入数据库
+
+            logger.info(f"✅ 家庭创建成功: {family_data['name']} (ID: {family_data['family_id']})")
             return family_data
+
         except SQLAlchemyError as e:
             logger.error(f"Database error creating family: {e}")
             raise DatabaseError(
@@ -37,18 +54,36 @@ class FamilyRepository:
     async def get_family_by_id(self, family_id: str) -> Optional[Dict[str, Any]]:
         """Get family by ID"""
         try:
-            # Mock implementation
-            logger.debug(f"Getting family by ID: {family_id}")
-            return {
-                "family_id": family_id,
-                "name": "Test Family",
-                "description": "A test family",
-                "owner_id": "user1",
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
-                "member_count": 1,
-                "is_active": True,
+            from ..database.family_models import FamilyDB
+
+            # 查询家庭记录
+            from sqlalchemy import select
+            stmt = select(FamilyDB).where(
+                FamilyDB.family_id == family_id,
+                FamilyDB.is_active == True
+            )
+            result = await self.session.execute(stmt)
+            family_db = result.scalar_one_or_none()
+
+            if not family_db:
+                logger.debug(f"Family not found: {family_id}")
+                return None
+
+            # 转换为字典格式（简化版本）
+            family_data = {
+                "family_id": family_db.family_id,
+                "name": family_db.name,
+                "description": family_db.description,
+                "owner_id": family_db.owner_id,
+                "created_at": family_db.created_at,
+                "updated_at": family_db.updated_at,
+                "member_count": family_db.member_count,
+                "is_active": family_db.is_active
             }
+
+            logger.debug(f"✅ 家庭查询成功: {family_db.name} (ID: {family_id})")
+            return family_data
+
         except SQLAlchemyError as e:
             logger.error(f"Database error getting family: {e}")
             raise DatabaseError(
@@ -58,20 +93,37 @@ class FamilyRepository:
     async def get_user_families(self, user_id: str) -> List[Dict[str, Any]]:
         """Get all families for a user"""
         try:
-            # Mock implementation
-            logger.debug(f"Getting families for user: {user_id}")
-            return [
-                {
-                    "family_id": "family1",
-                    "name": "Test Family",
-                    "description": "A test family",
-                    "owner_id": user_id,
-                    "created_at": datetime.now(timezone.utc),
-                    "updated_at": datetime.now(timezone.utc),
-                    "member_count": 1,
-                    "is_active": True,
+            from ..database.family_models import FamilyDB, FamilyMemberDB
+
+            # 查询用户所属的所有家庭
+            from sqlalchemy import select
+            stmt = select(FamilyDB).join(
+                FamilyMemberDB, FamilyDB.family_id == FamilyMemberDB.family_id
+            ).where(
+                FamilyMemberDB.user_id == user_id,
+                FamilyMemberDB.is_active == True,
+                FamilyDB.is_active == True
+            ).order_by(FamilyDB.created_at.desc())
+
+            result = await self.session.execute(stmt)
+
+            families = []
+            for family_db in result.scalars().all():
+                family_data = {
+                    "family_id": family_db.family_id,
+                    "name": family_db.name,
+                    "description": family_db.description,
+                    "owner_id": family_db.owner_id,
+                    "created_at": family_db.created_at,
+                    "updated_at": family_db.updated_at,
+                    "member_count": family_db.member_count,
+                    "is_active": family_db.is_active
                 }
-            ]
+                families.append(family_data)
+
+            logger.debug(f"✅ 用户家庭查询成功: {len(families)} 个家庭 (用户: {user_id})")
+            return families
+
         except SQLAlchemyError as e:
             logger.error(f"Database error getting user families: {e}")
             raise DatabaseError(
@@ -94,9 +146,21 @@ class FamilyRepository:
     async def is_family_member(self, family_id: str, user_id: str) -> bool:
         """Check if user is a family member"""
         try:
-            # Mock implementation
-            logger.debug(f"Checking if user {user_id} is member of family {family_id}")
-            return True
+            from ..database.family_models import FamilyMemberDB
+
+            # 查询用户是否为家庭成员
+            from sqlalchemy import select
+            stmt = select(FamilyMemberDB).where(
+                FamilyMemberDB.family_id == family_id,
+                FamilyMemberDB.user_id == user_id,
+                FamilyMemberDB.is_active == True
+            )
+            result = await self.session.execute(stmt)
+            member_exists = result.scalar_one_or_none() is not None
+
+            logger.debug(f"✅ 家庭成员检查: 用户 {user_id} {'是' if member_exists else '不是'} 家庭 {family_id} 的成员")
+            return member_exists
+
         except SQLAlchemyError as e:
             logger.error(f"Database error checking family membership: {e}")
             raise DatabaseError(
@@ -109,8 +173,27 @@ class FamilyRepository:
     ) -> None:
         """Add a member to a family"""
         try:
-            # Mock implementation
-            logger.info(f"Adding user {user_id} to family {family_id} with role {role}")
+            from ..database.family_models import FamilyMemberDB
+            import uuid
+
+            # 创建家庭成员记录
+            member_db = FamilyMemberDB(
+                member_id=str(uuid.uuid4()),
+                family_id=family_id,
+                user_id=user_id,
+                role=role.value,
+                is_active=True,
+                joined_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+                permissions={},
+                data_access_level="basic"
+            )
+
+            self.session.add(member_db)
+            self.session.flush()
+
+            logger.info(f"✅ 家庭成员添加成功: 用户 {user_id} 加入家庭 {family_id}，角色: {role.value}")
+
         except SQLAlchemyError as e:
             logger.error(f"Database error adding family member: {e}")
             raise DatabaseError(
@@ -120,20 +203,34 @@ class FamilyRepository:
     async def get_family_members(self, family_id: str) -> List[Dict[str, Any]]:
         """Get all members of a family"""
         try:
-            # Mock implementation
-            logger.debug(f"Getting members for family: {family_id}")
-            return [
-                {
-                    "user_id": "user1",
-                    "username": "testuser1",
-                    "display_name": "Test User 1",
-                    "email": "test1@example.com",
-                    "role": FamilyRole.OWNER,
-                    "joined_at": datetime.now(timezone.utc),
-                    "last_active": datetime.now(timezone.utc),
-                    "is_active": True,
+            from ..database.family_models import FamilyMemberDB
+            from sqlalchemy import select
+
+            # 查询家庭成员（简化版本，暂时不JOIN用户表）
+            stmt = select(FamilyMemberDB).where(
+                FamilyMemberDB.family_id == family_id,
+                FamilyMemberDB.is_active == True
+            ).order_by(FamilyMemberDB.joined_at.asc())
+
+            result = await self.session.execute(stmt)
+            members = []
+
+            for member_db in result.scalars().all():
+                member_data = {
+                    "user_id": member_db.user_id,
+                    "username": f"user_{member_db.user_id[-4:]}",  # 临时用户名
+                    "display_name": member_db.display_name or f"用户{member_db.user_id[-4:]}",
+                    "email": f"user_{member_db.user_id[-4:]}@example.com",  # 临时邮箱
+                    "role": FamilyRole(member_db.role),
+                    "joined_at": member_db.joined_at,
+                    "last_active": member_db.last_active,
+                    "is_active": member_db.is_active
                 }
-            ]
+                members.append(member_data)
+
+            logger.debug(f"✅ 家庭成员查询成功: {len(members)} 个成员 (家庭: {family_id})")
+            return members
+
         except SQLAlchemyError as e:
             logger.error(f"Database error getting family members: {e}")
             raise DatabaseError(

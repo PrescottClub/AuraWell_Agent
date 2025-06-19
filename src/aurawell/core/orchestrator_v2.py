@@ -509,7 +509,7 @@ class AuraWellOrchestrator:
 
             # Get AI response
             response = self.deepseek_client.get_deepseek_response(
-                messages=messages, model_name="deepseek-reasoner", temperature=0.3
+                messages=messages, temperature=0.3
             )
 
             # Parse AI insights (simplified)
@@ -567,7 +567,7 @@ class AuraWellOrchestrator:
             ]
 
             response = self.deepseek_client.get_deepseek_response(
-                messages=messages, model_name="deepseek-reasoner", temperature=0.5
+                messages=messages, temperature=0.5
             )
 
             # Return structured plan (simplified)
