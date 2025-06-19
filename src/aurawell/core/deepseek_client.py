@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Any, Union, AsyncGenerator
 from dataclasses import dataclass
 from openai import OpenAI
 from pydantic import BaseModel
+from ..config.settings import AuraWellSettings
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -45,12 +46,13 @@ class DeepSeekClient:
     Prioritizes deepseek-reasoner model for reasoning and planning tasks.
     """
 
-    def __init__(self, api_key: Optional[str] = None) -> None:
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None) -> None:
         """
         Initialize DeepSeek client
 
         Args:
             api_key: DeepSeek API key. If None, will read from DEEPSEEK_API_KEY env var
+            base_url: API base URL. If None, will read from DEEPSEEK_BASE_URL env var
 
         Raises:
             ValueError: If API key is not provided or found in environment
@@ -61,16 +63,19 @@ class DeepSeekClient:
                 "DeepSeek API key not provided. Set DEEPSEEK_API_KEY environment variable."
             )
 
+        # Get base URL from environment or use default
+        self.base_url = base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+
         self.client = OpenAI(
-            api_key=self.api_key, base_url="https://api.deepseek.com/v1"
+            api_key=self.api_key, base_url=self.base_url
         )
 
-        logger.info("DeepSeek client initialized successfully")
+        logger.info(f"DeepSeek client initialized successfully with base_url: {self.base_url}")
 
     def get_deepseek_response(
         self,
         messages: List[Dict[str, str]],
-        model_name: str = "deepseek-reasoner",
+        model_name: Optional[str] = None,
         tools: Optional[List[Dict[str, Any]]] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
@@ -80,7 +85,7 @@ class DeepSeekClient:
 
         Args:
             messages: List of message dicts with 'role' and 'content'
-            model_name: DeepSeek model name (default: deepseek-reasoner for reasoning)
+            model_name: DeepSeek model name (default: from settings)
             tools: Optional list of function tool definitions for function calling
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens in response
@@ -91,6 +96,10 @@ class DeepSeekClient:
         Raises:
             Exception: For API errors, network issues, or authentication failures
         """
+        # Use default model from settings if not specified
+        if model_name is None:
+            model_name = AuraWellSettings.DEEPSEEK_DEFAULT_MODEL
+
         try:
             # Prepare API call parameters
             api_params = {
@@ -164,7 +173,7 @@ class DeepSeekClient:
     async def get_streaming_response(
         self,
         messages: List[Dict[str, str]],
-        model_name: str = "deepseek-reasoner",
+        model_name: Optional[str] = None,
         tools: Optional[List[Dict[str, Any]]] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
@@ -174,7 +183,7 @@ class DeepSeekClient:
 
         Args:
             messages: List of message dicts with 'role' and 'content'
-            model_name: DeepSeek model name (default: deepseek-reasoner for reasoning)
+            model_name: DeepSeek model name (default: from settings)
             tools: Optional list of function tool definitions for function calling
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens in response
@@ -185,6 +194,10 @@ class DeepSeekClient:
         Raises:
             Exception: For API errors, network issues, or authentication failures
         """
+        # Use default model from settings if not specified
+        if model_name is None:
+            model_name = AuraWellSettings.DEEPSEEK_DEFAULT_MODEL
+
         try:
             # Prepare API call parameters
             api_params = {
@@ -329,7 +342,7 @@ def demo_function_calling():
 
     try:
         response = client.get_deepseek_response(
-            messages=messages, tools=tools, model_name="deepseek-reasoner"
+            messages=messages, tools=tools
         )
 
         print(f"Response: {response.content}")

@@ -277,18 +277,37 @@ async def websocket_chat_endpoint(
     WebSocket endpoint for real-time chat
 
     Query parameters:
-    - token: JWT authentication token
+    - token: JWT authentication token (REQUIRED in production)
     """
     try:
-        # Authenticate user
-        if token:
-            authenticated_user_id = await get_user_from_websocket(websocket, token)
-            if authenticated_user_id != user_id:
-                await websocket.close(code=4001, reason="User ID mismatch")
+        # 🔒 强化认证：生产环境必须要求token
+        from ..config.settings import get_settings
+        settings = get_settings()
+
+        if not token:
+            # 检查是否为生产环境
+            if settings.ENVIRONMENT == "production":
+                logger.error(f"Production environment requires token for WebSocket connection: {user_id}")
+                await websocket.close(code=4001, reason="Authentication required in production")
                 return
-        else:
-            # For development/testing - in production, always require token
-            logger.warning(f"WebSocket connection without token for user: {user_id}")
+            else:
+                # 开发环境警告但允许连接
+                logger.warning(f"⚠️ Development: WebSocket connection without token for user: {user_id}")
+
+        # 验证token（如果提供）
+        authenticated_user_id = None
+        if token:
+            try:
+                authenticated_user_id = await get_user_from_websocket(websocket, token)
+                if authenticated_user_id != user_id:
+                    logger.error(f"User ID mismatch: token={authenticated_user_id}, path={user_id}")
+                    await websocket.close(code=4001, reason="User ID mismatch")
+                    return
+                logger.info(f"✅ WebSocket authenticated successfully for user: {user_id}")
+            except Exception as e:
+                logger.error(f"WebSocket authentication failed for user {user_id}: {e}")
+                await websocket.close(code=4001, reason="Authentication failed")
+                return
 
         # Connect user
         await websocket_manager.connect(

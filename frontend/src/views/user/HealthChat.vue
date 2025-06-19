@@ -76,32 +76,43 @@
 
     <!-- 输入区域 -->
     <div class="chat-input-area">
+      <!-- RAG功能提示 -->
+      <div class="rag-tip" v-if="!messages.length">
+        <a-alert
+          message="💡 智能检索功能"
+          description="输入 /rag 您的问题 可以搜索相关医学文档，例如：/rag 高血压的饮食建议"
+          type="info"
+          show-icon
+          closable
+          class="rag-alert"
+        />
+      </div>
+
       <div class="input-container">
         <a-input
           v-model:value="inputMessage"
           placeholder="请输入您的健康问题或需求..."
-          :disabled="isTyping"
+          :disabled="isTyping || isRAGLoading"
           @press-enter="sendMessage"
           class="message-input"
           :maxlength="500"
           show-count
         />
-        <a-button 
-          type="primary" 
-          :loading="isTyping"
+        <a-button
+          type="primary"
+          :loading="isTyping || isRAGLoading"
           :disabled="!inputMessage.trim()"
           @click="sendMessage"
           class="send-button"
         >
           <template #icon><send-outlined /></template>
-          发送
+          {{ isRAGLoading ? '检索中...' : '发送' }}
         </a-button>
       </div>
-      
+
       <!-- 输入提示 -->
       <div class="input-hints">
-        <span class="hint-text">💡 提示：您可以询问关于运动、饮食、睡眠、健康目标等任何问题</span>
-        <span class="hint-text">🔍 输入 "/rag" 开头可以使用RAG文档检索功能</span>
+        <span class="hint-text">💡 提示：您可以询问关于运动、饮食、睡眠、健康目标等任何问题，或使用 /rag 指令进行文档检索</span>
       </div>
     </div>
 
@@ -154,8 +165,14 @@ import {
 import ChatMessage from '../../components/chat/ChatMessage.vue'
 import TypingIndicator from '../../components/chat/TypingIndicator.vue'
 import HealthChatAPI from '../../api/chat.js'
+import { UserAPI } from '../../api/user.js'
 import { useAuthStore } from '../../stores/auth.js'
+import { useChatStore } from '../../stores/chat.js'
 import request from '../../utils/request.js'
+
+// 使用stores
+const { user } = useAuthStore()
+const { performRAGSearch, isRAGLoading, ragError, ragStatus } = useChatStore()
 
 // 响应式数据
 const inputMessage = ref('')
@@ -173,14 +190,47 @@ const quickStartSuggestions = ref([
   '如何改善我的睡眠质量？',
   '请帮我分析我的运动数据',
   '我需要营养饮食建议',
-  '如何建立健康的作息习惯？'
+  '如何建立健康的作息习惯？',
+  '/rag 高血压的饮食建议',
+  '/rag 糖尿病的运动指导'
 ])
 
-// 生命周期
+// 🚀 生命周期钩子 - 优化的初始化流程
 onMounted(async () => {
-  await ensureAuthenticated()
-  await initializeChat()
-  await loadConversationHistory()
+  console.log('🎯 HealthChat 组件开始初始化...')
+  
+  try {
+    // 🔑 第一步：严格的认证检查（必须成功后才能继续）
+    console.log('🔍 第一步：执行认证检查...')
+    await ensureAuthenticated()
+    console.log('✅ 认证检查完成')
+    
+    // 🚀 第二步：初始化聊天功能（仅在认证成功后执行）
+    console.log('🔍 第二步：初始化聊天功能...')
+    await initializeChat()
+    console.log('✅ 聊天功能初始化完成')
+    
+    // 🚀 第三步：加载历史对话（仅在聊天初始化成功后执行）
+    console.log('🔍 第三步：加载历史对话...')
+    await loadConversationHistory()
+    console.log('✅ 历史对话加载完成')
+    
+    console.log('🎉 HealthChat 初始化全部完成！')
+    
+  } catch (error) {
+    console.error('❌ HealthChat 初始化失败:', error)
+    
+    // 初始化失败时的容错处理
+    antMessage.error('页面初始化失败，请稍后重试')
+    
+    // 如果是认证相关错误，不再重复处理（ensureAuthenticated已处理）
+    // 如果是其他错误，显示友好提示
+    if (!error.message?.includes('认证') && !error.message?.includes('Token')) {
+      setTimeout(() => {
+        window.location.reload()
+      }, 3000)
+    }
+  }
 })
 
 // 监听消息变化，自动滚动到底部
@@ -190,37 +240,30 @@ watch(messages, () => {
   })
 }, { deep: true })
 
-// 方法
+// 🔧 简化认证逻辑 - 使用统一的认证状态管理
 const ensureAuthenticated = async () => {
   try {
     const authStore = useAuthStore()
 
-    // 检查是否已有token
-    if (authStore.token) {
-      console.log('用户已认证')
-      return
-    }
+    // 使用统一的认证检查方法
+    const isAuthenticated = await authStore.ensureAuthenticated()
 
-    // 自动登录（用于演示）
-    console.log('正在自动登录...')
-    const response = await request.post('/auth/login', {
-      username: 'test_user',
-      password: 'test_password'
-    })
-
-    if (response.data) {
-      authStore.setToken(
-        response.data.access_token,
-        response.data.token_type,
-        response.data.expires_in
-      )
-      console.log('自动登录成功')
+    if (isAuthenticated) {
+      console.log('✅ 用户认证成功')
+      return true
+    } else {
+      console.warn('⚠️ 用户认证失败')
+      antMessage.error('认证失败，请刷新页面重试')
+      return false
     }
   } catch (error) {
-    console.error('认证失败:', error)
-    antMessage.error('认证失败，请刷新页面重试')
+    console.error('❌ 认证检查异常:', error)
+    antMessage.error('认证异常，请刷新页面重试')
+    return false
   }
 }
+
+// 🔧 自动登录逻辑已移至统一认证状态管理中
 
 const initializeChat = async () => {
   try {
@@ -239,29 +282,46 @@ const initializeChat = async () => {
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || isTyping.value) return
 
+  const messageText = inputMessage.value.trim()
+
+  // 检查是否是RAG指令
+  if (messageText.startsWith('/rag ')) {
+    await handleRAGCommand(messageText)
+    return
+  }
+
   const userMessage = {
     id: Date.now(),
     sender: 'user',
-    content: inputMessage.value.trim(),
+    content: messageText,
     timestamp: new Date().toISOString()
   }
 
   // 添加用户消息
   messages.value.push(userMessage)
-  const messageText = inputMessage.value.trim()
   inputMessage.value = ''
 
   // 显示打字指示器
   isTyping.value = true
 
   try {
-    // 🔍 检查是否为RAG查询
-    if (messageText.startsWith('/rag ')) {
-      await handleRAGQuery(messageText.substring(5).trim())
-    } else {
-      // 普通聊天消息
-      await handleNormalChat(messageText)
+    // 发送消息到后端
+    const response = await HealthChatAPI.sendMessage(messageText, currentConversationId.value)
+
+    // 模拟延迟以显示打字效果
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // 添加AI回复
+    const aiMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      content: response.reply || response.data?.reply || response.data?.content || '抱歉，我现在无法处理您的请求，请稍后再试。',
+      timestamp: new Date().toISOString(),
+      suggestions: response.suggestions || response.data?.suggestions || [],
+      quickReplies: response.quick_replies || response.data?.quickReplies || []
     }
+
+    messages.value.push(aiMessage)
   } catch (error) {
     console.error('发送消息失败:', error)
 
@@ -280,77 +340,40 @@ const sendMessage = async () => {
   }
 }
 
-// RAG查询处理函数
-const handleRAGQuery = async (query) => {
+// 处理RAG指令
+const handleRAGCommand = async (command) => {
+  const query = command.replace('/rag ', '').trim()
+
+  if (!query) {
+    const helpMessage = {
+      id: Date.now(),
+      sender: 'agent',
+      type: 'help',
+      content: '使用方法：/rag 您的查询内容\n例如：/rag 高血压的饮食建议',
+      timestamp: new Date().toISOString()
+    }
+    messages.value.push(helpMessage)
+    inputMessage.value = ''
+    return
+  }
+
+  // 添加用户RAG查询消息
+  const userMessage = {
+    id: Date.now(),
+    sender: 'user',
+    type: 'rag_query',
+    content: `🔍 RAG检索: ${query}`,
+    timestamp: new Date().toISOString()
+  }
+  messages.value.push(userMessage)
+  inputMessage.value = ''
+
+  // 执行RAG检索
   try {
-    console.log('🔍 执行RAG查询:', query)
-
-    // 调用RAG API
-    const response = await HealthChatAPI.retrieveRAGDocuments(query, 3)
-
-    // 模拟延迟
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // 构造RAG响应消息
-    let content = `🔍 **RAG文档检索结果**\n\n`
-    content += `**查询**: ${query}\n`
-    content += `**找到文档**: ${response.data.total_found} 个\n\n`
-
-    if (response.data.results && response.data.results.length > 0) {
-      content += `**相关文档**:\n`
-      response.data.results.forEach((doc, index) => {
-        content += `${index + 1}. ${doc}\n\n`
-      })
-    } else {
-      content += `抱歉，没有找到与"${query}"相关的文档。`
-    }
-
-    const aiMessage = {
-      id: Date.now() + 1,
-      sender: 'agent',
-      content: content,
-      timestamp: new Date().toISOString(),
-      type: 'rag_result'
-    }
-
-    messages.value.push(aiMessage)
-    antMessage.success(`RAG检索完成，找到 ${response.data.total_found} 个相关文档`)
-
+    await performRAGSearch(query, 3)
   } catch (error) {
-    console.error('RAG查询失败:', error)
-
-    const errorMessage = {
-      id: Date.now() + 1,
-      sender: 'agent',
-      content: `🔍 **RAG检索失败**\n\n抱歉，RAG文档检索服务暂时不可用。\n\n错误信息: ${error.message || '未知错误'}`,
-      timestamp: new Date().toISOString(),
-      type: 'rag_error'
-    }
-
-    messages.value.push(errorMessage)
-    antMessage.error('RAG检索失败')
+    console.error('RAG检索失败:', error)
   }
-}
-
-// 普通聊天处理函数
-const handleNormalChat = async (messageText) => {
-  // 发送消息到后端
-  const response = await HealthChatAPI.sendMessage(messageText, currentConversationId.value)
-
-  // 模拟延迟以显示打字效果
-  await new Promise(resolve => setTimeout(resolve, 1000))
-
-  // 添加AI回复
-  const aiMessage = {
-    id: Date.now() + 1,
-    sender: 'agent',
-    content: response.reply || response.data?.reply || response.data?.content || '抱歉，我现在无法处理您的请求，请稍后再试。',
-    timestamp: new Date().toISOString(),
-    suggestions: response.suggestions || response.data?.suggestions || [],
-    quickReplies: response.quick_replies || response.data?.quickReplies || []
-  }
-
-  messages.value.push(aiMessage)
 }
 
 const sendQuickMessage = (suggestionText) => {
@@ -567,6 +590,16 @@ const deleteConversation = async (conversationId) => {
 .hint-text {
   font-size: 12px;
   color: #8c8c8c;
+}
+
+/* RAG功能提示样式 */
+.rag-tip {
+  margin-bottom: 12px;
+}
+
+.rag-alert {
+  border-radius: 8px;
+  font-size: 12px;
 }
 
 .conversation-history {

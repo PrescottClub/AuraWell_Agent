@@ -18,7 +18,40 @@
         
         <!-- 消息文本 -->
         <div class="message-text" v-html="formattedMessage"></div>
-        
+
+        <!-- RAG检索结果 -->
+        <div v-if="message.type === 'rag_results' && message.ragResults && message.ragResults.length > 0" class="rag-results-container">
+          <h4>📚 相关文档</h4>
+          <div class="rag-results">
+            <a-card
+              v-for="(doc, index) in message.ragResults"
+              :key="index"
+              size="small"
+              class="rag-result-card"
+            >
+              <template #title>
+                <div class="rag-result-header">
+                  <span class="rag-result-title">{{ doc.title || `文档 ${index + 1}` }}</span>
+                  <a-tag v-if="doc.score" color="blue" size="small">
+                    相似度: {{ (doc.score * 100).toFixed(1) }}%
+                  </a-tag>
+                </div>
+              </template>
+              <div class="rag-result-content">
+                <p class="rag-result-text">{{ doc.content || doc.text }}</p>
+                <div v-if="doc.metadata" class="rag-result-metadata">
+                  <a-tag v-if="doc.metadata.source" size="small" color="green">
+                    来源: {{ doc.metadata.source }}
+                  </a-tag>
+                  <a-tag v-if="doc.metadata.category" size="small" color="orange">
+                    分类: {{ doc.metadata.category }}
+                  </a-tag>
+                </div>
+              </div>
+            </a-card>
+          </div>
+        </div>
+
         <!-- 健康建议卡片 -->
         <div v-if="message.suggestions && message.suggestions.length > 0" class="suggestions-container">
           <h4>💡 个性化建议</h4>
@@ -235,5 +268,66 @@ const handleSuggestionAction = (action) => {
 
 .user-message .quick-replies {
   justify-content: flex-end;
+}
+
+/* RAG结果样式 */
+.rag-results-container {
+  margin-top: 12px;
+}
+
+.rag-results-container h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rag-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rag-result-card {
+  border-left: 3px solid #1890ff;
+  background: #f8f9ff;
+}
+
+.rag-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.rag-result-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.rag-result-content {
+  margin: 0;
+}
+
+.rag-result-text {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.4;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.rag-result-metadata {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 </style>
