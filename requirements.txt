@@ -32,6 +32,9 @@ langchain-openai>=0.0.5
 redis>=4.0.0
 
 # Alibaba Cloud Function Compute SDK for RAG integration
-alibabacloud_fc20230330
-alibabacloud_credentials
-alibabacloud_tea_openapi
+alibabacloud_fc20230330>=1.0.0
+alibabacloud_credentials>=0.3.0
+alibabacloud_tea_openapi>=0.3.0
+
+# Additional dependencies for enhanced functionality
+alembic>=1.13.0  # Database migration tool
