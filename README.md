@@ -22,11 +22,13 @@ AuraWell是一个创新的超个性化健康生活方式编排AI Agent，采用M
 
 ### 🎯 核心特色
 
-- **🤖 智能AI推理**: 基于DeepSeek-R1模型，具备复杂健康推理和分析能力
+- **🤖 智能AI推理**: 基于DeepSeek-R1模型，通过阿里云DashScope提供强大的健康推理和分析能力
 - **🔗 MCP智能协作**: 13个专业服务器自动协作，实现真正的AI自动化健康管理
 - **👨‍👩‍👧‍👦 家庭健康管理**: 支持多成员健康数据管理和权限控制
 - **📊 数据驱动决策**: 自动分析健康数据，识别健康模式和风险
 - **🔬 科学研究支撑**: 实时获取最新医学研究，确保建议的科学性
+- **🔐 安全认证系统**: JWT token认证，保障用户数据安全
+- **⚡ 前端优化体验**: Vue 3 + TypeScript重构，提供现代化用户界面
 
 ---
 
@@ -37,12 +39,14 @@ AuraWell是一个创新的超个性化健康生活方式编排AI Agent，采用M
 - 五维度健康建议：营养、运动、体重、睡眠、心理
 - 自动工具选择和链式调用
 - 上下文记忆和会话管理
+- JWT token认证，无需硬编码用户信息
 
 ### 📈 **智能健康分析**
 - 自动数据可视化图表生成
 - 健康趋势分析和风险识别
 - 个性化健康报告生成
 - BMI、基础代谢等指标自动计算
+- 增强的错误处理和日志记录
 
 ### 👪 **家庭健康协作**
 - 一个账号管理全家健康
@@ -62,11 +66,12 @@ AuraWell是一个创新的超个性化健康生活方式编排AI Agent，采用M
 
 ### 核心技术栈
 ```
-🌐 前端: Vue 3 + TypeScript + Tailwind CSS
-📡 后端: FastAPI + SQLAlchemy + WebSocket
-🤖 AI引擎: DeepSeek-R1 + 13个MCP智能服务器
+🌐 前端: Vue 3 + TypeScript + Tailwind CSS + JWT认证
+📡 后端: FastAPI + SQLAlchemy + WebSocket + 请求拦截器
+🤖 AI引擎: DeepSeek-R1 (通过阿里云DashScope) + 13个MCP智能服务器
 🗄️ 数据库: SQLite + Alembic迁移
-🔐 认证: JWT Token + 权限控制
+🔐 认证: JWT Token + 三级权限控制 + 自动认证头
+☁️ 云服务: 阿里云DashScope兼容模式API
 ```
 
 ### MCP智能服务器
@@ -120,9 +125,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 # 数据库配置
 DATABASE_URL=sqlite:///./aurawell.db
 
-# DeepSeek API配置
-DEEPSEEK_API_KEY=your-deepseek-api-key
-DEEPSEEK_BASE_URL=https://api.deepseek.com
+# 阿里云DashScope API配置（DeepSeek兼容模式）
+DASHSCOPE_API_KEY=your-dashscope-api-key
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_DEFAULT_MODEL=deepseek-r1-0528
 
 # 开发环境配置
 DEVELOPMENT_MODE=true
@@ -206,6 +212,29 @@ AuraWell_Agent/
 ├── requirements.txt       # Python依赖
 └── .env                  # 环境变量配置
 ```
+
+---
+
+## 📈 更新日志
+
+### 🆕 最新更新 (2024-01-XX)
+
+#### ✨ 新功能
+- **AI服务迁移**: 从DeepSeek API迁移到阿里云DashScope兼容模式，提升服务稳定性
+- **前端认证优化**: 移除硬编码用户ID，实现完整的JWT token认证流程
+- **错误处理增强**: 完善前端API错误捕获和详细日志记录
+- **请求拦截器**: 自动附加认证头，优化API调用体验
+
+#### 🔧 技术改进
+- **配置管理**: 统一环境变量命名规范，支持DashScope配置
+- **代码重构**: 优化前端API调用结构，提升代码可维护性
+- **用户体验**: 改进HealthChat组件交互逻辑
+- **版本控制**: 规范项目文件结构，添加虚拟环境到gitignore
+
+#### 🛠️ 开发体验
+- **开发环境**: 添加前端开发环境配置文件
+- **测试脚本**: 新增API测试脚本和部署测试环境
+- **项目结构**: 清理不必要文件，优化项目组织
 
 ---
 
