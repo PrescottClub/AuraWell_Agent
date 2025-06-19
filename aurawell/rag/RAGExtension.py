@@ -4,7 +4,7 @@
 目前通过.env解析密钥，未来将通过KMS密钥管理系统解析密钥
 rag_utils是一个辅助RAGExtension核心逻辑运行的工具类，其本身不会调用API
 """
-from rag_utils import get_file_type, process_list
+from rag_utils import get_file_type, process_list, get_download_path
 from alibabacloud_docmind_api20220711.client import Client as docmind_api20220711Client
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_docmind_api20220711 import models as docmind_api20220711_models
@@ -20,6 +20,25 @@ import os
 import time
 import dashvector
 import numpy as np
+import platform
+
+def normalize_file_path(file_path: str) -> str:
+    """
+    跨平台文件路径标准化处理
+
+    Args:
+        file_path (str): 输入的文件路径
+
+    Returns:
+        str: 标准化后的绝对路径
+    """
+    # 将路径转换为绝对路径
+    abs_path = os.path.abspath(file_path)
+
+    # 标准化路径分隔符
+    normalized_path = os.path.normpath(abs_path)
+
+    return normalized_path
 
 def load_api_keys():
     """
@@ -117,8 +136,15 @@ class Document:
         :param file_path: 文档路径
         :return: 解析结果
         """
+        # 标准化文件路径，确保跨平台兼容性
+        normalized_path = normalize_file_path(file_path)
+
+        # 检查文件是否存在
+        if not os.path.exists(normalized_path):
+            raise FileNotFoundError(f"文件不存在: {normalized_path}")
+
         # 检查文件格式是否支持
-        file_extension = get_file_type(file_path)
+        file_extension = get_file_type(normalized_path)
         supported_formats = ["pdf", "docx", "xlsx"]
         if file_extension not in supported_formats:
             raise ValueError(f"不支持的文件格式: {file_extension}. 仅支持: {supported_formats}")
@@ -142,9 +168,9 @@ class Document:
         client = docmind_api20220711Client(config)
         request = docmind_api20220711_models.SubmitDocParserJobAdvanceRequest(
             # file_url_object : 本地文件流
-            file_url_object=open(file_path, "rb"),
+            file_url_object=open(normalized_path, "rb"),
             # 文档类型是必须上传的参数
-            file_name_extension=get_file_type(file_path)
+            file_name_extension=get_file_type(normalized_path)
         )
         runtime = util_models.RuntimeOptions(
             read_timeout=24000,
@@ -428,7 +454,11 @@ if __name__ == "__main__":
     # retrieve_list = test_user.retrieve_topK("每日营养建议", 3)
     # print(len(retrieve_list))
     # print(retrieve_list)
-    sample_doc_path = os.path.join(".", "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
+
+    # 使用跨平台路径处理
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    sample_doc_path = os.path.join(current_dir, "testMaterials", "中国成年人肉类食物摄入与代谢综合征的相关性研究.pdf")
+
     obj = Document()
     result = obj.file2VectorDB(sample_doc_path)
     print(result)
