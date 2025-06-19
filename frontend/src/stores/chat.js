@@ -11,6 +11,12 @@ export const useChatStore = defineStore('chat', () => {
   const isLoading = ref(false)
   const userProfile = ref(null)
 
+  // RAG相关状态
+  const ragResults = ref([])
+  const isRAGLoading = ref(false)
+  const ragError = ref(null)
+  const ragStatus = ref(null)
+
   // 计算属性
   const currentConversation = computed(() => {
     return conversations.value.find(conv => conv.id === currentConversationId.value)
@@ -195,6 +201,67 @@ export const useChatStore = defineStore('chat', () => {
     userProfile.value = profile
   }
 
+  const performRAGSearch = async (query, k = 3) => {
+    try {
+      isRAGLoading.value = true
+      ragError.value = null
+
+      const response = await HealthChatAPI.retrieveRAGDocuments(query, k)
+
+      if (response.success) {
+        ragResults.value = response.data.documents
+
+        // 创建RAG结果消息
+        const ragMessage = {
+          id: `rag_${Date.now()}`,
+          sender: 'agent',
+          type: 'rag_results',
+          content: `为您找到 ${response.data.documents.length} 条相关文档：`,
+          ragResults: response.data.documents,
+          query: query,
+          timestamp: new Date().toISOString()
+        }
+
+        messages.value.push(ragMessage)
+        return ragMessage
+      }
+    } catch (error) {
+      console.error('RAG检索失败:', error)
+      ragError.value = error.message
+
+      // 添加错误消息
+      const errorMessage = {
+        id: `rag_error_${Date.now()}`,
+        sender: 'agent',
+        type: 'error',
+        content: `RAG检索失败: ${error.message}`,
+        timestamp: new Date().toISOString()
+      }
+
+      messages.value.push(errorMessage)
+      return errorMessage
+    } finally {
+      isRAGLoading.value = false
+    }
+  }
+
+  const checkRAGStatus = async () => {
+    try {
+      const response = await HealthChatAPI.getRAGStatus()
+      ragStatus.value = response.data
+      return response.data
+    } catch (error) {
+      console.error('获取RAG状态失败:', error)
+      ragStatus.value = { service_ready: false, error: error.message }
+      return ragStatus.value
+    }
+  }
+
+  const clearRAGResults = () => {
+    ragResults.value = []
+    ragError.value = null
+  }
+
   const resetStore = () => {
     conversations.value = []
     currentConversationId.value = null
@@ -202,6 +269,12 @@ export const useChatStore = defineStore('chat', () => {
     isTyping.value = false
     isLoading.value = false
     userProfile.value = null
+
+    // 重置RAG状态
+    ragResults.value = []
+    isRAGLoading.value = false
+    ragError.value = null
+    ragStatus.value = null
   }
 
   return {
@@ -212,12 +285,18 @@ export const useChatStore = defineStore('chat', () => {
     isTyping,
     isLoading,
     userProfile,
-    
+
+    // RAG状态
+    ragResults,
+    isRAGLoading,
+    ragError,
+    ragStatus,
+
     // 计算属性
     currentConversation,
     hasActiveConversation,
     messageCount,
-    
+
     // 方法
     createNewConversation,
     sendMessage,
@@ -227,6 +306,11 @@ export const useChatStore = defineStore('chat', () => {
     clearCurrentConversation,
     updateConversationLastMessage,
     setUserProfile,
-    resetStore
+    resetStore,
+
+    // RAG方法
+    performRAGSearch,
+    checkRAGStatus,
+    clearRAGResults
   }
 })

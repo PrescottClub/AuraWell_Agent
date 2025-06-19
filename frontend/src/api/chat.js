@@ -155,6 +155,65 @@ export class HealthChatAPI {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * RAG文档检索
+   * @param {string} query - 用户查询
+   * @param {number} k - 返回文档数量
+   * @returns {Promise} RAG检索结果
+   */
+  static async retrieveRAGDocuments(query, k = 3) {
+    try {
+      const response = await request.post('/rag/retrieve', {
+        user_query: query,
+        k: k
+      })
+
+      return {
+        success: true,
+        data: {
+          documents: response.documents || [],
+          query: query,
+          total_count: response.total_count || 0,
+          retrieval_time: response.retrieval_time || 0,
+          timestamp: new Date().toISOString()
+        }
+      }
+    } catch (error) {
+      console.error('RAG检索失败:', error)
+
+      // 处理不同类型的错误
+      if (error.response?.status === 503) {
+        throw new Error('RAG服务暂时不可用，请检查配置或稍后再试')
+      } else if (error.response?.status === 401) {
+        throw new Error('认证失败，请重新登录')
+      } else if (error.response?.status === 400) {
+        throw new Error('查询参数无效，请检查输入')
+      } else {
+        throw new Error('RAG检索服务异常，请稍后再试')
+      }
+    }
+  }
+
+  /**
+   * 获取RAG服务状态
+   * @returns {Promise} RAG服务状态
+   */
+  static async getRAGStatus() {
+    try {
+      const response = await request.get('/rag/status')
+      return {
+        success: true,
+        data: response
+      }
+    } catch (error) {
+      console.error('获取RAG状态失败:', error)
+      throw error
+    }
+  }
+
+  /**
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
    * 格式化日期
    * @param {string} dateString - 日期字符串
    * @returns {string} 格式化后的日期
@@ -165,7 +224,11 @@ export class HealthChatAPI {
     const now = new Date()
     const diff = now - date
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
     if (days === 0) return '今天'
     if (days === 1) return '昨天'
     if (days < 7) return `${days}天前`

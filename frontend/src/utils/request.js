@@ -7,7 +7,7 @@ const request = axios.create({
     timeout: import.meta.env.VITE_API_TIMEOUT || 15000
 });
 
-// 请求拦截器
+// 🔧 统一请求拦截器 - 简化认证逻辑
 request.interceptors.request.use(
     config => {
         // 登录和注册请求不需要认证头
@@ -16,6 +16,7 @@ request.interceptors.request.use(
         if (!isAuthRequest) {
             const authStore = useAuthStore();
             const authHeader = authStore.getAuthHeader();
+<<<<<<< HEAD
             if (authHeader) {
                 config.headers['Authorization'] = authHeader;
             } else if (import.meta.env.VITE_APP_ENV === 'development' || import.meta.env.DEV) {
@@ -23,8 +24,18 @@ request.interceptors.request.use(
                 const devToken = localStorage.getItem('dev_auth_token') || 'Bearer dev-test-token';
                 config.headers['Authorization'] = devToken;
                 console.warn('使用开发环境测试token，生产环境请确保正确的认证流程');
+=======
+
+            if (authHeader) {
+                config.headers['Authorization'] = authHeader;
+            } else if (import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development') {
+                // 开发环境：使用测试token
+                config.headers['Authorization'] = 'Bearer dev-test-token';
+                console.warn('🔧 开发环境：使用测试token');
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
             }
         }
+
         return config;
     },
     error => {
@@ -33,22 +44,25 @@ request.interceptors.request.use(
     }
 );
 
-// 响应拦截器
+// 🔧 统一响应拦截器 - 优化错误处理
 request.interceptors.response.use(
     response => {
         const res = response.data;
-        
-        if (res.status === 'success') {
+
+        // 兼容不同的响应格式
+        if (res.status === 'success' || res.success === true || response.status === 200) {
             return res;
         } else {
-            message.error(res.message || '请求失败');
-            return Promise.reject(new Error(res.message || '请求失败'));
+            const errorMessage = res.message || res.error || '请求失败';
+            message.error(errorMessage);
+            return Promise.reject(new Error(errorMessage));
         }
     },
-    error => {
+    async error => {
         console.error('响应错误：', error);
-        
+
         if (error.response) {
+<<<<<<< HEAD
             switch (error.response.status) {
                 case 400:
                     message.error(error.response.data?.message || '请求参数错误');
@@ -59,6 +73,39 @@ request.interceptors.response.use(
                     authStore.clearToken();
                     window.location.href = '/login';
                     break;
+=======
+            const { status, data } = error.response;
+            const errorMessage = data?.message || data?.detail || '请求失败';
+
+            switch (status) {
+                case 400:
+                    message.error(errorMessage || '请求参数错误');
+                    break;
+
+                case 401: {
+                    // 🔧 统一401错误处理 - 防止认证循环
+                    console.warn('🔐 认证失败，处理401错误');
+
+                    const currentPath = window.location.pathname;
+                    if (currentPath === '/login') {
+                        console.warn('⚠️ 已在登录页面，跳过重定向防止循环');
+                        break;
+                    }
+
+                    const authStore = useAuthStore();
+
+                    // 清除认证信息
+                    authStore.clearToken();
+
+                    // 显示错误消息
+                    message.error(errorMessage || '认证失效，请重新登录');
+
+                    // 延迟跳转到登录页
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 100);
+                    break;
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
                 }
                 case 403:
                     message.error('拒绝访问');

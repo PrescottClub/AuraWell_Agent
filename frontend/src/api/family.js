@@ -1,15 +1,28 @@
 /**
+<<<<<<< HEAD
  * 家庭管理API接口 - Mock版本
  */
 // 使用Mock API替代真实API调用
 import { familyAPI as mockFamilyAPI } from '../mock/api.js'
+=======
+ * 家庭管理API接口 - 真实后端版本
+ */
+import request from '../utils/request.js'
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
 
 // 家庭管理
 export const familyAPI = {
   // 创建家庭
   async createFamily(data) {
     try {
+<<<<<<< HEAD
       const response = await mockFamilyAPI.createFamily(data)
+=======
+      const response = await request.post('/family', {
+        name: data.name,
+        description: data.description || null
+      })
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
       return response
     } catch (error) {
       throw new Error(error.message || '创建家庭失败')
@@ -19,7 +32,11 @@ export const familyAPI = {
   // 获取用户的家庭列表
   async getUserFamilies() {
     try {
+<<<<<<< HEAD
       const response = await mockFamilyAPI.getUserFamilies()
+=======
+      const response = await request.get('/family/user-families')
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
       return response
     } catch (error) {
       throw new Error(error.message || '获取家庭列表失败')
@@ -29,7 +46,11 @@ export const familyAPI = {
   // 获取家庭详情
   async getFamilyInfo(familyId) {
     try {
+<<<<<<< HEAD
       const response = await mockFamilyAPI.getFamilyInfo(familyId)
+=======
+      const response = await request.get(`/family/${familyId}`)
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
       return response
     } catch (error) {
       throw new Error(error.message || '获取家庭信息失败')
@@ -104,7 +125,11 @@ export const familyAPI = {
   // 获取家庭成员列表
   async getFamilyMembers(familyId) {
     try {
+<<<<<<< HEAD
       const response = await mockFamilyAPI.getFamilyMembers(familyId)
+=======
+      const response = await request.get(`/family/${familyId}/members`)
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
       return response
     } catch (error) {
       throw new Error(error.message || '获取家庭成员失败')

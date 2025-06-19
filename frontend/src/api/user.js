@@ -1,36 +1,57 @@
+<<<<<<< HEAD
 // 使用Mock API替代真实API调用
 import { authAPI } from '../mock/api.js'
 
 /**
  * 用户管理API服务 - Mock版本
+=======
+import request from '../utils/request.js'
+
+/**
+ * 用户管理API服务 - 真实后端版本
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
  */
 export class UserAPI {
   /**
-   * 用户注册
-   * @param {Object} userData - 用户注册数据
-   * @returns {Promise} API响应
+   * 🔑 验证当前Token是否有效 - 轻量级认证检查
+   * 这是专门为解决认证循环问题而设计的函数
+   * @returns {Promise<boolean>} Token是否有效
    */
-  static async register(userData) {
+  static async validateCurrentToken() {
     try {
+<<<<<<< HEAD
       const response = await authAPI.register(userData)
       return response
+=======
+      const response = await request.get('/user/profile')
+      return response && response.status === 'success'
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
     } catch (error) {
-      console.error('用户注册失败:', error)
-      throw error
+      // 任何错误（401、网络错误等）都表示Token无效
+      console.warn('Token验证失败:', error.response?.status || error.message)
+      return false
     }
   }
 
   /**
-   * 用户登录
-   * @param {Object} credentials - 登录凭据
-   * @returns {Promise} API响应
+   * 获取当前用户信息 - 用于身份验证
+   * @returns {Promise} 用户信息
    */
-  static async login(credentials) {
+  static async getMe() {
     try {
+<<<<<<< HEAD
       const response = await authAPI.login(credentials)
       return response
+=======
+      const response = await request.get('/user/profile')
+      return {
+        success: true,
+        data: response.data,
+        message: '获取用户信息成功'
+      }
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
     } catch (error) {
-      console.error('用户登录失败:', error)
+      console.error('获取用户信息失败:', error)
       throw error
     }
   }
@@ -199,7 +220,7 @@ export class UserAPI {
   /**
    * 更新健康目标 - Mock实现
    * @param {string} goalId - 目标ID
-   * @param {Object} goalData - 目标数据
+   * @param {Object} goalData - 更新数据
    * @returns {Promise} API响应
    */
   static async updateHealthGoal(goalId, goalData) {
@@ -246,15 +267,26 @@ export class UserAPI {
   }
 
   /**
+<<<<<<< HEAD
    * 用户登出 - Mock实现
+=======
+   * 用户登出
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
    * @returns {Promise} API响应
    */
   static async logout() {
     try {
+<<<<<<< HEAD
       const response = await authAPI.logout()
       return response
     } catch (error) {
       console.error('用户登出失败:', error)
+=======
+      const response = await request.post('/auth/logout')
+      return response
+    } catch (error) {
+      console.error('登出失败:', error)
+>>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
       throw error
     }
   }
