@@ -5,7 +5,7 @@ provider:
   region: cn-hangzhou
   runtime: python3.10
   memorySize: 1024
-  timeout: 15
+  timeout: 600
   environment:
     DASHSCOPE_API_KEY: ${env:DASHSCOPE_API_KEY}
     ALIYUN_ACCESS_KEY_ID: ${env:ALIYUN_ACCESS_KEY_ID}
@@ -78,6 +78,7 @@ resources:
           RequestMode: PASSTHROUGH
 
     # RDS MySQL实例
+    # Yanchen: 目前没有申请RDS实例，这些内容都是占位模板
     Database:
       Type: ALIYUN::RDS::DBInstance
       Properties:
@@ -93,10 +94,11 @@ resources:
           SwitchForce: false
 
     # OpenSearch Vector检索实例
+    # Yanchen: 目前只有这个免费的向量数据库有数据，在到期前应当将数据迁移到新数据库中
     VectorSearch:
       Type: ALIYUN::OpenSearch::Instance
       Properties:
-        InstanceName: aurawell-vector
+        InstanceName: test_cluster
         Edition: vector
         PaymentType: PostPaid
 
@@ -104,8 +106,8 @@ resources:
     Storage:
       Type: ALIYUN::OSS::Bucket
       Properties:
-        BucketName: aurawell-health-data
-        AccessControl: private
+        BucketName: rag-knowledge-bucket
+        AccessControl: public
         StorageClass: Standard
 
 plugins:
