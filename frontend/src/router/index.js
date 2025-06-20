@@ -112,7 +112,7 @@ const router = createRouter({
 // 🔧 统一路由守卫 - 使用认证状态管理
 router.beforeEach(async (to, _from, next) => {
   // 导入认证状态管理
-  const { useAuthStore } = await import('../stores/auth.js');
+  const { useAuthStore } = await import('../stores/auth');
   const authStore = useAuthStore();
 
   // 如果路由需要认证

@@ -1,15 +1,8 @@
-<<<<<<< HEAD
 // 使用Mock API替代真实API调用
-import { authAPI } from '../mock/api.js'
+import { authAPI } from '../mock/api'
 
 /**
  * 用户管理API服务 - Mock版本
-=======
-import request from '../utils/request.js'
-
-/**
- * 用户管理API服务 - 真实后端版本
->>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
  */
 export class UserAPI {
   /**
@@ -19,13 +12,8 @@ export class UserAPI {
    */
   static async validateCurrentToken() {
     try {
-<<<<<<< HEAD
-      const response = await authAPI.register(userData)
-      return response
-=======
-      const response = await request.get('/user/profile')
-      return response && response.status === 'success'
->>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
+      const response = await authAPI.getCurrentUser()
+      return response && response.success
     } catch (error) {
       // 任何错误（401、网络错误等）都表示Token无效
       console.warn('Token验证失败:', error.response?.status || error.message)
@@ -39,17 +27,8 @@ export class UserAPI {
    */
   static async getMe() {
     try {
-<<<<<<< HEAD
-      const response = await authAPI.login(credentials)
+      const response = await authAPI.getCurrentUser()
       return response
-=======
-      const response = await request.get('/user/profile')
-      return {
-        success: true,
-        data: response.data,
-        message: '获取用户信息成功'
-      }
->>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
     } catch (error) {
       console.error('获取用户信息失败:', error)
       throw error
@@ -267,26 +246,30 @@ export class UserAPI {
   }
 
   /**
-<<<<<<< HEAD
+   * 用户登录 - Mock实现
+   * @param {Object} credentials - 登录凭据
+   * @returns {Promise} API响应
+   */
+  static async login(credentials) {
+    try {
+      const response = await authAPI.login(credentials)
+      return response
+    } catch (error) {
+      console.error('用户登录失败:', error)
+      throw error
+    }
+  }
+
+  /**
    * 用户登出 - Mock实现
-=======
-   * 用户登出
->>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
    * @returns {Promise} API响应
    */
   static async logout() {
     try {
-<<<<<<< HEAD
       const response = await authAPI.logout()
       return response
     } catch (error) {
       console.error('用户登出失败:', error)
-=======
-      const response = await request.post('/auth/logout')
-      return response
-    } catch (error) {
-      console.error('登出失败:', error)
->>>>>>> 76d381683191c1560ef4ad4b3529f3ebd8b0973f
       throw error
     }
   }

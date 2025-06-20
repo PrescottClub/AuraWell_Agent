@@ -68,8 +68,8 @@ import {
   TeamOutlined,
   BarChartOutlined
 } from '@ant-design/icons-vue';
-import { useAuthStore } from '../stores/auth.js';
-import { useUserStore } from '../stores/user.js';
+import { useAuthStore } from '../stores/auth';
+import { useUserStore } from '../stores/user';
 import { message } from 'ant-design-vue';
 
 const router = useRouter();

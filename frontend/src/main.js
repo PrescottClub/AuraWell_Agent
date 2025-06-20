@@ -8,8 +8,8 @@ import VChart from 'vue-echarts'
 import { createPinia } from 'pinia'
 
 // 初始化Mock数据系统
-import { initMockData } from './mock/index.js'
-import './mock/devTools.js' // 加载开发工具
+import { initMockData } from './mock/index'
+import './mock/devTools' // 加载开发工具
 
 const app = createApp(App)
 const pinia = createPinia()
