@@ -4,7 +4,9 @@
 目前通过.env解析密钥，未来将通过KMS密钥管理系统解析密钥
 rag_utils是一个辅助RAGExtension核心逻辑运行的工具类，其本身不会调用API
 """
-from rag_utils import get_file_type, process_list, get_download_path
+from rag_utils import get_file_type, process_list
+from oss_utils import OSSManager
+from file_index_manager import FileIndexManager
 from alibabacloud_docmind_api20220711.client import Client as docmind_api20220711Client
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_docmind_api20220711 import models as docmind_api20220711_models
@@ -21,6 +23,10 @@ import time
 import dashvector
 import numpy as np
 import platform
+import re
+import math
+import tempfile
+from datetime import datetime, timedelta, timezone
 
 def normalize_file_path(file_path: str) -> str:
     """
@@ -53,6 +59,7 @@ def load_api_keys():
         "ALIBABA_CLOUD_ACCESS_KEY_ID": None,
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET": None,
         "DASHSCOPE_API_KEY": None,
+        "ALIBABA_QWEN_API_KEY": None,
         "DASH_VECTOR_API": None
     }
 
@@ -60,10 +67,10 @@ def load_api_keys():
     try:
         # 获取当前文件的绝对路径
         current_file_path = os.path.abspath(__file__)
-        # 获取当前文件所在目录（即 aurawell/rag）
+        # 获取当前文件所在目录（即 src/aurawell/rag）
         current_dir = os.path.dirname(current_file_path)
-        # 获取项目根目录
-        project_root = os.path.dirname(os.path.dirname(current_dir))
+        # 获取项目根目录（向上三级：rag -> aurawell -> src -> 项目根目录）
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         # 构建 .env 文件的完整路径
         dotenv_path = os.path.join(project_root, '.env')
 
@@ -96,6 +103,84 @@ def load_api_keys():
 
     return keys, success
 
+def detect_language(text: str) -> str:
+    """
+    检测文本语言，返回 'chinese' 或 'english'
+    如果不确定则默认返回 'chinese'
+
+    Args:
+        text (str): 待检测的文本
+
+    Returns:
+        str: 'chinese' 或 'english'
+    """
+    if not text or not isinstance(text, str):
+        return 'chinese'
+
+    # 统计中文字符数量
+    chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
+    # 统计英文字符数量（字母）
+    english_chars = len(re.findall(r'[a-zA-Z]', text))
+
+    # 如果中文字符占比超过30%，认为是中文
+    total_chars = len(text.strip())
+    if total_chars == 0:
+        return 'chinese'
+
+    chinese_ratio = chinese_chars / total_chars
+    english_ratio = english_chars / total_chars
+
+    # 如果中文字符比例大于英文字符比例，且中文字符比例超过0.1，则认为是中文
+    if chinese_ratio > english_ratio and chinese_ratio > 0.1:
+        return 'chinese'
+    elif english_ratio > 0.3:  # 英文字符比例超过30%认为是英文
+        return 'english'
+    else:
+        return 'chinese'  # 默认返回中文
+
+def translate_text(text: str, target_language: str, api_key: str, base_url: str) -> str:
+    """
+    使用阿里云大语言模型进行文本翻译
+
+    Args:
+        text (str): 待翻译的文本
+        target_language (str): 目标语言 ('chinese' 或 'english')
+        api_key (str): API密钥
+        base_url (str): API基础URL
+
+    Returns:
+        str: 翻译后的文本
+    """
+    try:
+        client = OpenAI(
+            api_key=api_key,
+            base_url=base_url
+        )
+
+        if target_language == 'chinese':
+            system_prompt = "你是一个专业的英译中翻译专家。请将用户输入的英文文本翻译成中文，保持原意不变。只返回翻译结果，不要添加任何解释。"
+            user_prompt = f"请将以下英文翻译成中文：{text}"
+        else:  # target_language == 'english'
+            system_prompt = "You are a professional Chinese-to-English translator. Please translate the user's Chinese text into English while maintaining the original meaning. Only return the translation result without any explanations."
+            user_prompt = f"请将以下中文翻译成英文：{text}"
+
+        completion = client.chat.completions.create(
+            model="qwen-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=1024
+        )
+
+        translated_text = completion.choices[0].message.content.strip()
+        return translated_text
+
+    except Exception as e:
+        print(f"翻译失败: {e}")
+        return text  # 翻译失败时返回原文
+
 class Document:
     def __init__(self):
         """
@@ -119,6 +204,7 @@ class Document:
         self.access_key_id = keys["ALIBABA_CLOUD_ACCESS_KEY_ID"]
         self.access_key_secret = keys["ALIBABA_CLOUD_ACCESS_KEY_SECRET"]
         self.dash_scope_key = keys["DASHSCOPE_API_KEY"]
+        self.qwen_api_key = keys["ALIBABA_QWEN_API_KEY"] or keys["DASHSCOPE_API_KEY"]  # 优先使用QWEN密钥，回退到DASHSCOPE
         self.dash_vector_key = keys["DASH_VECTOR_API"]
 
         # 访问的域名
@@ -305,6 +391,283 @@ class Document:
 
         return False
 
+    def get_recent_files_from_oss(self, days: int = 30) -> list:
+        """
+        从OSS云存储中读取在指定天数内上传的文件
+
+        Args:
+            days (int): 天数，默认30天
+
+        Returns:
+            list: 文件记录列表
+        """
+        try:
+            file_manager = FileIndexManager()
+            recent_files = file_manager.get_files_uploaded_in_days(days)
+
+            print(f"✅ 从OSS获取到 {len(recent_files)} 个在 {days} 天内上传的文件")
+            return recent_files
+
+        except Exception as e:
+            print(f"❌ 从OSS获取最近文件失败: {e}")
+            return []
+
+    def download_file_from_oss(self, oss_key: str, local_path: str = None) -> str:
+        """
+        从OSS下载文件到本地临时位置
+
+        Args:
+            oss_key (str): OSS中的文件键名
+            local_path (str): 本地保存路径，如果为None则使用临时文件
+
+        Returns:
+            str: 本地文件路径，失败返回None
+        """
+        try:
+            oss_manager = OSSManager()
+
+            if local_path is None:
+                # 创建临时文件
+                suffix = os.path.splitext(oss_key)[1] or '.tmp'
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+                local_path = temp_file.name
+                temp_file.close()
+
+            success = oss_manager.download_file(oss_key, local_path)
+
+            if success:
+                print(f"✅ 文件从OSS下载成功: {oss_key} -> {local_path}")
+                return local_path
+            else:
+                print(f"❌ 文件从OSS下载失败: {oss_key}")
+                return None
+
+        except Exception as e:
+            print(f"❌ 从OSS下载文件失败: {e}")
+            return None
+
+    def upload_parsed_content_to_oss(self, content: str, filename: str) -> bool:
+        """
+        将解析的文件内容以markdown形式上传到OSS
+
+        Args:
+            content (str): 解析后的文档内容
+            filename (str): 原始文件名
+
+        Returns:
+            bool: 上传是否成功
+        """
+        try:
+            oss_manager = OSSManager()
+
+            # 构建markdown文件的OSS键名
+            base_name = os.path.splitext(filename)[0]
+            markdown_key = f"parsed_content/{base_name}.md"
+
+            # 添加时间戳和元数据
+            timestamp = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+            markdown_content = f"""# 解析文档: {filename}
+
+**解析时间**: {timestamp}
+**原始文件**: {filename}
+
+---
+
+{content}
+"""
+
+            success = oss_manager.upload_string_as_file(markdown_content, markdown_key)
+
+            if success:
+                print(f"✅ 解析内容上传到OSS成功: {markdown_key}")
+            else:
+                print(f"❌ 解析内容上传到OSS失败: {markdown_key}")
+
+            return success
+
+        except Exception as e:
+            print(f"❌ 上传解析内容到OSS失败: {e}")
+            return False
+
+    def content_filter(self, file_path: str, is_oss_key: bool = False) -> list:
+        """
+        使用大语言模型分析文档内容，提取高信息密度文本，并将结果向量化存储到数据库
+
+        Args:
+            file_path (str): 文档路径或OSS键名
+            is_oss_key (bool): 是否为OSS键名
+
+        Returns:
+            list: 包含提取的高密度信息段落的列表，每个元素都是字符串
+        """
+        temp_file_path = None
+        try:
+            # 1. 如果是OSS键名，先下载到本地
+            if is_oss_key:
+                temp_file_path = self.download_file_from_oss(file_path)
+                if not temp_file_path:
+                    print(f"❌ 无法从OSS下载文件: {file_path}")
+                    return []
+                actual_file_path = temp_file_path
+                original_filename = os.path.basename(file_path)
+            else:
+                actual_file_path = file_path
+                original_filename = os.path.basename(file_path)
+
+            # 2. 使用现有方法解析文档
+            raw_content = self.__doc_analysation(actual_file_path)
+
+            # 3. 提取文档的完整文本内容
+            full_text = self.file_Parsing(actual_file_path)
+
+            if not full_text or len(full_text.strip()) < 10:
+                print("文档内容为空或过短，无法进行内容过滤")
+                return []
+
+            # 3. 使用大语言模型提取高密度信息
+            client = OpenAI(
+                api_key=self.qwen_api_key,
+                base_url=self.bailian_endpoint
+            )
+
+            # 构建提示词
+            system_prompt = """你是一位医学文献信息提取专家。请仔细阅读以下文本，从中提取所有**高密度信息段落**，包括但不限于：
+
+- 膳食建议
+- 推荐摄入量
+- 健康建议
+- 具体食物种类与克数
+- 饮水与运动指导
+- 营养标准与指标
+- 食品标签解读要点
+- 分餐与卫生建议
+- 膳食宝塔结构
+- 特定人群推荐（如孕妇、儿童、老年人）
+
+提取要求如下：
+
+1. **高密度信息**：具备明确数值、指导建议、可执行内容
+2. **去除低密度信息**：如背景介绍、定义、政策说明、意义阐述等
+3. **保留原文格式**，但只提取核心段落
+4. 使用 `;;` 分隔每一个提取出来的信息段
+
+现在请处理以下文本："""
+
+            user_prompt = full_text
+
+            # 调用大语言模型
+            completion = client.chat.completions.create(
+                model="qwen-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.3,
+                top_p=0.9,
+                max_tokens=2048
+            )
+
+            # 4. 处理大语言模型的返回结果
+            llm_response = completion.choices[0].message.content.strip()
+
+            if not llm_response:
+                print("大语言模型返回空结果")
+                return []
+
+            # 5. 按 ";;" 分割文本
+            segments = llm_response.split(";;")
+
+            # 6. 清理和过滤分割后的文本段
+            filtered_segments = []
+            for segment in segments:
+                cleaned_segment = segment.strip()
+                # 过滤掉长度小于3的段落
+                if len(cleaned_segment) >= 3:
+                    filtered_segments.append(cleaned_segment)
+
+            print(f"成功提取 {len(filtered_segments)} 个高密度信息段落")
+
+            # 7. 将过滤后的段落向量化并存储到数据库
+            if filtered_segments:
+                self._vectorize_and_store_segments(filtered_segments)
+
+            # 8. 如果是OSS文件，上传解析内容
+            if is_oss_key and full_text:
+                try:
+                    self.upload_parsed_content_to_oss(full_text, original_filename)
+                except Exception as e:
+                    print(f"⚠️  上传解析内容失败: {e}")
+
+            return filtered_segments
+
+        except Exception as e:
+            print(f"❌ 内容过滤过程中发生错误: {e}")
+            return []
+        finally:
+            # 清理临时文件
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                    print(f"🗑️  清理临时文件: {temp_file_path}")
+                except Exception as e:
+                    print(f"⚠️  清理临时文件失败: {e}")
+
+    def _vectorize_and_store_segments(self, segments: list):
+        """
+        将文本段落向量化并存储到向量数据库
+
+        Args:
+            segments (list): 文本段落列表
+        """
+        try:
+            client = OpenAI(
+                api_key=self.dash_scope_key,
+                base_url=self.bailian_endpoint
+            )
+
+            # 连接向量数据库
+            vector_client = dashvector.Client(
+                api_key=self.dash_vector_key,
+                endpoint=self.vectorDB_endpoint
+            )
+            collection = vector_client.get(name='simple_collection')
+
+            # 批量处理向量化（每次最多10个）
+            for i in range(0, len(segments), 10):
+                batch = segments[i:i+10]
+
+                # 向量化当前批次
+                completion = client.embeddings.create(
+                    model="text-embedding-v4",
+                    input=batch,
+                    dimensions=1024,
+                    encoding_format="float"
+                )
+
+                # 存储到向量数据库
+                for j, embedding_data in enumerate(completion.data):
+                    segment_text = batch[j]
+                    vector = np.array(embedding_data.embedding, dtype=float)
+
+                    ret = collection.insert(
+                        Doc(
+                            id=str(uuid.uuid4()),
+                            vector=vector,
+                            fields={
+                                "raw_text": segment_text,
+                                "sub_title": "filtered_content"
+                            }
+                        )
+                    )
+
+                    if not ret:
+                        print(f"向量存储失败: {segment_text[:50]}...")
+
+            print(f"成功将 {len(segments)} 个段落向量化并存储到数据库")
+
+        except Exception as e:
+            print(f"向量化和存储过程中发生错误: {e}")
+
     def __content_vectorised(self, raw_content):
         # raw_content 对应的是文档解析方法返回的 response.body.data
         discard_type = () # 返回值中，忽略其中type对应的值中为这些值的内容，因为它们通常不对应任何具体内容
@@ -357,28 +720,169 @@ class Document:
         return rawcontent_vector_pair
         # print(completion.model_dump_json())
         # return vector_list, query_list # 同时返回原文内容和其对应的向量
-    def file2VectorDB(self, file_path:str)->bool:
-        response = self.__doc_analysation(file_path)
-        vector_pairs = self.__content_vectorised(response)
-        client = dashvector.Client(
-            api_key=self.dash_vector_key,
-            endpoint=self.vectorDB_endpoint
-        )
-        collection = client.get(name='simple_collection')
-        for i in range(len(vector_pairs)):
-            ret = collection.insert(
-                Doc(
-                    # 测试时，需要使用i指定向量id，使用覆盖操作防止数据库存储因测试而增大，导致不必要的花销
-                    id=str(uuid.uuid4()),
-                    vector=vector_pairs[i][1],
-                    fields={
-                        "raw_text":  vector_pairs[i][0],
-                        "sub_title": "test"
-                    }
-                )
-            )
-            assert ret # 判断插入操作是否成功
-        return True
+    def file2VectorDB(self, file_path: str, use_content_filter: bool = True, is_oss_key: bool = False, update_index: bool = True) -> bool:
+        """
+        将文档解析并上传至向量数据库
+
+        Args:
+            file_path (str): 文档路径或OSS键名
+            use_content_filter (bool): 是否使用内容过滤功能，默认为True
+            is_oss_key (bool): 是否为OSS键名
+            update_index (bool): 是否更新文件索引的向量化状态
+
+        Returns:
+            bool: 操作是否成功
+        """
+        try:
+            filename = os.path.basename(file_path) if not is_oss_key else os.path.basename(file_path)
+
+            if use_content_filter:
+                # 使用新的内容过滤方法
+                filtered_segments = self.content_filter(file_path, is_oss_key=is_oss_key)
+                if filtered_segments:
+                    print(f"✅ 使用内容过滤方法成功处理文档，提取了 {len(filtered_segments)} 个高密度信息段落")
+
+                    # 更新向量化状态
+                    if update_index and is_oss_key:
+                        try:
+                            file_manager = FileIndexManager()
+                            file_manager.update_vectorization_status(filename, True)
+                        except Exception as e:
+                            print(f"⚠️  更新向量化状态失败: {e}")
+
+                    return True
+                else:
+                    print("⚠️ 内容过滤未提取到有效信息，回退到原始方法")
+                    # 如果内容过滤失败，回退到原始方法
+                    use_content_filter = False
+
+            if not use_content_filter:
+                # 使用原始方法
+                actual_file_path = file_path
+                temp_file_path = None
+
+                try:
+                    # 如果是OSS键名，先下载到本地
+                    if is_oss_key:
+                        temp_file_path = self.download_file_from_oss(file_path)
+                        if not temp_file_path:
+                            print(f"❌ 无法从OSS下载文件: {file_path}")
+                            return False
+                        actual_file_path = temp_file_path
+
+                    response = self.__doc_analysation(actual_file_path)
+                    vector_pairs = self.__content_vectorised(response)
+                    client = dashvector.Client(
+                        api_key=self.dash_vector_key,
+                        endpoint=self.vectorDB_endpoint
+                    )
+                    collection = client.get(name='simple_collection')
+                    for i in range(len(vector_pairs)):
+                        ret = collection.insert(
+                            Doc(
+                                id=str(uuid.uuid4()),
+                                vector=vector_pairs[i][1],
+                                fields={
+                                    "raw_text": vector_pairs[i][0],
+                                    "sub_title": "original_content"
+                                }
+                            )
+                        )
+                        assert ret  # 判断插入操作是否成功
+                    print(f"✅ 使用原始方法成功处理文档，存储了 {len(vector_pairs)} 个文本段落")
+
+                    # 更新向量化状态
+                    if update_index and is_oss_key:
+                        try:
+                            file_manager = FileIndexManager()
+                            file_manager.update_vectorization_status(filename, True)
+                        except Exception as e:
+                            print(f"⚠️  更新向量化状态失败: {e}")
+
+                finally:
+                    # 清理临时文件
+                    if temp_file_path and os.path.exists(temp_file_path):
+                        try:
+                            os.unlink(temp_file_path)
+                        except Exception as e:
+                            print(f"⚠️  清理临时文件失败: {e}")
+
+            return True
+
+        except Exception as e:
+            print(f"❌ 文档处理失败: {e}")
+            return False
+
+    def batch_process_recent_files(self, days: int = 30, use_content_filter: bool = True) -> dict:
+        """
+        批量处理OSS中最近上传的文件
+
+        Args:
+            days (int): 处理最近几天的文件，默认30天
+            use_content_filter (bool): 是否使用内容过滤功能
+
+        Returns:
+            dict: 处理结果统计
+        """
+        try:
+            # 获取最近上传的文件
+            recent_files = self.get_recent_files_from_oss(days)
+
+            if not recent_files:
+                print(f"⚠️  未找到最近 {days} 天内上传的文件")
+                return {"total": 0, "processed": 0, "failed": 0, "skipped": 0}
+
+            # 过滤出未向量化的文件
+            unvectorized_files = [f for f in recent_files if not f.get("vectorized", False)]
+
+            print(f"📊 处理统计:")
+            print(f"  - 最近 {days} 天内上传的文件: {len(recent_files)}")
+            print(f"  - 未向量化的文件: {len(unvectorized_files)}")
+
+            if not unvectorized_files:
+                print("✅ 所有最近上传的文件都已向量化")
+                return {"total": len(recent_files), "processed": 0, "failed": 0, "skipped": len(recent_files)}
+
+            # 批量处理文件
+            results = {"total": len(unvectorized_files), "processed": 0, "failed": 0, "skipped": 0}
+
+            for i, file_record in enumerate(unvectorized_files, 1):
+                filename = file_record["filename"]
+                oss_key = file_record["oss_key"]
+
+                print(f"\n[{i}/{len(unvectorized_files)}] 处理文件: {filename}")
+
+                try:
+                    success = self.file2VectorDB(
+                        oss_key,
+                        use_content_filter=use_content_filter,
+                        is_oss_key=True,
+                        update_index=True
+                    )
+
+                    if success:
+                        results["processed"] += 1
+                        print(f"✅ 文件处理成功: {filename}")
+                    else:
+                        results["failed"] += 1
+                        print(f"❌ 文件处理失败: {filename}")
+
+                except Exception as e:
+                    results["failed"] += 1
+                    print(f"❌ 文件处理异常: {filename}, 错误: {e}")
+
+            print(f"\n🎉 批量处理完成!")
+            print(f"📊 处理结果:")
+            print(f"  - 总文件数: {results['total']}")
+            print(f"  - 处理成功: {results['processed']}")
+            print(f"  - 处理失败: {results['failed']}")
+            print(f"  - 跳过文件: {results['skipped']}")
+
+            return results
+
+        except Exception as e:
+            print(f"❌ 批量处理失败: {e}")
+            return {"total": 0, "processed": 0, "failed": 0, "skipped": 0}
 
 class UserRetrieve:
     def __init__(self):
@@ -395,14 +899,18 @@ class UserRetrieve:
         keys, success = load_api_keys()
 
         # UserRetrieve只需要部分密钥
-        required_keys = ["DASHSCOPE_API_KEY", "DASH_VECTOR_API"]
-        missing_keys = [key for key in required_keys if not keys.get(key)]
+        required_keys = ["DASH_VECTOR_API"]
+        # 检查是否有可用的API密钥（DASHSCOPE_API_KEY 或 ALIBABA_QWEN_API_KEY）
+        has_llm_key = keys.get("DASHSCOPE_API_KEY") or keys.get("ALIBABA_QWEN_API_KEY")
 
-        if missing_keys:
+        missing_keys = [key for key in required_keys if not keys.get(key)]
+        if missing_keys or not has_llm_key:
+            missing_keys.append("DASHSCOPE_API_KEY 或 ALIBABA_QWEN_API_KEY")
             raise ValueError(f"❌ UserRetrieve类缺少必需的API密钥: {missing_keys}")
 
         # 设置实例变量
         self.dash_scope_key = keys["DASHSCOPE_API_KEY"]
+        self.qwen_api_key = keys["ALIBABA_QWEN_API_KEY"] or keys["DASHSCOPE_API_KEY"]  # 优先使用QWEN密钥
         self.dash_vector_key = keys["DASH_VECTOR_API"]
 
         # 访问的域名
@@ -411,43 +919,147 @@ class UserRetrieve:
         self.bailian_endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
         print("✅ UserRetrieve类初始化完成")
-    def __user_query_vectorised(self, raw_user_query:str):
-        # 目前阿里云已经推出DashScope调用，但是OpenAI兼容方法对应的文档更清晰，先用着
+    def __user_query_vectorised(self, raw_user_query: str):
+        """
+        增强的用户查询向量化方法，支持中英文检测和翻译
+
+        Args:
+            raw_user_query (str): 用户原始查询
+
+        Returns:
+            dict: 包含原文和翻译副本的向量化结果
+                {
+                    'original': {'text': str, 'vector': np.array, 'language': str},
+                    'translated': {'text': str, 'vector': np.array, 'language': str}
+                }
+        """
+        # 1. 检测用户查询的语言
+        detected_language = detect_language(raw_user_query)
+        print(f"🔍 检测到查询语言: {detected_language}")
+
+        # 2. 根据检测结果进行翻译
+        if detected_language == 'chinese':
+            # 原文是中文，翻译成英文
+            translated_query = translate_text(
+                raw_user_query,
+                'english',
+                self.qwen_api_key,
+                self.bailian_endpoint
+            )
+            translated_language = 'english'
+        else:
+            # 原文是英文，翻译成中文
+            translated_query = translate_text(
+                raw_user_query,
+                'chinese',
+                self.qwen_api_key,
+                self.bailian_endpoint
+            )
+            translated_language = 'chinese'
+
+        print(f"📝 原文: {raw_user_query}")
+        print(f"🔄 翻译: {translated_query}")
+
+        # 3. 对原文和翻译副本进行向量化
         client = OpenAI(
-            api_key=self.dash_scope_key,  # 直接配置api key以访问阿里云提供的服务
-            base_url=self.bailian_endpoint  # 百炼服务的base_url
+            api_key=self.dash_scope_key,
+            base_url=self.bailian_endpoint
         )
+
+        # 批量向量化原文和翻译
         completion = client.embeddings.create(
             model="text-embedding-v4",
-            input=raw_user_query,  # 一次性批上传10个文本块至阿里云百炼API
-            dimensions=1024,  # 指定向量维度（仅 text-embedding-v3及 text-embedding-v4支持该参数）
+            input=[raw_user_query, translated_query],
+            dimensions=1024,
             encoding_format="float"
         )
-        print(type(completion.data)) # 请注意，返回值是一个长度为1的列表，因此需要取列表的第一个元素，然后再转化
-        embeded_result = (raw_user_query , np.array(completion.data[0].embedding, dtype=float))
-        return embeded_result
-    def retrieve_topK(self, user_query:str, k:int):
-        relate_words = []
+
+        # 4. 构建返回结果
+        result = {
+            'original': {
+                'text': raw_user_query,
+                'vector': np.array(completion.data[0].embedding, dtype=float),
+                'language': detected_language
+            },
+            'translated': {
+                'text': translated_query,
+                'vector': np.array(completion.data[1].embedding, dtype=float),
+                'language': translated_language
+            }
+        }
+
+        return result
+    def retrieve_topK(self, user_query: str, k: int):
+        """
+        增强的TopK检索方法，支持中英文双语检索
+
+        Args:
+            user_query (str): 用户查询
+            k (int): 返回结果数量
+
+        Returns:
+            list: 检索到的相关文本列表，每个元素都是字符串
+        """
+        # 1. 获取用户查询的向量化结果（包含原文和翻译）
+        vectorised_queries = self.__user_query_vectorised(user_query)
+
+        # 2. 连接向量数据库
         client = dashvector.Client(
             api_key=self.dash_vector_key,
             endpoint=self.vectorDB_endpoint
         )
         collection = client.get(name='simple_collection')
-        vectorised_user_input = self.__user_query_vectorised(user_query)
 
+        # 3. 计算每次检索的数量（向上取整）
+        k_per_query = math.ceil(k / 2)
+        print(f"🔍 每个查询检索 {k_per_query} 个结果，总共检索 {k} 个结果")
 
-        ret = collection.query(
-            vector=vectorised_user_input[1],
-            topk=k,
+        # 4. 使用原文进行检索
+        print(f"🔍 使用原文检索: {vectorised_queries['original']['text']}")
+        ret_original = collection.query(
+            vector=vectorised_queries['original']['vector'],
+            topk=k_per_query,
             output_fields=['raw_text', 'sub_title'],
             include_vector=True
         )
-        if ret:
-            print("query success")
+
+        # 5. 使用翻译副本进行检索
+        print(f"🔍 使用翻译检索: {vectorised_queries['translated']['text']}")
+        ret_translated = collection.query(
+            vector=vectorised_queries['translated']['vector'],
+            topk=k_per_query,
+            output_fields=['raw_text', 'sub_title'],
+            include_vector=True
+        )
+
+        # 6. 合并检索结果
         retrieve_result = []
-        for content in ret.output:
-            retrieve_result.append(content.fields["raw_text"])
-        return  retrieve_result
+        seen_texts = set()  # 用于去重
+
+        # 添加原文检索结果
+        if ret_original and ret_original.output:
+            print(f"✅ 原文检索成功，获得 {len(ret_original.output)} 个结果")
+            for content in ret_original.output:
+                text = content.fields["raw_text"]
+                if text not in seen_texts:
+                    retrieve_result.append(text)
+                    seen_texts.add(text)
+        else:
+            print("⚠️ 原文检索失败或无结果")
+
+        # 添加翻译检索结果
+        if ret_translated and ret_translated.output:
+            print(f"✅ 翻译检索成功，获得 {len(ret_translated.output)} 个结果")
+            for content in ret_translated.output:
+                text = content.fields["raw_text"]
+                if text not in seen_texts:
+                    retrieve_result.append(text)
+                    seen_texts.add(text)
+        else:
+            print("⚠️ 翻译检索失败或无结果")
+
+        print(f"🎉 总共检索到 {len(retrieve_result)} 个唯一结果")
+        return retrieve_result
 
 if __name__ == "__main__":
     # test_user = UserRetrieve()
