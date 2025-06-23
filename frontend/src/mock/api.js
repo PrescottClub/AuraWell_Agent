@@ -3,7 +3,7 @@
  * 模拟真实API的响应格式和行为
  */
 
-import { mockData, mockUtils } from './index.js'
+import { mockData, mockUtils } from './index'
 
 // Mock API基础类
 class MockAPI {

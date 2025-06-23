@@ -57,17 +57,20 @@ class DeepSeekClient:
         Raises:
             ValueError: If API key is not provided or found in environment
         """
-        self.api_key = api_key or os.getenv("DASHSCOPE_API_KEY")
+        # 优先使用阿里云DashScope服务访问DeepSeek模型
+        self.api_key = api_key or os.getenv("QWEN_API") or os.getenv("DASHSCOPE_API_KEY") or os.getenv("DEEP_SEEK_API") or os.getenv("DEEPSEEK_API_KEY")
         if not self.api_key:
             raise ValueError(
-                "DashScope API key not provided. Set DASHSCOPE_API_KEY environment variable."
+                "DeepSeek API key not provided. Set QWEN_API, DASHSCOPE_API_KEY, DEEP_SEEK_API, or DEEPSEEK_API_KEY environment variable."
             )
 
-        # Get base URL from environment or use default (Alibaba Cloud DashScope)
+        # 使用阿里云DashScope的兼容模式访问DeepSeek模型
         self.base_url = base_url or os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
         self.client = OpenAI(
-            api_key=self.api_key, base_url=self.base_url
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=300.0  # 设置45秒超时，给LLM足够的响应时间
         )
 
         logger.info(f"DeepSeek client initialized successfully with base_url: {self.base_url}")
@@ -167,8 +170,21 @@ class DeepSeekClient:
             )
 
         except Exception as e:
-            logger.error(f"DeepSeek API call failed: {str(e)}")
-            raise Exception(f"DeepSeek API error: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"DeepSeek API call failed: {error_msg}")
+
+            # 检查是否是超时错误
+            if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                raise Exception(f"DeepSeek API 请求超时，请稍后重试: {error_msg}")
+            # 检查是否是网络错误
+            elif "connection" in error_msg.lower() or "network" in error_msg.lower():
+                raise Exception(f"DeepSeek API 网络连接失败，请检查网络: {error_msg}")
+            # 检查是否是认证错误
+            elif "401" in error_msg or "unauthorized" in error_msg.lower():
+                raise Exception(f"DeepSeek API 认证失败，请检查API密钥: {error_msg}")
+            # 其他错误
+            else:
+                raise Exception(f"DeepSeek API 调用失败: {error_msg}")
 
     async def get_streaming_response(
         self,
@@ -236,8 +252,21 @@ class DeepSeekClient:
             )
 
         except Exception as e:
-            logger.error(f"DeepSeek streaming API call failed: {str(e)}")
-            raise Exception(f"DeepSeek streaming API error: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"DeepSeek streaming API call failed: {error_msg}")
+
+            # 检查是否是超时错误
+            if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                raise Exception(f"DeepSeek 流式API 请求超时，请稍后重试: {error_msg}")
+            # 检查是否是网络错误
+            elif "connection" in error_msg.lower() or "network" in error_msg.lower():
+                raise Exception(f"DeepSeek 流式API 网络连接失败，请检查网络: {error_msg}")
+            # 检查是否是认证错误
+            elif "401" in error_msg or "unauthorized" in error_msg.lower():
+                raise Exception(f"DeepSeek 流式API 认证失败，请检查API密钥: {error_msg}")
+            # 其他错误
+            else:
+                raise Exception(f"DeepSeek 流式API 调用失败: {error_msg}")
 
 
 def create_health_tools() -> List[Dict[str, Any]]:

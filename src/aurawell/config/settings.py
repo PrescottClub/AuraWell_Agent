@@ -26,9 +26,10 @@ class AuraWellSettings:
     # Debug and logging
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
 
     # Alibaba Cloud DashScope AI Configuration (DeepSeek via DashScope)
-    DEEPSEEK_API_KEY: Optional[str] = os.getenv("DASHSCOPE_API_KEY")
+    DEEPSEEK_API_KEY: Optional[str] = os.getenv("QWEN_API") or os.getenv("DASHSCOPE_API_KEY")
     DEEPSEEK_BASE_URL: str = os.getenv(
         "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
