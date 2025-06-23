@@ -113,81 +113,209 @@ export const familyAPI = {
     }
   },
 
-  // 获取家庭权限
+  // 获取家庭权限 - Mock实现
   async getFamilyPermissions(familyId) {
     try {
-      const response = await mockFamilyAPI.getFamilyPermissions(familyId)
-      return response
+      // 模拟家庭权限数据
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        data: {
+          family_id: familyId,
+          permissions: {
+            can_view_health_data: true,
+            can_edit_family_info: false,
+            can_invite_members: false,
+            can_remove_members: false,
+            can_manage_challenges: false
+          }
+        },
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '获取家庭权限失败')
     }
   },
 
-  // 切换活跃成员
+  // 切换活跃成员 - Mock实现
   async switchActiveMember(data) {
     try {
-      const response = await mockFamilyAPI.switchActiveMember(data)
-      return response
+      // 模拟切换活跃成员
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        data: {
+          active_member_id: data.member_id,
+          switched_at: new Date().toISOString()
+        },
+        message: '活跃成员切换成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '切换活跃成员失败')
     }
   },
 
-  // 获取家庭健康报告
+  // 获取家庭健康报告 - Mock实现
   async getFamilyHealthReport(familyId, params = {}) {
     try {
-      const response = await mockFamilyAPI.getFamilyHealthReport(familyId, params)
-      return response
+      // 模拟家庭健康报告
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      return {
+        success: true,
+        data: {
+          family_id: familyId,
+          period: params.period || 'week',
+          summary: {
+            total_steps: 45000,
+            avg_sleep_hours: 7.2,
+            active_members: 3,
+            weekly_challenges: 2
+          },
+          members_data: []
+        },
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '获取家庭健康报告失败')
     }
   },
 
-  // 获取家庭排行榜
+  // 获取家庭排行榜 - Mock实现
   async getFamilyLeaderboard(familyId, params = {}) {
     try {
-      const response = await mockFamilyAPI.getFamilyLeaderboard(familyId, params)
-      return response
+      // 模拟家庭排行榜
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        data: {
+          leaderboard: [
+            {
+              member_id: 'member_001',
+              display_name: '爸爸',
+              score: 850,
+              rank: 1,
+              avatar: null
+            },
+            {
+              member_id: 'member_002',
+              display_name: '妈妈',
+              score: 720,
+              rank: 2,
+              avatar: null
+            }
+          ]
+        },
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '获取家庭排行榜失败')
     }
   },
 
-  // 获取家庭挑战
+  // 获取家庭挑战 - Mock实现
   async getFamilyChallenges(familyId) {
     try {
-      const response = await mockFamilyAPI.getFamilyChallenges(familyId)
-      return response
+      // 模拟家庭挑战
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        data: {
+          challenges: [
+            {
+              challenge_id: 'challenge_001',
+              title: '家庭步数挑战',
+              description: '本周目标：每人每天走10000步',
+              type: 'steps',
+              status: 'active',
+              target_value: 10000,
+              current_value: 7500,
+              progress_percentage: 75,
+              participants_count: 3
+            }
+          ]
+        },
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '获取家庭挑战失败')
     }
   },
 
-  // 创建家庭挑战
+  // 创建家庭挑战 - Mock实现
   async createFamilyChallenge(familyId, data) {
     try {
-      const response = await mockFamilyAPI.createFamilyChallenge(familyId, data)
-      return response
+      // 模拟创建家庭挑战
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      return {
+        success: true,
+        data: {
+          challenge_id: 'challenge_' + Date.now(),
+          family_id: familyId,
+          ...data,
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        message: '家庭挑战创建成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '创建家庭挑战失败')
     }
   },
 
-  // 为成员点赞
+  // 为成员点赞 - Mock实现
   async likeMember(memberId, data) {
     try {
-      const response = await mockFamilyAPI.likeMember(memberId, data)
-      return response
+      // 模拟点赞
+      await new Promise(resolve => setTimeout(resolve, 200))
+
+      return {
+        success: true,
+        data: {
+          member_id: memberId,
+          likes_count: (data.current_likes || 0) + 1,
+          liked_at: new Date().toISOString()
+        },
+        message: '点赞成功',
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '点赞失败')
     }
   },
 
-  // 获取健康告警列表
+  // 获取健康告警列表 - Mock实现
   async getHealthAlerts(familyId) {
     try {
-      const response = await mockFamilyAPI.getHealthAlerts(familyId)
-      return response
+      // 模拟健康告警
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      return {
+        success: true,
+        data: {
+          alerts: [
+            {
+              alert_id: 'alert_001',
+              family_id: familyId,
+              member_id: 'member_002',
+              alert_type: 'weight_gain',
+              title: '体重异常增长',
+              message: '妈妈的体重在过去一周增长了2kg，建议关注饮食和运动',
+              severity: 'medium',
+              status: 'active',
+              created_at: new Date().toISOString()
+            }
+          ]
+        },
+        timestamp: new Date().toISOString()
+      }
     } catch (error) {
       throw new Error(error.message || '获取健康告警失败')
     }

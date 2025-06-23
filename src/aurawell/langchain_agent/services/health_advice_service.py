@@ -756,7 +756,7 @@ class HealthAdviceService:
             ExternalServiceError: API调用失败
         """
         import asyncio
-        from aurawell.core.exceptions import ExternalServiceError
+        from ...core.exceptions import ExternalServiceError
 
         last_error = None
 

@@ -3,7 +3,7 @@
  * 提供开发过程中的数据管理和调试功能
  */
 
-import { mockData, mockUtils, resetMockData } from './index.js'
+import { mockData, mockUtils, resetMockData } from './index'
 
 // 开发工具状态
 const devToolsState = {

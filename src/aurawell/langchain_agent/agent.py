@@ -248,8 +248,11 @@ class HealthAdviceAgent(BaseAgent):
                 **(context or {}),
             }
 
+            # 检测是否是RAG查询请求
+            if message.startswith('/rag '):
+                response = await self._handle_rag_request(message, full_context)
             # 检测是否是健康建议生成请求
-            if self._is_health_advice_request(message):
+            elif self._is_health_advice_request(message):
                 response = await self._handle_health_advice_request(
                     message, full_context
                 )
@@ -280,6 +283,95 @@ class HealthAdviceAgent(BaseAgent):
                 "message": "处理消息时发生错误",
                 "error": str(e),
                 "agent_type": "langchain",
+            }
+
+    async def _handle_rag_request(
+        self, message: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        处理RAG查询请求
+
+        Args:
+            message: 用户消息（以/rag开头）
+            context: 上下文信息
+
+        Returns:
+            处理结果
+        """
+        try:
+            # 提取RAG查询内容
+            rag_query = message.replace('/rag ', '').strip()
+
+            if not rag_query:
+                return {
+                    "message": "请提供RAG查询内容，例如：/rag 高血压的饮食建议",
+                    "data": {"response_type": "rag_help"},
+                    "tools_used": [],
+                }
+
+            logger.info(f"处理RAG查询: {rag_query}")
+
+            # 导入RAG服务
+            from ..services.rag_service import get_rag_service
+            rag_service = get_rag_service()
+
+            # 执行RAG检索
+            rag_results = await rag_service.retrieve_from_rag(rag_query, k=3)
+
+            if not rag_results:
+                return {
+                    "message": f"抱歉，没有找到关于'{rag_query}'的相关信息。",
+                    "data": {"response_type": "rag_no_results", "query": rag_query},
+                    "tools_used": ["RAG"],
+                }
+
+            # 使用RAG结果生成AI回答
+            if self.deepseek_client:
+                # 构建包含RAG结果的提示
+                rag_context = "\n".join([f"- {result}" for result in rag_results])
+                enhanced_prompt = f"""基于以下检索到的医疗健康信息，回答用户的问题：
+
+检索结果：
+{rag_context}
+
+用户问题：{rag_query}
+
+请基于上述信息提供专业、准确的健康建议。如果信息不足，请建议咨询专业医生。"""
+
+                ai_response = await self._get_ai_response(enhanced_prompt, context)
+
+                return {
+                    "message": ai_response,
+                    "data": {
+                        "response_type": "rag_enhanced",
+                        "query": rag_query,
+                        "rag_results": rag_results,
+                        "rag_count": len(rag_results)
+                    },
+                    "tools_used": ["RAG", "DeepSeekAI"],
+                }
+            else:
+                # 没有AI客户端时，直接返回RAG结果
+                formatted_results = "\n\n".join([f"{i+1}. {result}" for i, result in enumerate(rag_results)])
+                response_message = f"根据您的查询'{rag_query}'，找到以下相关信息：\n\n{formatted_results}\n\n建议您根据这些信息咨询专业医生获取个性化建议。"
+
+                return {
+                    "message": response_message,
+                    "data": {
+                        "response_type": "rag_only",
+                        "query": rag_query,
+                        "rag_results": rag_results,
+                        "rag_count": len(rag_results)
+                    },
+                    "tools_used": ["RAG"],
+                }
+
+        except Exception as e:
+            logger.error(f"RAG查询处理失败: {e}")
+            return {
+                "message": f"抱歉，RAG查询处理失败: {str(e)}",
+                "data": {"error": str(e), "response_type": "rag_error"},
+                "tools_used": [],
             }
 
     def _is_health_advice_request(self, message: str) -> bool:

@@ -459,7 +459,22 @@ class FamilyService:
                 raise AuthorizationError("You are not a member of this family")
 
             members_data = await family_repo.get_family_members(family_id)
-            return [FamilyMember(**member) for member in members_data]
+
+            # 创建FamilyMember对象，确保数据类型正确
+            members = []
+            for member_data in members_data:
+                try:
+                    # 确保role是FamilyRole枚举
+                    if isinstance(member_data.get('role'), str):
+                        member_data['role'] = FamilyRole(member_data['role'])
+
+                    member = FamilyMember(**member_data)
+                    members.append(member)
+                except Exception as e:
+                    logger.error(f"Error creating FamilyMember object: {e}, data: {member_data}")
+                    raise
+
+            return members
 
         try:
             return await self._execute_with_retry(_get_family_members_operation)

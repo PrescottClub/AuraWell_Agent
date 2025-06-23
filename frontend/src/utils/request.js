@@ -4,12 +4,7 @@ import { useAuthStore } from '../stores/auth';
 
 const request = axios.create({
     baseURL: import.meta.env.VITE_APP_API_BASE_URL || '/api/v1',
-    timeout: import.meta.env.VITE_API_TIMEOUT || 60000, // 增加到60秒，适应AI处理时间
-    headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Accept': 'application/json'
-        // 移除 Accept-Charset，浏览器不允许设置此头
-    }
+    timeout: import.meta.env.VITE_API_TIMEOUT || 15000
 });
 
 // 🔧 统一请求拦截器 - 简化认证逻辑
@@ -24,38 +19,12 @@ request.interceptors.request.use(
 
             if (authHeader) {
                 config.headers['Authorization'] = authHeader;
-                console.log('🔐 使用存储的认证token');
             } else if (import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development') {
-                // 开发环境：先尝试自动登录获取真实token
-                console.warn('⚠️ 缺少认证token，需要先登录');
-                // 不设置无效的dev-test-token，让请求失败并触发自动登录
+                // 开发环境：使用测试token
+                config.headers['Authorization'] = 'Bearer dev-test-token';
+                console.warn('🔧 开发环境：使用测试token');
             }
         }
-
-        // 确保请求数据正确编码
-        if (config.data && typeof config.data === 'object') {
-            // 确保Content-Type包含charset
-            config.headers['Content-Type'] = 'application/json; charset=utf-8';
-
-            // 手动序列化JSON以确保UTF-8编码
-            try {
-                const jsonString = JSON.stringify(config.data);
-                // 验证JSON字符串是否包含正确的中文字符
-                console.log('🔤 JSON序列化结果:', jsonString);
-                config.data = jsonString;
-
-                // 明确设置transformRequest为空，避免axios再次处理
-                config.transformRequest = [];
-            } catch (error) {
-                console.error('❌ JSON序列化失败:', error);
-            }
-        }
-
-        // 添加请求日志
-        console.log(`📤 发送请求: ${config.method?.toUpperCase()} ${config.url}`, {
-            headers: config.headers,
-            data: config.data
-        });
 
         return config;
     },
@@ -70,9 +39,6 @@ request.interceptors.response.use(
     response => {
         const res = response.data;
 
-        // 添加响应日志
-        console.log(`📥 收到响应: ${response.status} ${response.config?.url}`, res);
-
         // 兼容不同的响应格式
         if (res.status === 'success' || res.success === true || response.status === 200) {
             return res;
@@ -84,23 +50,6 @@ request.interceptors.response.use(
     },
     async error => {
         console.error('响应错误：', error);
-        console.error('错误详情：', {
-            message: error.message,
-            code: error.code,
-            config: {
-                url: error.config?.url,
-                method: error.config?.method,
-                headers: error.config?.headers,
-                data: error.config?.data
-            },
-            response: error.response ? {
-                status: error.response.status,
-                statusText: error.response.statusText,
-                data: error.response.data,
-                headers: error.response.headers
-            } : null,
-            request: error.request ? 'Request was made but no response received' : null
-        });
 
         if (error.response) {
             const { status, data } = error.response;
@@ -164,7 +113,12 @@ request.interceptors.response.use(
                     message.error(`请求失败: ${error.response.status}`);
             }
         } else if (error.request) {
-            message.error('网络错误，请检查您的网络连接');
+            // 检查是否是超时错误
+            if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
+                message.error('请求超时，AI正在思考中，请稍后重试');
+            } else {
+                message.error('网络错误，请检查您的网络连接');
+            }
         } else {
             message.error('请求配置错误');
         }

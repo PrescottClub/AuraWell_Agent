@@ -391,11 +391,43 @@ const handleRAGCommand = async (command) => {
   messages.value.push(userMessage)
   inputMessage.value = ''
 
-  // 执行RAG检索
+  // 显示加载状态
+  isTyping.value = true
+  scrollToBottom()
+
   try {
-    await performRAGSearch(query, 3)
+    // 直接发送RAG命令到后端，让后端处理RAG逻辑
+    const response = await HealthChatAPI.sendMessage(command, currentConversationId.value)
+
+    // 添加AI回复，包含RAG结果
+    const aiMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      content: response.reply || response.data?.reply || response.data?.content || '抱歉，RAG检索失败。',
+      timestamp: new Date().toISOString(),
+      type: 'rag_response',
+      ragResults: response.data?.rag_results || [],
+      ragQuery: query,
+      ragCount: response.data?.rag_count || 0
+    }
+
+    messages.value.push(aiMessage)
+
   } catch (error) {
     console.error('RAG检索失败:', error)
+
+    // 添加错误消息
+    const errorMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      type: 'error',
+      content: `RAG检索失败: ${error.message || '未知错误'}`,
+      timestamp: new Date().toISOString()
+    }
+    messages.value.push(errorMessage)
+  } finally {
+    isTyping.value = false
+    scrollToBottom()
   }
 }
 

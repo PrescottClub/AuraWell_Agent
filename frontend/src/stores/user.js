@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { UserAPI } from '../api/user.js'
+import { UserAPI } from '../api/user'
 
 export const useUserStore = defineStore('user', () => {
   // 状态

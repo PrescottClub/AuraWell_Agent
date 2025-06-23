@@ -90,7 +90,8 @@ export const useFamilyStore = defineStore('family', {
       this.loading.families = true
       try {
         const response = await familyAPI.getUserFamilies()
-        this.userFamilies = response.data?.families || []
+        // API返回的data字段直接是家庭数组
+        this.userFamilies = response.data || []
 
         // 如果有家庭且没有选中当前家庭，选择第一个
         if (this.userFamilies.length > 0 && !this.currentFamily) {

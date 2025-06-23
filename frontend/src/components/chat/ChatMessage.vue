@@ -20,8 +20,8 @@
         <div class="message-text" v-html="formattedMessage"></div>
 
         <!-- RAG检索结果 -->
-        <div v-if="message.type === 'rag_results' && message.ragResults && message.ragResults.length > 0" class="rag-results-container">
-          <h4>📚 相关文档</h4>
+        <div v-if="(message.type === 'rag_results' || message.type === 'rag_response') && message.ragResults && message.ragResults.length > 0" class="rag-results-container">
+          <h4>📚 检索到的相关信息 ({{ message.ragCount || message.ragResults.length }}条)</h4>
           <div class="rag-results">
             <a-card
               v-for="(doc, index) in message.ragResults"
@@ -31,14 +31,14 @@
             >
               <template #title>
                 <div class="rag-result-header">
-                  <span class="rag-result-title">{{ doc.title || `文档 ${index + 1}` }}</span>
+                  <span class="rag-result-title">{{ doc.title || `相关信息 ${index + 1}` }}</span>
                   <a-tag v-if="doc.score" color="blue" size="small">
                     相似度: {{ (doc.score * 100).toFixed(1) }}%
                   </a-tag>
                 </div>
               </template>
               <div class="rag-result-content">
-                <p class="rag-result-text">{{ doc.content || doc.text }}</p>
+                <p class="rag-result-text">{{ doc.content || doc.text || doc }}</p>
                 <div v-if="doc.metadata" class="rag-result-metadata">
                   <a-tag v-if="doc.metadata.source" size="small" color="green">
                     来源: {{ doc.metadata.source }}
@@ -49,6 +49,9 @@
                 </div>
               </div>
             </a-card>
+          </div>
+          <div v-if="message.ragQuery" class="rag-query-info">
+            <a-tag color="purple" size="small">查询: {{ message.ragQuery }}</a-tag>
           </div>
         </div>
 
@@ -329,5 +332,11 @@ const handleSuggestionAction = (action) => {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
+}
+
+.rag-query-info {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e8e8e8;
 }
 </style>

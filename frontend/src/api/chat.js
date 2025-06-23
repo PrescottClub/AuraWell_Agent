@@ -14,11 +14,13 @@ export class HealthChatAPI {
   static async sendMessage(message, conversationId = null) {
     try {
       // 🚀 真实API调用：连接后端AI引擎
+      // 为聊天请求设置更长的超时时间（60秒）
       const response = await request.post('/chat/message', {
         message: message,
         conversation_id: conversationId,
-        // 移除user_id，让后端从认证token中获取
-        family_member_id: null
+        context: {}
+      }, {
+        timeout: 60000  // 60秒超时，给LLM足够的响应时间
       })
 
       return {
@@ -173,6 +175,8 @@ export class HealthChatAPI {
       const response = await request.post('/rag/retrieve', {
         user_query: query,
         k: k
+      }, {
+        timeout: 30000  // 30秒超时，RAG检索通常较快
       })
 
       return {
