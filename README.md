@@ -178,9 +178,16 @@ AuraWell_Agent/
 │   ├── requirements.txt                     # Python 依赖
 │   └── .env.example                         # 环境变量模板
 │
-└── 📚 文档与测试
+├── 🧪 测试套件
+│   ├── tests/                               # 测试目录
+│   │   ├── test_unit/                       # 单元测试
+│   │   ├── test_integration/                # 集成测试
+│   │   ├── test_api/                        # API测试
+│   │   ├── test_performance/                # 性能测试
+│   │   └── test_deployment/                 # 部署验证测试
+│   │
+└── 📚 文档
     ├── README.md                            # 项目文档 (本文件)
-    ├── docs/                                # 详细文档
     └── logs/                                # 日志目录
 ```
 
@@ -502,15 +509,68 @@ npm run dev  # 支持热重载
 # 运行所有测试
 python -m pytest
 
-# 测试特定模块
-python -m pytest tests/test_agent.py -v
+## 🧪 测试框架
 
-# 测试覆盖率
-python -m pytest --cov=src/aurawell tests/
+AuraWell 采用 pytest 作为主要测试框架，提供全面的测试覆盖：
 
-# API 测试
-python test_aurawell_api.ps1  # Windows
-./test_aurawell_api.sh        # Linux/Mac
+### 📁 测试目录结构
+
+```
+tests/
+├── test_unit/                  # 单元测试
+│   ├── test_models/            # 数据模型测试
+│   ├── test_services/          # 服务层测试
+│   └── test_utils/             # 工具函数测试
+├── test_integration/           # 集成测试
+│   ├── test_database/          # 数据库集成测试
+│   ├── test_api_endpoints/     # API端点集成测试
+│   └── test_external_apis/     # 外部API集成测试
+├── test_api/                   # API测试
+│   ├── test_health_endpoints/  # 健康数据API测试
+│   ├── test_user_endpoints/    # 用户管理API测试
+│   └── test_chat_endpoints/    # 聊天功能API测试
+├── test_performance/           # 性能测试
+│   ├── test_load/              # 负载测试
+│   ├── test_stress/            # 压力测试
+│   └── test_benchmark/         # 基准测试
+└── test_deployment/            # 部署验证测试
+    ├── test_frontend/          # 前端部署测试
+    ├── test_backend/           # 后端部署测试
+    └── test_infrastructure/    # 基础设施测试
+```
+
+### 🚀 运行测试
+
+```bash
+# 运行所有测试
+pytest tests/
+
+# 运行特定类型测试
+pytest tests/test_unit/          # 单元测试
+pytest tests/test_integration/   # 集成测试
+pytest tests/test_api/           # API测试
+pytest tests/test_performance/   # 性能测试
+pytest tests/test_deployment/    # 部署验证测试
+
+# 运行带覆盖率的测试
+pytest tests/ --cov=src/aurawell --cov-report=html
+
+# 运行特定文件的测试
+pytest tests/test_unit/test_models/test_user_model.py -v
+
+# 性能测试（仅在需要时运行）
+pytest tests/test_performance/ --benchmark-only
+```
+
+### 📊 测试覆盖率
+
+项目目标测试覆盖率：**80%+**
+
+```bash
+# 生成覆盖率报告
+pytest tests/ --cov=src/aurawell --cov-report=html
+open htmlcov/index.html  # 查看详细覆盖率报告
+```
 ```
 
 ### 📝 代码规范

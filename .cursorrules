@@ -226,6 +226,19 @@ parallel_calls = [
 - 函数和类名使用英文，注释可以包含中文说明
 - 集成MCP工具调用的错误处理和重试机制
 
+## 测试规范 (Testing Standards)
+- **测试框架**: 使用 pytest 作为主要测试框架
+- **测试目录**: 所有测试文件必须放在 `tests/` 目录下
+- **测试分类**: 
+  - `tests/test_unit/`: 单元测试
+  - `tests/test_integration/`: 集成测试
+  - `tests/test_api/`: API测试
+  - `tests/test_performance/`: 性能测试
+  - `tests/test_deployment/`: 部署验证测试
+- **命名规范**: 测试文件以 `test_` 开头，测试类以 `Test` 开头，测试方法以 `test_` 开头
+- **测试覆盖率**: 目标覆盖率80%以上
+- **MCP工具测试**: 优先使用MCP工具进行自动化测试执行和报告生成
+
 ## AI伦理与医疗边界 (AI Ethics & Medical Boundaries)
 - **建议透明化**: 使用sequential-thinking解释AI建议的推理过程
 - **多源验证**: 通过brave-search确认建议的科学依据
