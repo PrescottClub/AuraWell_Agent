@@ -159,7 +159,7 @@ export const familyAPI = {
   },
 
   // 获取家庭健康报告 - Mock实现
-  async getFamilyHealthReport(familyId, params = {}) {
+  async getFamilyHealthReport(familyId) {
     try {
       // 模拟家庭健康报告
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -168,7 +168,7 @@ export const familyAPI = {
         success: true,
         data: {
           family_id: familyId,
-          period: params.period || 'week',
+          period: 'week',
           summary: {
             total_steps: 45000,
             avg_sleep_hours: 7.2,
@@ -185,7 +185,7 @@ export const familyAPI = {
   },
 
   // 获取家庭排行榜 - Mock实现
-  async getFamilyLeaderboard(familyId, params = {}) {
+  async getFamilyLeaderboard(familyId) {
     try {
       // 模拟家庭排行榜
       await new Promise(resolve => setTimeout(resolve, 300))

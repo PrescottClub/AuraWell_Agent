@@ -204,7 +204,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { DownOutlined } from '@ant-design/icons-vue'
 import { useFamilyStore } from '@/stores/family'
@@ -294,9 +294,10 @@ const getPermissionText = (permission) => {
   return texts[permission] || permission
 }
 
-const formatTime = (time) => {
-  if (!time) return '从未'
-  return new Date(time).toLocaleString()
+const formatTime = (timestamp) => {
+  if (!timestamp) return '从未'
+  const date = new Date(timestamp)
+  return date.toLocaleString()
 }
 
 const canEditMember = (member) => {
@@ -404,15 +405,10 @@ const handleSetAlerts = async () => {
   }
 }
 
-const handleSaveAlerts = (alertData) => {
-  // 处理保存告警数据
-  console.log('保存告警数据:', alertData)
-}
-
 // 生命周期
 onMounted(() => {
-  if (familyStore.currentFamily) {
-    familyStore.fetchFamilyMembers(familyStore.currentFamily.family_id)
+  if (!familyStore.familyMembers.length) {
+    familyStore.fetchFamilyMembers()
   }
 })
 </script>
@@ -436,5 +432,9 @@ onMounted(() => {
 
 .ant-checkbox-wrapper {
   @apply mb-2;
+}
+
+.member-management .ant-table-cell {
+  vertical-align: top;
 }
 </style>

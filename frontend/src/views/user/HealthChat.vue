@@ -1,154 +1,76 @@
 <template>
-  <div class="health-chat-container">
-    <!-- 聊天头部 -->
-    <div class="chat-header">
-      <div class="header-content">
-        <div class="agent-info">
-          <a-avatar :size="48" :style="{ backgroundColor: '#52c41a' }">
-            <template #icon>
-              <robot-outlined />
-            </template>
-          </a-avatar>
-          <div class="agent-details">
-            <h3>AuraWell 健康助手</h3>
-            <p>您的专属健康管理顾问，随时为您提供个性化建议</p>
+  <div class="h-full flex flex-col bg-background">
+    <!-- 主聊天界面 -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- 消息列表 -->
+      <div ref="messagesContainer" class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- 欢迎信息 -->
+        <div v-if="messages.length === 0" class="welcome-message text-center">
+          <div class="inline-block p-4 bg-secondary rounded-2xl mb-4">
+              <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+              </svg>
           </div>
-        </div>
-        <div class="chat-actions">
-          <a-button type="text" @click="showConversationHistory = true">
-            <template #icon><history-outlined /></template>
-            历史对话
-          </a-button>
-          <a-button type="text" @click="clearCurrentChat">
-            <template #icon><clear-outlined /></template>
-            清空对话
-          </a-button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 聊天消息区域 -->
-    <div class="chat-messages" ref="messagesContainer">
-      <!-- 欢迎消息 -->
-      <div v-if="messages.length === 0" class="welcome-section">
-        <div class="welcome-message">
-          <h2>👋 欢迎使用 AuraWell 健康助手</h2>
-          <p>我是您的专属健康管理顾问，可以帮助您：</p>
-          <ul>
-            <li>🎯 制定个性化的健康目标</li>
-            <li>📊 分析您的健康数据</li>
-            <li>💪 提供运动和饮食建议</li>
-            <li>😴 改善睡眠质量</li>
-            <li>🧘 建立健康的生活习惯</li>
-          </ul>
-          <p>请告诉我您的健康目标或当前遇到的问题，让我们开始您的健康之旅吧！</p>
+          <h2 class="text-2xl font-bold text-text-primary">AuraWell 健康助手</h2>
+          <p class="text-text-secondary mt-2">我可以帮助您分析健康数据、制定计划、获取建议等。</p>
         </div>
         
-        <!-- 快速开始建议 -->
-        <div class="quick-start-suggestions">
-          <h4>💡 快速开始</h4>
-          <div class="suggestion-buttons">
-            <a-button 
-              v-for="suggestion in quickStartSuggestions" 
-              :key="suggestion"
-              type="default"
-              class="suggestion-btn"
-              @click="sendQuickMessage(suggestion)"
+        <ChatMessage 
+          v-for="msg in messages" 
+          :key="msg.id" 
+          :message="msg"
+        />
+        <TypingIndicator v-if="isTyping" />
+      </div>
+
+      <!-- 底部输入区域 -->
+      <div class="p-4 bg-white border-t border-border">
+        <!-- 快速建议 -->
+        <div class="flex items-center space-x-2 mb-3 overflow-x-auto pb-2">
+            <button 
+                v-for="suggestion in quickStartSuggestions" 
+                :key="suggestion"
+                @click="sendQuickSuggestion(suggestion)"
+                class="px-4 py-2 text-sm font-medium text-primary bg-secondary rounded-full whitespace-nowrap hover:bg-primary/20 transition-colors"
             >
-              {{ suggestion }}
-            </a-button>
-          </div>
+                {{ suggestion }}
+            </button>
+        </div>
+
+        <!-- 输入框和发送按钮 -->
+        <div class="relative">
+          <CommandPalette
+            ref="commandPaletteRef"
+            :visible="showCommandPalette"
+            :commands="availableCommands"
+            :filter="commandFilter"
+            @select="onCommandSelect"
+          />
+          <textarea
+            v-model="inputMessage"
+            @input="handleInput"
+            @keydown="handleKeyDown"
+            placeholder="输入 / 获取命令提示..."
+            class="w-full py-3 pl-4 pr-28 text-base bg-background-alt border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+            rows="1"
+            ref="inputArea"
+          ></textarea>
+          <button 
+            @click="sendMessage"
+            :disabled="!inputMessage.trim() || isTyping"
+            class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <PaperAirplaneIcon class="w-6 h-6" />
+          </button>
         </div>
       </div>
-
-      <!-- 聊天消息列表 -->
-      <div v-for="message in messages" :key="message.id">
-        <ChatMessage 
-          :message="message"
-          @quick-reply="handleQuickReply"
-          @suggestion-action="handleSuggestionAction"
-        />
-      </div>
-
-      <!-- 打字指示器 -->
-      <TypingIndicator :visible="isTyping" />
     </div>
 
-    <!-- 输入区域 -->
-    <div class="chat-input-area">
-      <!-- RAG功能提示 -->
-      <div class="rag-tip" v-if="!messages.length">
-        <a-alert
-          message="💡 智能检索功能"
-          description="输入 /rag 您的问题 可以搜索相关医学文档，例如：/rag 高血压的饮食建议"
-          type="info"
-          show-icon
-          closable
-          class="rag-alert"
-        />
-      </div>
-
-      <div class="input-container">
-        <a-input
-          v-model:value="inputMessage"
-          placeholder="请输入您的健康问题或需求..."
-          :disabled="isTyping || isRAGLoading"
-          @press-enter="sendMessage"
-          class="message-input"
-          :maxlength="500"
-          show-count
-        />
-        <a-button
-          type="primary"
-          :loading="isTyping || isRAGLoading"
-          :disabled="!inputMessage.trim()"
-          @click="sendMessage"
-          class="send-button"
-        >
-          <template #icon><send-outlined /></template>
-          {{ isRAGLoading ? '检索中...' : '发送' }}
-        </a-button>
-      </div>
-
-      <!-- 输入提示 -->
-      <div class="input-hints">
-        <span class="hint-text">💡 提示：您可以询问关于运动、饮食、睡眠、健康目标等任何问题，或使用 /rag 指令进行文档检索</span>
-      </div>
-    </div>
-
-    <!-- 对话历史抽屉 -->
-    <a-drawer
-      v-model:open="showConversationHistory"
-      title="对话历史"
-      placement="right"
-      :width="400"
-    >
-      <div class="conversation-history">
-        <a-list
-          :data-source="conversationHistory"
-          :loading="loadingHistory"
-        >
-          <template #renderItem="{ item }">
-            <a-list-item>
-              <a-list-item-meta
-                :title="item.title"
-                :description="item.lastMessage"
-              >
-                <template #avatar>
-                  <a-avatar :style="{ backgroundColor: '#1890ff' }">
-                    {{ item.date }}
-                  </a-avatar>
-                </template>
-              </a-list-item-meta>
-              <template #actions>
-                <a @click="loadConversation(item.id)">加载</a>
-                <a @click="deleteConversation(item.id)" style="color: #ff4d4f">删除</a>
-              </template>
-            </a-list-item>
-          </template>
-        </a-list>
-      </div>
-    </a-drawer>
+    <!-- 历史记录侧边栏 (可选) -->
+    <aside v-if="showConversationHistory" class="w-80 bg-background-alt border-l border-border p-4">
+      <h3 class="text-lg font-semibold text-text-primary mb-4">对话历史</h3>
+      <!-- 历史记录列表 -->
+    </aside>
   </div>
 </template>
 
@@ -161,9 +83,11 @@ import {
   HistoryOutlined,
   ClearOutlined
 } from '@ant-design/icons-vue'
+import { PaperAirplaneIcon } from '@heroicons/vue/24/solid'
 
 import ChatMessage from '../../components/chat/ChatMessage.vue'
 import TypingIndicator from '../../components/chat/TypingIndicator.vue'
+import CommandPalette from '../../components/chat/CommandPalette.vue'
 import HealthChatAPI from '../../api/chat.js'
 import { UserAPI } from '../../api/user.js'
 import { useAuthStore } from '../../stores/auth.js'
@@ -183,16 +107,24 @@ const showConversationHistory = ref(false)
 const conversationHistory = ref([])
 const loadingHistory = ref(false)
 const currentConversationId = ref(null)
+const inputArea = ref(null)
+const commandPaletteRef = ref(null)
+const showCommandPalette = ref(false)
+const commandFilter = ref('')
+const messageHistory = ref([])
+let historyIndex = -1
 
 // 快速开始建议
 const quickStartSuggestions = ref([
-  '我想制定一个减重计划',
+  '帮我制定一个减脂计划',
   '如何改善我的睡眠质量？',
-  '请帮我分析我的运动数据',
-  '我需要营养饮食建议',
-  '如何建立健康的作息习惯？',
-  '/rag 高血压的饮食建议',
-  '/rag 糖尿病的运动指导'
+  '分析我最近的运动数据'
+])
+
+const availableCommands = ref([
+    { name: '/rag', description: '使用RAG知识库进行搜索' },
+    { name: '/clear', description: '清除当前对话' },
+    { name: '/help', description: '显示帮助信息' },
 ])
 
 // 🚀 生命周期钩子 - 优化的初始化流程
@@ -240,6 +172,16 @@ watch(messages, () => {
   })
 }, { deep: true })
 
+watch(inputMessage, () => {
+    nextTick(() => {
+        const el = inputArea.value;
+        if (el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+    });
+});
+
 // 🔧 简化认证逻辑 - 使用统一的认证状态管理
 const ensureAuthenticated = async () => {
   try {
@@ -281,8 +223,38 @@ const initializeChat = async () => {
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || isTyping.value) return
+  const messageText = inputMessage.value.trim();
 
-  const messageText = inputMessage.value.trim()
+  // Handle commands
+  if (messageText.startsWith('/')) {
+    const [command] = messageText.split(' ');
+    switch (command) {
+      case '/clear':
+        messages.value = [];
+        antMessage.success('对话已清除');
+        inputMessage.value = '';
+        return;
+      case '/help':
+        messages.value.push({
+          id: Date.now(),
+          sender: 'assistant',
+          content: '可用命令: /rag [查询], /clear, /help',
+          timestamp: new Date().toISOString()
+        });
+        inputMessage.value = '';
+        return;
+      case '/rag':
+        // RAG command is handled below
+        break;
+      default:
+        antMessage.error(`未知命令: ${command}`);
+        inputMessage.value = '';
+        return;
+    }
+  }
+
+  messageHistory.value.push(messageText);
+  historyIndex = messageHistory.value.length;
 
   // 检查是否是RAG指令
   if (messageText.startsWith('/rag ')) {
@@ -360,6 +332,12 @@ const sendMessage = async () => {
     }
   } finally {
     isTyping.value = false
+    nextTick(() => {
+        const el = inputArea.value;
+        if (el) {
+            el.style.height = 'auto';
+        }
+    });
   }
 }
 
@@ -431,21 +409,66 @@ const handleRAGCommand = async (command) => {
   }
 }
 
-const sendQuickMessage = (suggestionText) => {
-  inputMessage.value = suggestionText
-  sendMessage()
+const handleInput = (e) => {
+    const text = e.target.value;
+    if (text.startsWith('/')) {
+        showCommandPalette.value = true;
+        commandFilter.value = text;
+    } else {
+        showCommandPalette.value = false;
+    }
 }
 
-const handleQuickReply = (reply) => {
-  inputMessage.value = reply.text || reply
-  sendMessage()
+const handleKeyDown = (e) => {
+    if (showCommandPalette.value) {
+        switch (e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                commandPaletteRef.value?.onArrowUp();
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                commandPaletteRef.value?.onArrowDown();
+                break;
+            case 'Enter':
+                e.preventDefault();
+                commandPaletteRef.value?.onEnter();
+                break;
+            case 'Escape':
+                showCommandPalette.value = false;
+                break;
+        }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    } else if (e.key === 'ArrowUp' && !inputMessage.value) {
+        if (historyIndex > 0) {
+            historyIndex--;
+            inputMessage.value = messageHistory.value[historyIndex];
+        }
+    } else if (e.key === 'ArrowDown' && !inputMessage.value) {
+        if (historyIndex < messageHistory.value.length - 1) {
+            historyIndex++;
+            inputMessage.value = messageHistory.value[historyIndex];
+        } else {
+            historyIndex = messageHistory.value.length;
+            inputMessage.value = '';
+        }
+    }
 }
 
-const handleSuggestionAction = (action) => {
-  console.log('处理建议操作:', action)
-  // 这里可以根据action类型执行不同的操作
-  // 比如跳转到特定页面、打开模态框等
+const onCommandSelect = (command) => {
+    inputMessage.value = command + ' ';
+    showCommandPalette.value = false;
+    nextTick(() => {
+        inputArea.value?.focus();
+    });
 }
+
+const sendQuickSuggestion = (suggestion) => {
+    inputMessage.value = suggestion;
+    sendMessage();
+};
 
 const scrollToBottom = () => {
   if (messagesContainer.value) {
@@ -496,33 +519,14 @@ const deleteConversation = async (conversationId) => {
 </script>
 
 <style scoped>
-.health-chat-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+/* 聊天页面样式已移至全局glass-card和glow-btn类 */
+
+/* 聊天输入区域的阴影，使其悬浮 */
+.chat-input-area {
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
 }
 
-.chat-header {
-  background: white;
-  border-bottom: 1px solid #e8e8e8;
-  padding: 16px 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.agent-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
 
 .agent-details h3 {
   margin: 0;
@@ -559,15 +563,17 @@ const deleteConversation = async (conversationId) => {
 
 .welcome-message {
   background: white;
-  padding: 32px;
+  padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+  border: 1px solid #e2e8f0;
 }
 
 .welcome-message h2 {
-  color: #52c41a;
+  color: #1f2937;
   margin-bottom: 16px;
+  font-weight: 700;
 }
 
 .welcome-message ul {
@@ -583,14 +589,16 @@ const deleteConversation = async (conversationId) => {
 
 .quick-start-suggestions {
   background: white;
-  padding: 24px;
+  padding: 32px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
 }
 
 .quick-start-suggestions h4 {
-  margin-bottom: 16px;
-  color: #262626;
+  margin-bottom: 20px;
+  color: #1f2937;
+  font-weight: 600;
 }
 
 .suggestion-buttons {
@@ -602,25 +610,31 @@ const deleteConversation = async (conversationId) => {
 
 .suggestion-btn {
   border-radius: 20px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid #e2e8f0;
   transition: all 0.3s;
+  background: white;
+  color: #64748b;
 }
 
 .suggestion-btn:hover {
-  border-color: #52c41a;
-  color: #52c41a;
+  background: linear-gradient(120deg, #a0e9ff, #a1c4fd, #c2e9fb);
+  border-color: transparent;
+  color: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(160, 233, 255, 0.25);
 }
 
 .chat-input-area {
   background: white;
-  border-top: 1px solid #e8e8e8;
-  padding: 16px 24px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  border-top: 1px solid #e2e8f0;
+  padding: 24px 32px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 16px 16px 0 0;
 }
 
 .input-container {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   max-width: 1200px;
   margin: 0 auto;
   align-items: flex-end;
@@ -628,13 +642,21 @@ const deleteConversation = async (conversationId) => {
 
 .message-input {
   flex: 1;
-  border-radius: 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.message-input:focus {
+  border-color: #a0e9ff;
+  box-shadow: 0 0 0 3px rgba(160, 233, 255, 0.1);
 }
 
 .send-button {
-  border-radius: 20px;
-  height: 40px;
-  padding: 0 20px;
+  border-radius: 12px;
+  height: 44px;
+  padding: 0 24px;
+  font-weight: 600;
 }
 
 .input-hints {
@@ -649,12 +671,14 @@ const deleteConversation = async (conversationId) => {
 
 /* RAG功能提示样式 */
 .rag-tip {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .rag-alert {
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .conversation-history {
@@ -683,25 +707,25 @@ const deleteConversation = async (conversationId) => {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .chat-header {
-    padding: 12px 16px;
+    padding: 16px 20px;
   }
 
   .header-content {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     align-items: flex-start;
   }
 
   .chat-messages {
-    padding: 16px 0;
+    padding: 20px 0;
   }
 
   .welcome-section {
-    padding: 0 16px;
+    padding: 0 20px;
   }
 
   .welcome-message {
-    padding: 24px 20px;
+    padding: 32px 24px;
   }
 
   .suggestion-buttons {
@@ -709,16 +733,17 @@ const deleteConversation = async (conversationId) => {
   }
 
   .chat-input-area {
-    padding: 12px 16px;
+    padding: 20px 24px;
   }
 
   .input-container {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
 
   .send-button {
     width: 100%;
+    height: 48px;
   }
 }
 </style>

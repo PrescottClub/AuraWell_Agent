@@ -103,7 +103,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['view', 'export', 'edit', 'delete'])
+defineEmits(['view', 'export', 'edit', 'delete'])
 
 const statusColor = computed(() => {
   const colors = {

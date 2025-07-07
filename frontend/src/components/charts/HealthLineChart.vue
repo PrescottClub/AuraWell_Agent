@@ -56,6 +56,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { MessageOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import { useTheme } from '../../composables/useTheme.js'
+import { getChartTheme } from '../../utils/chartThemes.js'
 import { healthReportAPI } from '../../mock/api.js'
 
 // Props
@@ -89,6 +91,9 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['chart-click', 'period-change'])
 
+// 主题相关
+const { isDark } = useTheme()
+
 // 响应式数据
 const chartRef = ref(null)
 const loading = ref(false)
@@ -100,20 +105,28 @@ const summary = ref({})
 // 计算属性
 const chartOption = computed(() => {
   if (!chartData.value.length) return {}
-  
+
+  // 获取当前主题配置
+  const currentTheme = getChartTheme(isDark.value)
+  const primaryColor = props.color || currentTheme.color[0] || '#14b8a6'
+
   return {
+    // 应用主题配置
+    ...currentTheme,
     tooltip: {
       trigger: 'axis',
       formatter: (params) => {
         const point = params[0]
         return `${point.name}<br/>${props.title}: ${formatValue(point.value)}${props.unit}`
-      }
+      },
+      ...currentTheme.tooltip
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: '3%',
-      containLabel: true
+      containLabel: true,
+      ...currentTheme.grid
     },
     xAxis: {
       type: 'category',
@@ -121,16 +134,18 @@ const chartOption = computed(() => {
       data: chartData.value.map(item => formatDate(item.date)),
       axisLabel: {
         fontSize: 12,
-        color: '#666'
-      }
+        color: currentTheme.categoryAxis?.axisLabel?.color || (isDark.value ? '#94a3b8' : '#64748b')
+      },
+      ...currentTheme.categoryAxis
     },
     yAxis: {
       type: 'value',
       axisLabel: {
         fontSize: 12,
-        color: '#666',
+        color: currentTheme.valueAxis?.axisLabel?.color || (isDark.value ? '#94a3b8' : '#64748b'),
         formatter: (value) => formatValue(value) + props.unit
-      }
+      },
+      ...currentTheme.valueAxis
     },
     series: [
       {
@@ -140,11 +155,11 @@ const chartOption = computed(() => {
         symbol: 'circle',
         symbolSize: 6,
         lineStyle: {
-          color: props.color,
+          color: primaryColor,
           width: 3
         },
         itemStyle: {
-          color: props.color
+          color: primaryColor
         },
         areaStyle: {
           color: {
@@ -154,8 +169,8 @@ const chartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: props.color + '40' },
-              { offset: 1, color: props.color + '10' }
+              { offset: 0, color: primaryColor + '40' },
+              { offset: 1, color: primaryColor + '10' }
             ]
           }
         },
@@ -319,6 +334,11 @@ const handleChartClick = async () => {
 watch(() => props.metricType, () => {
   fetchData()
 }, { immediate: false })
+
+// 监听主题变化
+watch(isDark, () => {
+  // 主题变化时图表会自动重新渲染
+})
 
 // 生命周期
 onMounted(() => {

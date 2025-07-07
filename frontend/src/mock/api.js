@@ -49,7 +49,7 @@ export class AuthAPI extends MockAPI {
   async login(credentials) {
     await this.delay()
     
-    const { username, password } = credentials
+    const { username } = credentials
     
     // 模拟登录验证 - 支持多种测试账户
     const validCredentials = [
@@ -59,7 +59,7 @@ export class AuthAPI extends MockAPI {
     ]
 
     const isValidLogin = validCredentials.some(cred =>
-      cred.username === username && cred.password === password
+      cred.username === username && cred.password === credentials.password
     )
 
     if (isValidLogin) {
@@ -82,7 +82,7 @@ export class AuthAPI extends MockAPI {
   async register(userData) {
     await this.delay()
     
-    const { username, email, password, full_name } = userData
+    const { username, email, full_name } = userData
     
     // 检查用户是否已存在
     const existingUser = mockData.users.find(u => u.username === username || u.email === email)
@@ -317,7 +317,7 @@ export class ChatAPI extends MockAPI {
     session.messages.push(userMessage)
     
     // 模拟AI回复
-    const aiResponse = this.generateAIResponse(content)
+    const aiResponse = this.generateAIResponse()
     const aiMessage = {
       message_id: mockUtils.generateId('msg'),
       role: 'assistant',
@@ -335,7 +335,7 @@ export class ChatAPI extends MockAPI {
   }
 
   // 生成AI回复（简单模拟）
-  generateAIResponse(userInput) {
+  generateAIResponse() {
     const responses = [
       '感谢您的咨询！基于您提供的信息，我建议您...',
       '这是一个很好的问题。根据健康管理的最佳实践...',
@@ -462,7 +462,7 @@ export class FamilyAPI extends MockAPI {
   }
 
   // 获取家庭健康报告
-  async getFamilyHealthReport(familyId, params = {}) {
+  async getFamilyHealthReport(familyId) {
     await this.delay()
     this.checkAuth()
 
@@ -483,7 +483,7 @@ export class FamilyAPI extends MockAPI {
   }
 
   // 获取家庭排行榜
-  async getFamilyLeaderboard(familyId, params = {}) {
+  async getFamilyLeaderboard(familyId) {
     await this.delay()
     this.checkAuth()
 
@@ -532,7 +532,7 @@ export class FamilyAPI extends MockAPI {
   }
 
   // 为成员点赞
-  async likeMember(memberId, data) {
+  async likeMember() {
     await this.delay(200)
     this.checkAuth()
 
@@ -642,10 +642,10 @@ export class HealthReportAPI extends MockAPI {
     await this.delay(800)
     this.checkAuth()
 
-    const { category, period } = params
+    const { category } = params
 
     // 模拟AI生成的健康洞察
-    const insights = this.generateHealthInsights(category, period)
+    const insights = this.generateHealthInsights(category)
 
     return this.createResponse({
       insights,
@@ -695,17 +695,25 @@ export class HealthReportAPI extends MockAPI {
 
   // 获取默认开始日期
   getDefaultStartDate(reportType) {
-    const now = new Date()
+    const today = new Date();
     switch (reportType) {
-      case 'weekly':
-        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      case 'monthly':
-        return new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-      case 'quarterly':
-        const quarter = Math.floor(now.getMonth() / 3)
-        return new Date(now.getFullYear(), quarter * 3, 1).toISOString()
+      case 'weekly': {
+        const d = new Date(today);
+        d.setDate(d.getDate() - 7);
+        return d;
+      }
+      case 'monthly': {
+        const d = new Date(today);
+        d.setMonth(d.getMonth() - 1);
+        return d;
+      }
+      case 'quarterly': {
+        const d = new Date(today);
+        d.setMonth(d.getMonth() - 3);
+        return d;
+      }
       default:
-        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        return today;
     }
   }
 
@@ -791,7 +799,7 @@ export class HealthReportAPI extends MockAPI {
   }
 
   // 生成健康洞察
-  generateHealthInsights(category, period) {
+  generateHealthInsights(category) {
     const insights = [
       {
         insight_id: mockUtils.generateId('insight'),

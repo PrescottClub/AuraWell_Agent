@@ -151,49 +151,14 @@
       @context-changed="handleContextChanged"
     />
 
-    <!-- 对话弹窗 -->
-    <a-modal
-      v-model:open="showChatModal"
-      title="AI健康分析对话"
-      width="800px"
-      :footer="null"
-      @cancel="handleCloseChatModal"
-    >
-      <div class="chat-container">
-        <div class="chat-context" v-if="chatContext">
-          <div class="context-title">讨论主题: {{ chatContext.title }}</div>
-          <div class="context-desc">{{ chatContext.description }}</div>
-        </div>
-        
-        <div class="chat-messages">
-          <div 
-            v-for="message in chatMessages" 
-            :key="message.id"
-            class="chat-message"
-            :class="message.role"
-          >
-            <div class="message-content">{{ message.content }}</div>
-            <div class="message-time">{{ formatTime(message.timestamp) }}</div>
-          </div>
-        </div>
-        
-        <div class="chat-input">
-          <a-input
-            v-model:value="chatInput"
-            placeholder="输入您的问题或想法..."
-            @press-enter="handleSendMessage"
-            :disabled="chatLoading"
-          />
-          <a-button 
-            type="primary" 
-            @click="handleSendMessage"
-            :loading="chatLoading"
-          >
-            发送
-          </a-button>
-        </div>
-      </div>
-    </a-modal>
+    <!-- 对话弹窗 - Refactored -->
+    <ReportChatModal
+      v-model:visible="showChatModal"
+      :context="chatContext"
+      :session-id="currentSessionId"
+      @close="handleCloseChatModal"
+      @sent="handleMessageSent"
+    />
   </div>
 </template>
 
@@ -216,6 +181,7 @@ import OptimizedChart from '../../components/charts/OptimizedChart.vue'
 import HealthHeatmap from '../../components/charts/HealthHeatmap.vue'
 import HealthRadarChart from '../../components/charts/HealthRadarChart.vue'
 import ChatIntegration from '../../components/report/ChatIntegration.vue'
+import ReportChatModal from '../../components/report/ReportChatModal.vue'
 
 // 响应式数据
 const reports = ref([])
@@ -273,8 +239,8 @@ const getExerciseDataSource = async (timeRange) => {
 }
 
 // 方法
-const handleReportSelect = (data) => {
-  console.log('报告选择:', data)
+const handleReportSelect = (report) => {
+  console.log('报告选择:', report)
 }
 
 const handleBatchAction = (data) => {
@@ -306,8 +272,8 @@ const handleGenerateReport = async () => {
     // 自动打开新生成的报告
     currentReport.value = response.data
   } catch (error) {
-    console.error('生成报告失败:', error)
-    message.error('生成报告失败')
+    console.error("生成报告失败:", error)
+    message.error('生成报告失败，请稍后重试。')
   } finally {
     generating.value = false
   }
@@ -459,38 +425,9 @@ const handleCloseChatModal = () => {
   currentSessionId.value = null
 }
 
-const handleSendMessage = async () => {
-  if (!chatInput.value.trim()) return
-  
-  const userMessage = {
-    id: Date.now(),
-    role: 'user',
-    content: chatInput.value,
-    timestamp: new Date().toISOString()
-  }
-  
-  chatMessages.value.push(userMessage)
-  const messageContent = chatInput.value
-  chatInput.value = ''
-  chatLoading.value = true
-  
-  try {
-    const response = await chatAPI.sendMessage(messageContent, currentSessionId.value)
-    
-    const aiMessage = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      content: response.data.aiMessage.content,
-      timestamp: new Date().toISOString()
-    }
-    
-    chatMessages.value.push(aiMessage)
-  } catch (error) {
-    console.error('发送消息失败:', error)
-    message.error('发送消息失败')
-  } finally {
-    chatLoading.value = false
-  }
+const handleMessageSent = (message) => {
+  // Can optionally track sent messages here if needed
+  console.log('Message sent from modal:', message);
 }
 
 // 其他操作
@@ -529,15 +466,16 @@ const handleContextChanged = (context) => {
 }
 
 // 生命周期
-onMounted(() => {
+onMounted(async () => {
+  loading.value = true
   // 初始化时不需要获取报告列表，由VirtualReportList组件处理
 })
 </script>
 
 <style scoped>
 .health-report-page {
-  padding: 24px;
-  background: #f5f5f5;
+  padding: 32px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
 }
 
@@ -545,11 +483,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
 }
 
 .header-content h1 {

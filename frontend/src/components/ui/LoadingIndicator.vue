@@ -1,127 +1,319 @@
 <template>
-  <div class="loading-indicator" :class="loadingClass">
-    <!-- 默认加载动画 -->
-    <div v-if="type === 'default'" class="loading-default">
-      <div class="spinner"></div>
-      <span v-if="text" class="loading-text">{{ text }}</span>
-    </div>
-
-    <!-- MCP工具加载动画 -->
-    <div v-else-if="type === 'mcp'" class="loading-mcp">
-      <div class="mcp-spinner">
-        <div class="mcp-circle" v-for="i in 3" :key="i" :style="{ animationDelay: `${i * 0.1}s` }"></div>
+  <div 
+    v-motion-bounce-visible="{
+      initial: { scale: 0, opacity: 0 },
+      visible: { 
+        scale: 1, 
+        opacity: 1,
+        transition: {
+          type: 'spring',
+          stiffness: 350,
+          damping: 20
+        }
+      }
+    }"
+    class="loading-indicator" 
+    :class="[`size-${size}`, `type-${type}`]"
+  >
+    <!-- MCP工具加载状态 -->
+    <div v-if="type === 'mcp'" class="mcp-loading">
+      <div class="loading-icon">
+        <div class="mcp-spinner">
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+        </div>
       </div>
-      <span class="loading-text">{{ text || 'AI正在分析中...' }}</span>
+      <div class="loading-content">
+        <div class="loading-title">{{ title || 'MCP 智能助手工作中' }}</div>
+        <div class="loading-text">{{ text || '正在调用多个 MCP 服务器进行协同分析...' }}</div>
+        <div class="loading-tools" v-if="activeTools && activeTools.length > 0">
+          <span 
+            v-for="tool in activeTools" 
+            :key="tool"
+            class="active-tool"
+          >
+            {{ getToolDisplayName(tool) }}
+          </span>
+        </div>
+      </div>
     </div>
 
-    <!-- 图表加载动画 -->
-    <div v-else-if="type === 'chart'" class="loading-chart">
-      <div class="chart-placeholder">
-        <div class="chart-bars">
+    <!-- 数据分析加载状态 -->
+    <div v-else-if="type === 'analysis'" class="analysis-loading">
+      <div class="analysis-icon">
+        <div class="data-bars">
           <div class="bar" v-for="i in 5" :key="i" :style="{ animationDelay: `${i * 0.1}s` }"></div>
         </div>
       </div>
-      <span class="loading-text">{{ text || '图表生成中...' }}</span>
+      <div class="loading-content">
+        <div class="loading-title">{{ title || '数据分析中' }}</div>
+        <div class="loading-text">{{ text || '正在处理您的健康数据，生成个性化分析...' }}</div>
+      </div>
     </div>
 
-    <!-- 数据计算加载动画 -->
-    <div v-else-if="type === 'calculation'" class="loading-calculation">
-      <div class="calculation-spinner">
-        <div class="calc-icon">🧮</div>
-        <div class="calc-waves">
-          <div class="wave" v-for="i in 3" :key="i" :style="{ animationDelay: `${i * 0.2}s` }"></div>
-        </div>
+    <!-- 搜索加载状态 -->
+    <div v-else-if="type === 'search'" class="search-loading">
+      <div class="search-icon">
+        <div class="search-pulse"></div>
       </div>
-      <span class="loading-text">{{ text || '数据计算中...' }}</span>
+      <div class="loading-content">
+        <div class="loading-title">{{ title || '智能搜索中' }}</div>
+        <div class="loading-text">{{ text || '正在搜索最新健康科研信息...' }}</div>
+      </div>
     </div>
 
-    <!-- 搜索研究加载动画 -->
-    <div v-else-if="type === 'research'" class="loading-research">
-      <div class="research-spinner">
-        <div class="research-icon">🔍</div>
-        <div class="search-dots">
-          <div class="dot" v-for="i in 3" :key="i" :style="{ animationDelay: `${i * 0.3}s` }"></div>
-        </div>
-      </div>
-      <span class="loading-text">{{ text || '搜索科学研究中...' }}</span>
+    <!-- 默认加载状态 -->
+    <div v-else class="default-loading">
+      <div class="default-spinner"></div>
+      <div v-if="text" class="loading-text">{{ text }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
+defineProps({
   type: {
     type: String,
-    default: 'default',
-    validator: (value) => ['default', 'mcp', 'chart', 'calculation', 'research'].includes(value)
+    default: 'default', // mcp, analysis, search, default
+    validator: (value) => ['mcp', 'analysis', 'search', 'default'].includes(value)
+  },
+  size: {
+    type: String,
+    default: 'medium', // small, medium, large
+    validator: (value) => ['small', 'medium', 'large'].includes(value)
   },
   text: {
     type: String,
     default: ''
   },
-  size: {
+  title: {
     type: String,
-    default: 'medium',
-    validator: (value) => ['small', 'medium', 'large'].includes(value)
+    default: ''
+  },
+  activeTools: {
+    type: Array,
+    default: () => []
   }
 })
 
-const loadingClass = computed(() => ({
-  [`loading-${props.size}`]: true
-}))
+const getToolDisplayName = (tool) => {
+  const toolNames = {
+    'database-sqlite': '数据库',
+    'calculator': '计算器',
+    'quickchart': '图表生成',
+    'brave-search': '搜索引擎',
+    'memory': '知识图谱',
+    'sequential-thinking': '深度分析',
+    'weather': '环境数据',
+    'filesystem': '文件系统',
+    'fetch': '数据抓取',
+    'github': '代码仓库',
+    'notion': '文档管理',
+    'run-python': 'Python执行',
+    'time': '时间工具'
+  }
+  return toolNames[tool] || tool
+}
 </script>
 
 <style scoped>
 .loading-indicator {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
   padding: 20px;
-}
-
-.loading-text {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #666;
-  text-align: center;
+  background: var(--color-bg-base);
+  border-radius: var(--border-radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color-base);
 }
 
 /* 尺寸变体 */
-.loading-small {
-  padding: 10px;
+.size-small {
+  padding: 12px;
+  gap: 12px;
 }
 
-.loading-small .loading-text {
+.size-large {
+  padding: 24px;
+  gap: 20px;
+}
+
+/* MCP 加载样式 */
+.mcp-loading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-icon {
+  flex-shrink: 0;
+}
+
+.mcp-spinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: mcpSpin 1.2s linear infinite;
+}
+
+.spinner-ring:nth-child(2) {
+  animation-delay: -0.4s;
+  transform: scale(0.8);
+  border-top-color: theme('colors.gemini.blue');
+}
+
+.spinner-ring:nth-child(3) {
+  animation-delay: -0.8s;
+  transform: scale(0.6);
+  border-top-color: theme('colors.gemini.purple');
+}
+
+.loading-content {
+  flex: 1;
+}
+
+.loading-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-base);
+  margin-bottom: 4px;
+}
+
+.loading-text {
   font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.loading-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 8px;
 }
 
-.loading-large {
-  padding: 40px;
+.active-tool {
+  background: var(--color-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  animation: toolPulse 2s infinite;
 }
 
-.loading-large .loading-text {
-  font-size: 16px;
-  margin-top: 16px;
-}
-
-/* 默认加载动画 */
-.loading-default {
+/* 数据分析加载样式 */
+.analysis-loading {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 16px;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #1890ff;
+.analysis-icon {
+  flex-shrink: 0;
+}
+
+.data-bars {
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  height: 32px;
+}
+
+.bar {
+  width: 4px;
+  background: linear-gradient(135deg, theme('colors.gemini.blue') 0%, theme('colors.gemini.purple') 100%);
+  border-radius: 2px;
+  animation: dataBar 1.5s infinite ease-in-out;
+}
+
+/* 搜索加载样式 */
+.search-loading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.search-icon {
+  flex-shrink: 0;
+}
+
+.search-pulse {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: searchPulse 1.5s infinite;
+}
+
+/* 默认加载样式 */
+.default-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.default-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color-base);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+/* 动画定义 */
+@keyframes mcpSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes toolPulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(0.95);
+  }
+}
+
+@keyframes dataBar {
+  0%, 100% { 
+    height: 8px; 
+    opacity: 0.6; 
+  }
+  50% { 
+    height: 24px; 
+    opacity: 1; 
+  }
+}
+
+@keyframes searchPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
@@ -129,211 +321,76 @@ const loadingClass = computed(() => ({
   100% { transform: rotate(360deg); }
 }
 
-/* MCP工具加载动画 */
-.loading-mcp {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* 小尺寸调整 */
+.size-small .mcp-spinner {
+  width: 24px;
+  height: 24px;
 }
 
-.mcp-spinner {
-  display: flex;
-  gap: 8px;
+.size-small .loading-title {
+  font-size: 12px;
 }
 
-.mcp-circle {
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
-  animation: mcpBounce 1.4s ease-in-out infinite both;
+.size-small .loading-text {
+  font-size: 11px;
 }
 
-@keyframes mcpBounce {
-  0%, 80%, 100% {
-    transform: scale(0);
-  }
-  40% {
-    transform: scale(1);
-  }
+.size-small .data-bars {
+  height: 20px;
 }
 
-/* 图表加载动画 */
-.loading-chart {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.size-small .search-pulse {
+  width: 20px;
+  height: 20px;
 }
 
-.chart-placeholder {
-  width: 120px;
-  height: 80px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  align-items: end;
-  justify-content: center;
+/* 大尺寸调整 */
+.size-large .mcp-spinner {
+  width: 48px;
+  height: 48px;
 }
 
-.chart-bars {
-  display: flex;
-  align-items: end;
-  gap: 4px;
-  height: 100%;
+.size-large .loading-title {
+  font-size: 16px;
 }
 
-.bar {
-  width: 12px;
-  background: #1890ff;
-  border-radius: 2px;
-  animation: chartGrow 1.5s ease-in-out infinite;
+.size-large .loading-text {
+  font-size: 14px;
 }
 
-.bar:nth-child(1) { height: 20%; }
-.bar:nth-child(2) { height: 40%; }
-.bar:nth-child(3) { height: 60%; }
-.bar:nth-child(4) { height: 80%; }
-.bar:nth-child(5) { height: 35%; }
-
-@keyframes chartGrow {
-  0%, 100% {
-    transform: scaleY(1);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scaleY(1.3);
-    opacity: 1;
-  }
+.size-large .data-bars {
+  height: 40px;
 }
 
-/* 数据计算加载动画 */
-.loading-calculation {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.size-large .search-pulse {
+  width: 40px;
+  height: 40px;
 }
 
-.calculation-spinner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 深色模式优化 */
+.dark .loading-indicator {
+  background: var(--color-bg-muted);
+  border-color: var(--border-color-muted);
 }
 
-.calc-icon {
-  font-size: 32px;
-  animation: calcPulse 2s ease-in-out infinite;
+.dark .active-tool {
+  background: theme('colors.gemini.purple');
 }
 
-.calc-waves {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-}
-
-.wave {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 2px solid #52c41a;
-  border-radius: 50%;
-  opacity: 0;
-  animation: waveExpand 2s ease-out infinite;
-}
-
-@keyframes calcPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-@keyframes waveExpand {
-  0% {
-    transform: scale(0.3);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
-}
-
-/* 搜索研究加载动画 */
-.loading-research {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.research-spinner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.research-icon {
-  font-size: 28px;
-  animation: searchRotate 3s linear infinite;
-}
-
-.search-dots {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 4px;
-  margin-left: 40px;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  background: #faad14;
-  border-radius: 50%;
-  animation: dotBlink 1.5s ease-in-out infinite;
-}
-
-@keyframes searchRotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes dotBlink {
-  0%, 80%, 100% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
+/* 响应式优化 */
+@media (max-width: 640px) {
   .loading-indicator {
     padding: 16px;
+    gap: 12px;
   }
-  
-  .calc-icon,
-  .research-icon {
-    font-size: 24px;
+
+  .loading-tools {
+    gap: 4px;
   }
-  
-  .chart-placeholder {
-    width: 100px;
-    height: 60px;
-    padding: 12px;
-  }
-  
-  .bar {
-    width: 8px;
+
+  .active-tool {
+    font-size: 9px;
+    padding: 1px 6px;
   }
 }
-</style> 
+</style>

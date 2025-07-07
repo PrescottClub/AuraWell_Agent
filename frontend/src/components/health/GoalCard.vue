@@ -71,14 +71,14 @@
 <script setup>
 import { MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 
-const props = defineProps({
+defineProps({
   goal: {
     type: Object,
     required: true
   }
 })
 
-const emit = defineEmits(['edit', 'delete', 'update-progress', 'complete'])
+defineEmits(['edit', 'delete', 'update-progress', 'complete'])
 
 const getGoalTypeLabel = (type) => {
   const labels = {

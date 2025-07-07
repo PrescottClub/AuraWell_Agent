@@ -1,17 +1,65 @@
 <template>
-  <div class="typing-indicator" v-if="visible">
+  <div 
+    v-if="visible"
+    v-motion-bounce-visible="{
+      initial: { scale: 0, opacity: 0 },
+      visible: { 
+        scale: 1, 
+        opacity: 1,
+        transition: {
+          type: 'spring',
+          stiffness: 400,
+          damping: 15
+        }
+      }
+    }"
+    class="typing-indicator"
+  >
     <div class="message-container">
       <!-- AI助手头像 -->
       <div class="avatar-container">
-        <a-avatar :size="40" :style="{ backgroundColor: '#52c41a' }">
+        <a-avatar 
+          :size="44" 
+          :style="{ 
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, theme(\\\'colors.primary.600\\\') 100%)',
+            boxShadow: 'var(--shadow-card)',
+            fontWeight: '600'
+          }"
+        >
           AI
         </a-avatar>
       </div>
       
       <!-- 打字动画 -->
       <div class="typing-content">
-        <div class="typing-bubble">
-          <div class="typing-dots">
+        <div 
+          v-motion-fade-visible="{
+            initial: { opacity: 0, scale: 0.9 },
+            visible: { 
+              opacity: 1, 
+              scale: 1,
+              transition: {
+                delay: 200,
+                duration: 300
+              }
+            }
+          }"
+          class="typing-bubble"
+        >
+          <div 
+            v-motion-pop="{
+              initial: { scale: 0 },
+              visible: { 
+                scale: 1,
+                transition: {
+                  type: 'spring',
+                  stiffness: 300,
+                  delay: 400
+                }
+              }
+            }"
+            class="typing-dots"
+          >
             <span class="dot"></span>
             <span class="dot"></span>
             <span class="dot"></span>
@@ -93,13 +141,15 @@ onUnmounted(() => {
 }
 
 .typing-bubble {
-  background: #f5f5f5;
-  padding: 12px 16px;
-  border-radius: 12px;
+  background: var(--color-bg-muted);
+  padding: 16px 20px;
+  border-radius: var(--border-radius-card);
+  box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 20px;
+  gap: 16px;
+  min-height: 24px;
+  transition: all 0.3s ease;
 }
 
 .typing-dots {
@@ -108,11 +158,12 @@ onUnmounted(() => {
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background-color: #52c41a;
-  animation: typing 1.4s infinite ease-in-out;
+  background: linear-gradient(135deg, theme('colors.gemini.blue') 0%, theme('colors.gemini.purple') 100%);
+  box-shadow: 0 2px 4px rgba(0, 148, 255, 0.2);
+  animation: typing 1.6s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .dot:nth-child(1) {
@@ -128,9 +179,10 @@ onUnmounted(() => {
 }
 
 .typing-text {
-  font-size: 12px;
-  color: #666;
+  font-size: 13px;
+  color: var(--color-text-muted);
   font-style: italic;
+  font-weight: 500;
 }
 
 @keyframes typing {

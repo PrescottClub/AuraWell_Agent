@@ -258,7 +258,7 @@ export class UserAPI {
    * @param {string} goalId - 目标ID
    * @returns {Promise} API响应
    */
-  static async deleteHealthGoal(goalId) {
+  static async deleteHealthGoal() {
     try {
       await new Promise(resolve => setTimeout(resolve, 300))
 

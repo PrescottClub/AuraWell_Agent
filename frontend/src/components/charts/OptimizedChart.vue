@@ -130,7 +130,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { 
+import {
   LoadingOutlined,
   DashboardOutlined,
   ReloadOutlined,
@@ -138,12 +138,14 @@ import {
   FullscreenExitOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import { 
-  DataSampling, 
+import {
+  DataSampling,
   globalPerformanceMonitor,
   debounce,
   performanceUtils
 } from '../../utils/performance.js'
+import { useTheme } from '../../composables/useTheme.js'
+import { getChartTheme } from '../../utils/chartThemes.js'
 
 // Props
 const props = defineProps({
@@ -183,6 +185,9 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits(['chart-click', 'data-zoom', 'data-loaded'])
+
+// 主题相关
+const { isDark } = useTheme()
 
 // 响应式数据
 const chartContainer = ref(null)
@@ -236,17 +241,23 @@ const chartStyle = computed(() => {
 
 const optimizedChartOption = computed(() => {
   if (!processedData.value.length) return {}
-  
+
   const devicePerf = performanceUtils.getDevicePerformance()
   const isLowPerf = devicePerf.level === 'low'
-  
+
+  // 获取当前主题配置
+  const currentTheme = getChartTheme(isDark.value)
+
   const baseOption = {
+    // 应用主题配置
+    ...currentTheme,
     title: {
       text: props.title,
       left: 'center',
       textStyle: {
         fontSize: 16,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        color: currentTheme.title?.textStyle?.color || (isDark.value ? '#f1f5f9' : '#1e293b')
       }
     },
     tooltip: {
@@ -258,28 +269,33 @@ const optimizedChartOption = computed(() => {
       formatter: (params) => {
         const point = params[0]
         return `${point.name}<br/>${point.seriesName}: ${point.value}`
-      }
+      },
+      // 应用主题的tooltip样式
+      ...currentTheme.tooltip
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: props.enableDataZoom ? '15%' : '3%',
-      containLabel: true
+      containLabel: true,
+      ...currentTheme.grid
     },
     xAxis: {
       type: 'category',
       data: processedData.value.map(item => formatDate(item.date)),
       axisLabel: {
         fontSize: 12,
-        color: '#666'
-      }
+        color: currentTheme.categoryAxis?.axisLabel?.color || (isDark.value ? '#94a3b8' : '#64748b')
+      },
+      ...currentTheme.categoryAxis
     },
     yAxis: {
       type: 'value',
       axisLabel: {
         fontSize: 12,
-        color: '#666'
-      }
+        color: currentTheme.valueAxis?.axisLabel?.color || (isDark.value ? '#94a3b8' : '#64748b')
+      },
+      ...currentTheme.valueAxis
     },
     series: [
       {
@@ -293,7 +309,7 @@ const optimizedChartOption = computed(() => {
           width: 2
         },
         itemStyle: {
-          color: '#1890ff'
+          color: currentTheme.color[0] || '#14b8a6' // 使用主题的第一个颜色
         },
         // 大数据量时禁用动画
         animation: !isLowPerf && displayDataCount.value < 1000,
@@ -508,6 +524,16 @@ watch(() => props.autoRefresh, (enabled) => {
   } else {
     stopAutoRefresh()
   }
+})
+
+// 监听主题变化，重新渲染图表
+watch(isDark, () => {
+  // 主题变化时，图表会自动重新渲染因为 optimizedChartOption 是响应式的
+  nextTick(() => {
+    if (chartRef.value) {
+      chartRef.value.resize()
+    }
+  })
 })
 
 // 性能监控

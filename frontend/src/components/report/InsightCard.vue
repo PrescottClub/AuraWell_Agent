@@ -1,5 +1,11 @@
 <template>
-  <div class="insight-card" :class="severityClass">
+  <div 
+    class="insight-card" 
+    :class="severityClass"
+    v-motion
+    :initial="{ y: 0, boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' }"
+    :hovered="{ y: -5, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }"
+  >
     <div class="insight-header">
       <div class="insight-icon">
         <component :is="iconComponent" :style="{ color: iconColor }" />

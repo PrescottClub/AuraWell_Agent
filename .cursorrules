@@ -7,7 +7,7 @@ AuraWell是一个超个性化健康生活方式编排AI Agent，旨在整合用�
 - **后端**: Python (FastAPI + SQLAlchemy)
 - **核心AI引擎**: DeepSeek API (preferably deepseek-r1 model for reasoning)
 - **健康数据集成**: 薄荷健康API、小米健康API、苹果健康HealthKit
-- **前端**: React + TypeScript (现代化UI)
+- **前端**: Vue.js + TypeScript (现代化UI)
 - **数据模型**: Pydantic for data validation and serialization
 - **MCP工具栈**: 13个智能化MCP服务器自动协作
 
@@ -227,17 +227,10 @@ parallel_calls = [
 - 集成MCP工具调用的错误处理和重试机制
 
 ## 测试规范 (Testing Standards)
-- **测试框架**: 使用 pytest 作为主要测试框架
-- **测试目录**: 所有测试文件必须放在 `tests/` 目录下
-- **测试分类**: 
-  - `tests/test_unit/`: 单元测试
-  - `tests/test_integration/`: 集成测试
-  - `tests/test_api/`: API测试
-  - `tests/test_performance/`: 性能测试
-  - `tests/test_deployment/`: 部署验证测试
-- **命名规范**: 测试文件以 `test_` 开头，测试类以 `Test` 开头，测试方法以 `test_` 开头
-- **测试覆盖率**: 目标覆盖率80%以上
-- **MCP工具测试**: 优先使用MCP工具进行自动化测试执行和报告生成
+- **测试框架**: 使用 pytest 作为主要测试框架。
+- **测试目录**: 所有测试文件建议放在独立的 `tests/` 目录下。
+- **命名规范**: 测试文件以 `test_` 开头，测试方法以 `test_` 开头。
+- **测试覆盖率**: 鼓励编写测试，逐步提高项目覆盖率。
 
 ## AI伦理与医疗边界 (AI Ethics & Medical Boundaries)
 - **建议透明化**: 使用sequential-thinking解释AI建议的推理过程
@@ -318,7 +311,7 @@ parallel_calls = [
 
 ### 🎯 开发实用技巧 (Development Tips)
 
-- **数据库路径**: 已配置绝对路径到项目的aurawell.db
+- **数据库路径**: 建议使用环境变量或相对路径配置`aurawell.db`数据库，避免使用绝对路径。
 - **文件系统**: 已设置项目根目录为工作路径
 - **API密钥**: 记得在环境变量中设置BRAVE_API_KEY
 - **并行调用**: 多个工具可以同时使用提升效率
