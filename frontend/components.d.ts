@@ -7,9 +7,20 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AAvatar: typeof import('ant-design-vue/es')['Avatar']
+    ACheckbox: typeof import('ant-design-vue/es')['Checkbox']
+    AForm: typeof import('ant-design-vue/es')['Form']
+    AFormItem: typeof import('ant-design-vue/es')['FormItem']
+    AInput: typeof import('ant-design-vue/es')['Input']
+    AInputPassword: typeof import('ant-design-vue/es')['InputPassword']
     AuroraButton: typeof import('./src/components/ui/AuroraButton.vue')['default']
+    BaseInput: typeof import('./src/components/ui/BaseInput.vue')['default']
+    BaseModal: typeof import('./src/components/ui/BaseModal.vue')['default']
+    BaseSelect: typeof import('./src/components/ui/BaseSelect.vue')['default']
+    BaseToast: typeof import('./src/components/ui/BaseToast.vue')['default']
     ChatIntegration: typeof import('./src/components/report/ChatIntegration.vue')['default']
     ChatMessage: typeof import('./src/components/chat/ChatMessage.vue')['default']
+    CommandPalette: typeof import('./src/components/chat/CommandPalette.vue')['default']
     CreateChallengeForm: typeof import('./src/components/family/CreateChallengeForm.vue')['default']
     GlobalHeader: typeof import('./src/components/GlobalHeader.vue')['default']
     GoalCard: typeof import('./src/components/health/GoalCard.vue')['default']

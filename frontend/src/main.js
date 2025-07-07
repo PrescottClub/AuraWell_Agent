@@ -10,7 +10,7 @@ import { createPinia } from 'pinia'
 import motionPlugin from './plugins/motion.js' // 动效插件
 import i18n from './plugins/i18n.js'; // 国际化插件
 import * as Sentry from "@sentry/vue";
-import { onCLS, onFID, onLCP } from 'web-vitals';
+import { onCLS, onINP, onLCP } from 'web-vitals';
 
 // 初始化Mock数据系统
 import { initMockData } from './mock/index'
@@ -51,5 +51,5 @@ app.mount('#app')
 
 // Web Vitals 应该在 Sentry 初始化后调用
 onCLS(Sentry.captureFeedback);
-onFID(Sentry.captureFeedback);
+onINP(Sentry.captureFeedback);
 onLCP(Sentry.captureFeedback);

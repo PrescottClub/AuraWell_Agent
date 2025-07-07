@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import Toast from './Toast.vue';
+import Toast from './BaseToast.vue';
 import { useToast } from '../../composables/useToast';
 
 const { toasts, removeToast } = useToast();

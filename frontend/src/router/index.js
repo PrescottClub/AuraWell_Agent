@@ -38,12 +38,14 @@ const routes = [
       },
       */
 
+      /*
       {
         path: 'mcp-test',
         name: 'MCPTest',
         component: () => import('../views/test/MCPTestPage.vue'),
         meta: { title: 'MCP功能测试' }
       },
+      */
       {
         path: 'profile',
         name: 'Profile',
