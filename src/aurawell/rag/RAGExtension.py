@@ -938,32 +938,49 @@ class UserRetrieve:
                     'translated': {'text': str, 'vector': np.array, 'language': str}
                 }
         """
-        # 1. 检测用户查询的语言
-        detected_language = detect_language(raw_user_query)
-        print(f"🔍 检测到查询语言: {detected_language}")
+        # 1. 使用新的翻译服务进行语言检测和翻译
+        try:
+            from ..services.translation_service import get_translation_service
+            translation_service = get_translation_service()
+            translation_result = translation_service.query_translation(raw_user_query)
 
-        # 2. 根据检测结果进行翻译
-        if detected_language == 'chinese':
-            # 原文是中文，翻译成英文
-            translated_query = translate_text(
-                raw_user_query,
-                'english',
-                self.qwen_api_key,
-                self.bailian_endpoint
-            )
-            translated_language = 'english'
-        else:
-            # 原文是英文，翻译成中文
-            translated_query = translate_text(
-                raw_user_query,
-                'chinese',
-                self.qwen_api_key,
-                self.bailian_endpoint
-            )
-            translated_language = 'chinese'
+            # 提取翻译结果
+            original_text = translation_result['original']['text']
+            original_language = translation_result['original']['language']
+            translated_text = translation_result['translated']['text']
+            translated_language = translation_result['translated']['language']
 
-        print(f"📝 原文: {raw_user_query}")
-        print(f"🔄 翻译: {translated_query}")
+            print(f"🔍 检测到查询语言: {original_language}")
+            print(f"📝 原文: {original_text}")
+            print(f"🔄 翻译: {translated_text}")
+
+        except Exception as e:
+            print(f"⚠️ 新翻译服务失败，回退到原有翻译方法: {e}")
+            # 回退到原有的翻译方法
+            detected_language = detect_language(raw_user_query)
+            print(f"🔍 检测到查询语言: {detected_language}")
+
+            if detected_language == 'chinese':
+                translated_query = translate_text(
+                    raw_user_query,
+                    'english',
+                    self.qwen_api_key,
+                    self.bailian_endpoint
+                )
+                translated_language = 'english'
+            else:
+                translated_query = translate_text(
+                    raw_user_query,
+                    'chinese',
+                    self.qwen_api_key,
+                    self.bailian_endpoint
+                )
+                translated_language = 'chinese'
+
+            # 统一变量名
+            original_text = raw_user_query
+            original_language = detected_language
+            translated_text = translated_query
 
         # 3. 对原文和翻译副本进行向量化
         client = OpenAI(
@@ -974,7 +991,7 @@ class UserRetrieve:
         # 批量向量化原文和翻译
         completion = client.embeddings.create(
             model="text-embedding-v4",
-            input=[raw_user_query, translated_query],
+            input=[original_text, translated_text],
             dimensions=1024,
             encoding_format="float"
         )
@@ -982,12 +999,12 @@ class UserRetrieve:
         # 4. 构建返回结果
         result = {
             'original': {
-                'text': raw_user_query,
+                'text': original_text,
                 'vector': np.array(completion.data[0].embedding, dtype=float),
-                'language': detected_language
+                'language': original_language
             },
             'translated': {
-                'text': translated_query,
+                'text': translated_text,
                 'vector': np.array(completion.data[1].embedding, dtype=float),
                 'language': translated_language
             }
