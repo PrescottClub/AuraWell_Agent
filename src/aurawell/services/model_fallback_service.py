@@ -1,10 +1,11 @@
 """
 AuraWell 多模型梯度服务
-实现deepseek-r1-0528和qwen-turbo的智能切换机制
+实现deepseek-v3和qwen-turbo的智能切换机制
 """
 
 import logging
 import time
+import os
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
@@ -53,16 +54,16 @@ class ModelFallbackService:
         """
         self.deepseek_client = deepseek_client
         
-        # 模型配置字典
+        # 模型配置字典 - 从环境变量读取模型名称
         self.model_configs = {
             ModelTier.HIGH_PRECISION: ModelConfig(
-                name="deepseek-r1-0528",
+                name=os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3"),
                 tier=ModelTier.HIGH_PRECISION,
                 timeout_threshold=180.0,  # 3分钟超时阈值
                 max_retries=2
             ),
             ModelTier.FAST_RESPONSE: ModelConfig(
-                name="qwen-turbo",
+                name=os.getenv("QWEN_FAST", "qwen-turbo"),
                 tier=ModelTier.FAST_RESPONSE,
                 timeout_threshold=60.0,   # 1分钟超时阈值
                 max_retries=3
