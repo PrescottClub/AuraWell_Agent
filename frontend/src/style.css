@@ -1,3 +1,1 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* 这个文件现在由 main.css 处理，保持为空以避免重复导入 */

@@ -4,7 +4,7 @@
     <div v-if="!familyStore.currentFamily" class="no-family-state">
       <a-empty
         description="您还没有加入任何家庭"
-        :image="a-empty.PRESENTED_IMAGE_SIMPLE"
+        image="simple"
       >
         <a-button type="primary" @click="showCreateFamilyModal = true">
           创建家庭

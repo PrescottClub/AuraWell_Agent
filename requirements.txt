@@ -38,3 +38,19 @@ alibabacloud_tea_openapi>=0.3.0
 
 # Additional dependencies for enhanced functionality
 alembic>=1.13.0  # Database migration tool
+
+# Testing dependencies
+selenium>=4.0.0  # Web automation testing
+webdriver-manager>=3.8.0  # WebDriver management
+pytest>=7.0.0  # Testing framework
+pytest-asyncio>=0.21.0  # Async testing support
+
+# RAG dependencies
+dashvector>=1.0.0  # Vector database client
+numpy>=1.24.0  # Numerical computing
+
+# Translation and language detection dependencies for RAG upgrade
+torch>=2.0.0  # PyTorch for translation models
+transformers>=4.30.0  # Hugging Face transformers for MarianMT
+langdetect>=1.0.9  # Language detection
+sentencepiece>=0.1.99  # Tokenization for translation models

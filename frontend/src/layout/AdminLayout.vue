@@ -1,116 +1,75 @@
 <template>
-    <a-layout class="min-h-screen">
-        <a-layout-sider v-model:collapsed="collapsed" collapsible>
-            <div class="logo p-4 text-white text-center text-lg font-bold">
-                AuraWell
-            </div>
-            <a-menu v-model:selectedKeys="selectedKeys" theme="dark" mode="inline">
-                <a-menu-item key="dashboard" @click="() => router.push('/admin/dashboard')">
-                    <template #icon>
-                        <DashboardOutlined />
-                    </template>
-                    <span>仪表盘</span>
-                </a-menu-item>
-                <a-menu-item key="users" @click="() => router.push('/admin/users')">
-                    <template #icon>
-                        <UserOutlined />
-                    </template>
-                    <span>用户管理</span>
-                </a-menu-item>
-                <a-menu-item key="settings" @click="() => router.push('/admin/settings')">
-                    <template #icon>
-                        <SettingOutlined />
-                    </template>
-                    <span>系统设置</span>
-                </a-menu-item>
-            </a-menu>
-        </a-layout-sider>
-        <a-layout>
-            <a-layout-header class="bg-white px-4 flex items-center justify-between">
-                <a-row>
-                    <a-col flex="auto"></a-col>
-                    <a-col flex="100px">
-                        <div class="flex items-center">
-                            <a-dropdown>
-                                <a class="ant-dropdown-link" @click.prevent>
-                                    <UserOutlined class="mr-2" />
-                                    管理员
-                                    <DownOutlined />
-                                </a>
-                                <template #overlay>
-                                    <a-menu>
-                                        <a-menu-item key="profile">
-                                            个人信息
-                                        </a-menu-item>
-                                        <a-menu-item key="logout" @click="handleLogout">
-                                            退出登录
-                                        </a-menu-item>
-                                    </a-menu>
-                                </template>
-                            </a-dropdown>
-                        </div>
-                    </a-col>
-                </a-row>
-            </a-layout-header>
-            <a-layout-content class="content-container">
-                <div class="content-wrapper">
-                    <router-view></router-view>
-                </div>
-            </a-layout-content>
-            <a-layout-footer style="text-align: center">
-                Ant Design ©2018 Created by Ant UED
-            </a-layout-footer>
-        </a-layout>
-    </a-layout>
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="logo">
+        <h3>AuraWell Admin</h3>
+      </div>
+      <nav class="menu">
+        <router-link to="/admin/dashboard" class="menu-item">
+          <span class="icon">📊</span>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/admin/prompt-playground" class="menu-item">
+          <span class="icon">🧪</span>
+          <span>Prompt Playground</span>
+        </router-link>
+         <router-link to="/admin/users" class="menu-item">
+          <span class="icon">👥</span>
+          <span>Users</span>
+        </router-link>
+      </nav>
+    </aside>
+    <main class="content">
+      <router-view />
+    </main>
+  </div>
 </template>
+
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import {
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    DashboardOutlined,
-    UserOutlined,
-    SettingOutlined,
-    DownOutlined
-} from '@ant-design/icons-vue';
-
-const router = useRouter();
-const collapsed = ref(false);
-const selectedKeys = ref(['dashboard']);
-
-const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    router.push('/login');
-};
 </script>
+
 <style scoped>
-.trigger {
-    cursor: pointer;
-    transition: color 0.3s;
+.admin-layout {
+  display: flex;
+  height: 100vh;
 }
-
-.trigger:hover {
-    color: #1890ff;
+.sidebar {
+  width: 240px;
+  background-color: #001529;
+  color: white;
+  display: flex;
+  flex-direction: column;
 }
-
 .logo {
-    height: 32px;
-    margin: 16px;
-    background: rgba(255, 255, 255, 0.3);
+  padding: 16px;
+  text-align: center;
+  font-size: 20px;
+  border-bottom: 1px solid #002140;
 }
-
-.content-container {
-    height: calc(100vh - 64px);
-    overflow: auto;
-    background: #f0f2f5;
+.menu {
+  flex-grow: 1;
+  padding-top: 16px;
 }
-
-.content-wrapper {
-    padding: 24px;
-    min-height: 100%;
-    background: #fff;
-    margin: 0;
-    height: 100%;
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.menu-item:hover, .router-link-exact-active {
+  color: #fff;
+  background-color: #1890ff;
+}
+.menu-item .icon {
+  margin-right: 12px;
+  font-size: 18px;
+}
+.content {
+  flex-grow: 1;
+  padding: 24px;
+  background-color: #f0f2f5;
+  overflow-y: auto;
 }
 </style>

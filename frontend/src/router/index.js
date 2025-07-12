@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import BasicLayout from '../layout/BasicLayout.vue';
-import Login from '../views/Login.vue';
+import UserLogin from '../views/UserLogin.vue';
 
 const routes = [
   {
@@ -11,13 +11,14 @@ const routes = [
       {
         path: '',
         name: 'Home',
-        component: () => import('../views/user/Home.vue')
+        component: () => import('../views/user/UserHome.vue')
       },
       {
         path: 'health-chat',
         name: 'HealthChat',
         component: () => import('../views/user/HealthChat.vue')
       },
+      /*
       {
         path: 'health-chat-demo',
         name: 'HealthChatDemo',
@@ -28,10 +29,27 @@ const routes = [
         name: 'SimpleChatDemo',
         component: () => import('../views/user/SimpleChatDemo.vue')
       },
+
+      {
+        path: 'gemini-components-test',
+        name: 'GeminiComponentsTest',
+        component: () => import('../views/test/GeminiComponentsTest.vue'),
+        meta: { title: 'Gemini 组件测试' }
+      },
+      */
+
+      /*
+      {
+        path: 'mcp-test',
+        name: 'MCPTest',
+        component: () => import('../views/test/MCPTestPage.vue'),
+        meta: { title: 'MCP功能测试' }
+      },
+      */
       {
         path: 'profile',
         name: 'Profile',
-        component: () => import('../views/user/Profile.vue'),
+        component: () => import('../views/user/UserProfile.vue'),
         meta: { requiresAuth: true }
       },
       {
@@ -89,14 +107,41 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: UserLogin
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../views/Register.vue')
+    component: () => import('../views/UserRegister.vue')
   },
-
+  {
+    path: '/admin',
+    component: () => import('../layout/AdminLayout.vue'),
+    children: [
+      {
+        path: '',
+        redirect: '/admin/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'AdminDashboard',
+        component: () => import('../views/admin/AdminDashboard.vue'),
+        meta: { requiresAuth: true, isAdmin: true }
+      },
+      {
+        path: 'prompt-playground',
+        name: 'PromptPlayground',
+        component: () => import('../views/admin/PromptPlayground.vue'),
+        meta: { requiresAuth: true, isAdmin: true }
+      },
+       {
+        path: 'users',
+        name: 'AdminUsers',
+        component: () => import('../views/admin/AdminUsers.vue'),
+        meta: { requiresAuth: true, isAdmin: true }
+      }
+    ]
+  }
 ];
 
 const router = createRouter({
@@ -107,7 +152,7 @@ const router = createRouter({
 // 🔧 统一路由守卫 - 使用认证状态管理
 router.beforeEach(async (to, _from, next) => {
   // 导入认证状态管理
-  const { useAuthStore } = await import('../stores/auth.js');
+  const { useAuthStore } = await import('../stores/auth');
   const authStore = useAuthStore();
 
   // 如果路由需要认证

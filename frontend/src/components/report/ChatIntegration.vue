@@ -1,6 +1,6 @@
 <template>
   <div class="chat-integration">
-    <!-- 快速对话触发器 -->
+    <!-- Quick chat triggers -->
     <div class="quick-chat-triggers">
       <a-button 
         v-for="trigger in quickTriggers" 
@@ -16,7 +16,7 @@
       </a-button>
     </div>
     
-    <!-- 浮动聊天按钮 -->
+    <!-- Floating chat button -->
     <a-float-button
       v-if="showFloatButton"
       type="primary"
@@ -29,7 +29,7 @@
       </template>
     </a-float-button>
     
-    <!-- 侧边聊天面板 -->
+    <!-- Chat panel -->
     <div 
       v-if="chatPanelVisible" 
       class="chat-panel"
@@ -38,7 +38,7 @@
       <div class="panel-header">
         <div class="panel-title">
           <MessageOutlined />
-          AI健康助手
+          AI Health Assistant
         </div>
         <div class="panel-controls">
           <a-button 
@@ -60,7 +60,7 @@
       </div>
       
       <div class="panel-content">
-        <!-- 对话上下文 -->
+        <!-- Context section -->
         <div v-if="currentContext" class="chat-context">
           <div class="context-header">
             <component :is="currentContext.icon" class="context-icon" />
@@ -78,7 +78,7 @@
           </div>
         </div>
         
-        <!-- 消息列表 -->
+        <!-- Messages list -->
         <div class="messages-container" ref="messagesContainer">
           <div 
             v-for="message in messages" 
@@ -95,7 +95,7 @@
               <div class="message-text">{{ message.content }}</div>
               <div class="message-time">{{ formatTime(message.timestamp) }}</div>
               
-              <!-- 消息操作 -->
+              <!-- Message actions -->
               <div v-if="message.role === 'assistant'" class="message-actions">
                 <a-button 
                   type="text" 
@@ -132,7 +132,7 @@
                 </a-dropdown>
               </div>
               
-              <!-- 快速回复 -->
+              <!-- Quick replies -->
               <div v-if="message.quickReplies?.length" class="quick-replies">
                 <a-button 
                   v-for="reply in message.quickReplies" 
@@ -147,7 +147,7 @@
             </div>
           </div>
           
-          <!-- 加载指示器 -->
+          <!-- Typing indicator -->
           <div v-if="isTyping" class="typing-indicator">
             <div class="message-avatar">
               <RobotOutlined />
@@ -160,11 +160,11 @@
           </div>
         </div>
         
-        <!-- 输入区域 -->
+        <!-- Input area -->
         <div class="input-area">
-          <!-- 智能建议 -->
+          <!-- Smart suggestions -->
           <div v-if="smartSuggestions.length" class="smart-suggestions">
-            <div class="suggestions-label">智能建议:</div>
+            <div class="suggestions-label">Smart suggestions:</div>
             <div class="suggestions-list">
               <a-tag 
                 v-for="suggestion in smartSuggestions" 
@@ -177,11 +177,11 @@
             </div>
           </div>
           
-          <!-- 输入框 -->
+          <!-- Input box -->
           <div class="input-container">
             <a-input
               v-model:value="inputText"
-              placeholder="输入您的问题或想法..."
+              placeholder="Ask something..."
               @press-enter="handleSendMessage"
               :disabled="isTyping"
               class="message-input"
@@ -198,7 +198,7 @@
             </a-button>
           </div>
           
-          <!-- 功能按钮 -->
+          <!-- Function buttons -->
           <div class="function-buttons">
             <a-button 
               type="text" 
@@ -207,7 +207,7 @@
               :loading="replanning"
             >
               <EditOutlined />
-              重新规划
+              Re-plan
             </a-button>
             
             <a-button 
@@ -217,7 +217,7 @@
               :loading="adjusting"
             >
               <SettingOutlined />
-              微调方案
+              Adjust
             </a-button>
             
             <a-button 
@@ -226,7 +226,7 @@
               @click="handleClearChat"
             >
               <DeleteOutlined />
-              清空对话
+              Clear
             </a-button>
           </div>
         </div>
@@ -253,17 +253,19 @@ import {
   DeleteOutlined,
   BarChartOutlined,
   LineChartOutlined,
-  RadarChartOutlined,
-  HeatMapOutlined
+  PieChartOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import { chatAPI, healthPlanAPI } from '../../mock/api.js'
+import { chatAPI } from '../../mock/api'
 
-// Props
 const props = defineProps({
-  reportData: {
+  reportId: {
+    type: String,
+    default: null
+  },
+  initialContext: {
     type: Object,
-    default: () => ({})
+    default: null
   },
   showFloatButton: {
     type: Boolean,
@@ -271,72 +273,116 @@ const props = defineProps({
   }
 })
 
-// Emits
-const emit = defineEmits(['chat-started', 'plan-updated', 'context-changed'])
+const emit = defineEmits(['context-change', 'interaction'])
 
-// 响应式数据
 const chatPanelVisible = ref(false)
 const panelExpanded = ref(false)
-const messages = ref([])
-const inputText = ref('')
-const isTyping = ref(false)
-const currentContext = ref(null)
-const currentSessionId = ref(null)
 const messagesContainer = ref(null)
+
+const isTyping = ref(false)
+const inputText = ref('')
+const messages = ref([])
+const currentContext = ref(null)
+const smartSuggestions = ref([])
+
 const replanning = ref(false)
 const adjusting = ref(false)
 
-// 快速触发器
 const quickTriggers = ref([
-  {
-    type: 'trend_analysis',
-    label: '趋势分析',
-    icon: LineChartOutlined,
-    loading: false
-  },
-  {
-    type: 'data_insight',
-    label: '数据洞察',
-    icon: BarChartOutlined,
-    loading: false
-  },
-  {
-    type: 'health_advice',
-    label: '健康建议',
-    icon: RadarChartOutlined,
-    loading: false
-  },
-  {
-    type: 'pattern_analysis',
-    label: '模式分析',
-    icon: HeatMapOutlined,
-    loading: false
-  }
+  { type: 'summarize', label: 'Summarize', icon: BarChartOutlined, loading: false },
+  { type: 'analyze_trends', label: 'Analyze Trends', icon: LineChartOutlined, loading: false },
+  { type: 'compare_periods', label: 'Compare Periods', icon: PieChartOutlined, loading: false }
 ])
 
-// 智能建议
-const smartSuggestions = computed(() => {
-  if (!currentContext.value) {
-    return ['我想了解我的健康状况', '如何改善睡眠质量？', '制定运动计划']
+watch(() => props.initialContext, (newContext) => {
+  if (newContext) {
+    setContext(newContext)
   }
-  
-  const contextType = currentContext.value.type
-  const suggestions = {
-    chart_analysis: ['这个趋势说明什么？', '如何改善这个指标？', '设定新的目标'],
-    insight_discussion: ['这个建议可行吗？', '有其他方案吗？', '如何开始执行？'],
-    plan_adjustment: ['调整运动强度', '修改饮食计划', '设置提醒']
-  }
-  
-  return suggestions[contextType] || []
-})
+}, { immediate: true })
 
-// 方法
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+  })
+}
+
+const addMessage = (messageData) => {
+  messages.value.push({
+    ...messageData,
+    id: messageData.id || `msg_${Date.now()}`
+  })
+  scrollToBottom()
+}
+
+const handleSendMessage = async () => {
+  if (!inputText.value.trim()) return
+
+  const userMessage = {
+    role: 'user',
+    content: inputText.value,
+    timestamp: new Date().toISOString()
+  }
+  addMessage(userMessage)
+  
+  const messageContent = inputText.value
+  inputText.value = ''
+  
+  await sendMessage(messageContent)
+}
+
+const sendMessage = async (messageContent) => {
+  isTyping.value = true
+  try {
+    const response = await chatAPI.triggerReportChat(props.reportId, {
+      query: messageContent,
+      context: currentContext.value
+    })
+    
+    if (response.success && response.data.reply) {
+      addMessage({
+        role: 'assistant',
+        content: response.data.reply,
+        suggestions: response.data.suggestions,
+        quickReplies: response.data.quickReplies,
+        timestamp: new Date().toISOString()
+      })
+      
+      if (response.data.context) {
+        setContext(response.data.context)
+      }
+      
+      if (response.data.smartSuggestions) {
+        smartSuggestions.value = response.data.smartSuggestions
+      }
+    } else {
+      throw new Error('Invalid response from AI assistant')
+    }
+  } catch (error) {
+    addMessage({
+      role: 'assistant',
+      content: 'Sorry, I encountered an error. Please try again.',
+      timestamp: new Date().toISOString()
+    })
+  } finally {
+    isTyping.value = false
+  }
+}
+
+const handleQuickChat = async (trigger) => {
+  trigger.loading = true
+  await sendMessage(`Please ${trigger.type} the current report.`)
+  trigger.loading = false
+}
+
+const setContext = (context) => {
+  currentContext.value = context
+  emit('context-change', context)
+}
+
 const toggleChatPanel = () => {
   chatPanelVisible.value = !chatPanelVisible.value
-  if (chatPanelVisible.value && messages.value.length === 0) {
-    // 发送欢迎消息
-    addWelcomeMessage()
-  }
 }
 
 const closeChatPanel = () => {
@@ -347,165 +393,17 @@ const togglePanelSize = () => {
   panelExpanded.value = !panelExpanded.value
 }
 
-const addWelcomeMessage = () => {
-  const welcomeMessage = {
-    id: Date.now(),
-    role: 'assistant',
-    content: '您好！我是您的AI健康助手。我可以帮您分析健康数据、解读报告内容、调整健康计划。有什么我可以帮助您的吗？',
-    timestamp: new Date().toISOString(),
-    quickReplies: [
-      { text: '分析我的健康趋势' },
-      { text: '解读报告内容' },
-      { text: '调整健康计划' }
-    ]
-  }
-  
-  messages.value.push(welcomeMessage)
-  scrollToBottom()
+const handleCopyMessage = (msg) => {
+  navigator.clipboard.writeText(msg.content)
+  message.success('Copied to clipboard')
 }
 
-const handleQuickChat = async (trigger) => {
-  trigger.loading = true
-  
-  try {
-    // 设置对话上下文
-    const context = {
-      type: trigger.type,
-      title: trigger.label,
-      description: getContextDescription(trigger.type),
-      icon: trigger.icon,
-      data: getContextData(trigger.type)
-    }
-    
-    setContext(context)
-    
-    // 打开聊天面板
-    if (!chatPanelVisible.value) {
-      chatPanelVisible.value = true
-    }
-    
-    // 发送初始分析消息
-    const initialMessage = generateInitialMessage(trigger.type)
-    await sendMessage(initialMessage, false)
-    
-  } catch (error) {
-    console.error('快速对话启动失败:', error)
-    message.error('启动对话失败')
-  } finally {
-    trigger.loading = false
-  }
+const handleLikeMessage = (msg) => {
+  msg.liked = !msg.liked
 }
 
-const setContext = (context) => {
-  currentContext.value = context
-  emit('context-changed', context)
-}
-
-const getContextDescription = (type) => {
-  const descriptions = {
-    trend_analysis: '分析您的健康数据变化趋势',
-    data_insight: '深度解读您的健康数据',
-    health_advice: '基于数据提供个性化建议',
-    pattern_analysis: '分析您的健康行为模式'
-  }
-  return descriptions[type] || '健康数据分析'
-}
-
-const getContextData = (type) => {
-  // 根据类型返回相关的上下文数据
-  const reportMetrics = props.reportData.metrics || {}
-  
-  switch (type) {
-    case 'trend_analysis':
-      return {
-        weight_change: reportMetrics.weight?.change || 0,
-        exercise_trend: reportMetrics.exercise?.trend || 'stable',
-        sleep_avg: reportMetrics.sleep?.avg_duration || 0
-      }
-    case 'data_insight':
-      return {
-        health_score: props.reportData.health_score?.overall || 0,
-        improvement: props.reportData.health_score?.improvement || 0
-      }
-    default:
-      return null
-  }
-}
-
-const generateInitialMessage = (type) => {
-  const messages = {
-    trend_analysis: '我来为您分析最近的健康数据趋势。从您的数据来看...',
-    data_insight: '让我为您深度解读这些健康数据的含义...',
-    health_advice: '基于您的健康数据，我为您准备了一些个性化建议...',
-    pattern_analysis: '我发现了您健康行为中的一些有趣模式...'
-  }
-  return messages[type] || '让我们开始分析您的健康数据。'
-}
-
-const handleSendMessage = async () => {
-  if (!inputText.value.trim()) return
-  
-  const userMessage = {
-    id: Date.now(),
-    role: 'user',
-    content: inputText.value,
-    timestamp: new Date().toISOString()
-  }
-  
-  messages.value.push(userMessage)
-  const messageContent = inputText.value
-  inputText.value = ''
-  
-  await sendMessage(messageContent, true)
-}
-
-const sendMessage = async (content, isUserMessage = true) => {
-  if (!isUserMessage) {
-    // 直接添加AI消息
-    const aiMessage = {
-      id: Date.now(),
-      role: 'assistant',
-      content,
-      timestamp: new Date().toISOString(),
-      suggestions: generateSuggestions(content),
-      quickReplies: generateQuickReplies(content)
-    }
-    
-    messages.value.push(aiMessage)
-    scrollToBottom()
-    return
-  }
-  
-  isTyping.value = true
-  scrollToBottom()
-  
-  try {
-    // 创建或使用现有会话
-    if (!currentSessionId.value) {
-      const session = await chatAPI.createChatSession('健康报告分析')
-      currentSessionId.value = session.data.session_id
-    }
-    
-    const response = await chatAPI.sendMessage(content, currentSessionId.value)
-    
-    const aiMessage = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      content: response.data.content,
-      timestamp: new Date().toISOString(),
-      suggestions: response.data.suggestions || [],
-      quickReplies: response.data.quickReplies || []
-    }
-    
-    messages.value.push(aiMessage)
-    
-  } catch (error) {
-    console.error('发送消息失败:', error)
-    message.error('发送消息失败')
-  } finally {
-    isTyping.value = false
-    scrollToBottom()
-  }
+const handleSuggestionAction = (suggestion) => {
+  sendMessage(`Regarding my last message, I'd like to ${suggestion.label}.`)
 }
 
 const handleQuickReply = (text) => {
@@ -518,141 +416,42 @@ const handleSuggestionClick = (suggestion) => {
   handleSendMessage()
 }
 
-const handleCopyMessage = (msg) => {
-  navigator.clipboard.writeText(msg.content)
-  message.success('消息已复制')
-}
-
-const handleLikeMessage = (msg) => {
-  msg.liked = !msg.liked
-  message.success(msg.liked ? '感谢您的反馈' : '反馈已取消')
-}
-
-const handleSuggestionAction = (suggestion) => {
-  // 处理建议操作
-  console.log('执行建议:', suggestion)
+const handleClearChat = () => {
+  messages.value = []
 }
 
 const handleReplanRequest = async () => {
   replanning.value = true
-  
-  try {
-    const replanMessage = '我想重新制定我的健康计划，请基于当前的数据和目标为我生成新的方案。'
-    await sendMessage(replanMessage, false)
-    
-    // 模拟重新规划过程
-    setTimeout(async () => {
-      const planMessage = '好的，我正在为您重新制定健康计划。基于您最近的数据表现和健康目标，我建议...'
-      await sendMessage(planMessage, false)
-      
-      emit('plan-updated', { type: 'replan', context: currentContext.value })
-    }, 1000)
-    
-  } catch (error) {
-    console.error('重新规划失败:', error)
-    message.error('重新规划失败')
-  } finally {
-    replanning.value = false
-  }
+  await sendMessage("Based on this, please generate a new health plan.")
+  replanning.value = false
 }
 
 const handleAdjustPlan = async () => {
   adjusting.value = true
-  
-  try {
-    const adjustMessage = '让我为您微调当前的健康方案，保持主要框架不变，只优化具体的执行细节。'
-    await sendMessage(adjustMessage, false)
-    
-    emit('plan-updated', { type: 'adjust', context: currentContext.value })
-    
-  } catch (error) {
-    console.error('方案调整失败:', error)
-    message.error('方案调整失败')
-  } finally {
-    adjusting.value = false
-  }
-}
-
-const handleClearChat = () => {
-  messages.value = []
-  currentContext.value = null
-  currentSessionId.value = null
-  addWelcomeMessage()
-}
-
-const generateSuggestions = (content) => {
-  // 基于消息内容生成操作建议
-  return [
-    { action: 'create_plan', label: '创建计划' },
-    { action: 'set_reminder', label: '设置提醒' },
-    { action: 'view_details', label: '查看详情' }
-  ]
-}
-
-const generateQuickReplies = (content) => {
-  // 基于消息内容生成快速回复
-  if (content.includes('建议')) {
-    return [
-      { text: '这个建议很好' },
-      { text: '有其他方案吗？' },
-      { text: '如何开始执行？' }
-    ]
-  }
-  return []
+  await sendMessage("Let's adjust the current recommendations.")
+  adjusting.value = false
 }
 
 const getDataLabel = (key) => {
   const labels = {
-    weight_change: '体重变化',
-    exercise_trend: '运动趋势',
-    sleep_avg: '平均睡眠',
-    health_score: '健康评分',
-    improvement: '改善程度'
+    average: 'Average',
+    trend: 'Trend',
+    comparison: 'Comparison'
   }
   return labels[key] || key
 }
 
 const formatDataValue = (value, key) => {
-  if (typeof value === 'number') {
-    if (key.includes('weight')) return value.toFixed(1) + 'kg'
-    if (key.includes('sleep')) return value.toFixed(1) + '小时'
-    if (key.includes('score')) return value + '分'
-    return value.toString()
+  if (key === 'trend' && typeof value === 'number') {
+    return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
   }
   return value
 }
 
 const formatTime = (timestamp) => {
-  return new Date(timestamp).toLocaleTimeString()
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-    }
-  })
-}
-
-// 监听器
-watch(chatPanelVisible, (visible) => {
-  if (visible) {
-    emit('chat-started')
-  }
-})
-
-// 暴露方法给父组件
-defineExpose({
-  startChat: (context) => {
-    setContext(context)
-    if (!chatPanelVisible.value) {
-      toggleChatPanel()
-    }
-  },
-  sendMessage: (content) => {
-    sendMessage(content, false)
-  }
-})
 </script>
 
 <style scoped>
@@ -664,62 +463,43 @@ defineExpose({
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.trigger-button {
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.trigger-button:hover {
-  border-color: #1890ff;
-  color: #1890ff;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
 }
 
 .chat-panel {
   position: fixed;
   right: 24px;
-  bottom: 80px;
-  width: 400px;
+  bottom: 88px;
+  width: 380px;
   height: 600px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
-  z-index: 1000;
   transition: all 0.3s ease;
+  z-index: 1000;
 }
 
 .panel-expanded {
   width: 600px;
-  height: 700px;
+  height: 80vh;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-  border-radius: 12px 12px 0 0;
 }
 
 .panel-title {
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #262626;
-}
-
-.panel-controls {
-  display: flex;
-  gap: 4px;
 }
 
 .panel-content {
@@ -729,182 +509,67 @@ defineExpose({
   overflow: hidden;
 }
 
-.chat-context {
-  padding: 12px 16px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.context-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.context-icon {
-  color: #1890ff;
-  font-size: 16px;
-}
-
-.context-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #262626;
-}
-
-.context-desc {
-  font-size: 12px;
-  color: #8c8c8c;
-}
-
-.context-data {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.data-item {
-  font-size: 12px;
-}
-
-.data-label {
-  color: #8c8c8c;
-}
-
-.data-value {
-  color: #262626;
-  font-weight: 600;
-  margin-left: 4px;
-}
-
 .messages-container {
   flex: 1;
-  overflow-y: auto;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .message-item {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
+.message-item.assistant {
+  justify-content: flex-start;
+}
+
 .message-item.user {
-  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.message-item.user .message-content {
+  background: #1890ff;
+  color: white;
+  border-radius: 16px 16px 4px 16px;
+}
+
+.message-item.assistant .message-content {
+  background: #f0f2f5;
+  border-radius: 16px 16px 16px 4px;
 }
 
 .message-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f0f0f0;
+  background: #d9d9d9;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  color: #666;
   flex-shrink: 0;
 }
 
 .message-item.user .message-avatar {
-  background: #1890ff;
-  color: white;
+  order: 2;
+  background: #bae7ff;
 }
 
 .message-content {
-  flex: 1;
-  max-width: calc(100% - 40px);
-}
-
-.message-text {
-  background: #f5f5f5;
   padding: 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.4;
-  word-wrap: break-word;
-}
-
-.message-item.user .message-text {
-  background: #1890ff;
-  color: white;
+  max-width: 80%;
 }
 
 .message-time {
-  font-size: 11px;
-  color: #8c8c8c;
+  font-size: 10px;
+  color: #b0b0b0;
   margin-top: 4px;
-  text-align: right;
 }
 
 .message-item.user .message-time {
-  text-align: left;
-}
-
-.message-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.message-actions .ant-btn.liked {
-  color: #1890ff;
-}
-
-.quick-replies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.quick-reply-btn {
-  font-size: 12px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 12px;
-}
-
-.typing-indicator {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.typing-dots {
-  display: flex;
-  gap: 4px;
-  padding: 12px;
-  background: #f5f5f5;
-  border-radius: 12px;
-}
-
-.typing-dots span {
-  width: 6px;
-  height: 6px;
-  background: #8c8c8c;
-  border-radius: 50%;
-  animation: typing 1.4s infinite ease-in-out;
-}
-
-.typing-dots span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.typing-dots span:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-@keyframes typing {
-  0%, 80%, 100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  text-align: right;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .input-area {
@@ -912,60 +577,31 @@ defineExpose({
   border-top: 1px solid #f0f0f0;
 }
 
-.smart-suggestions {
-  margin-bottom: 12px;
-}
-
-.suggestions-label {
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-bottom: 6px;
-}
-
-.suggestions-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.suggestion-tag {
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.suggestion-tag:hover {
-  background: #e6f7ff;
-  border-color: #1890ff;
-}
-
 .input-container {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
-.message-input {
-  flex: 1;
-}
-
-.send-button {
-  width: 40px;
-  height: 40px;
-  padding: 0;
+.typing-indicator {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.function-buttons {
-  display: flex;
-  justify-content: space-between;
+.typing-dots span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b0b0b0;
+  animation: typing 1s infinite;
 }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-.function-buttons .ant-btn {
-  font-size: 12px;
-  padding: 0 8px;
-  height: 28px;
+@keyframes typing {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
 }
 </style>

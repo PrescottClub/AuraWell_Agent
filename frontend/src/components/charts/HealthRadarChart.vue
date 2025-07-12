@@ -67,7 +67,7 @@ import { message } from 'ant-design-vue'
 import { healthReportAPI } from '../../mock/api.js'
 
 // Props
-const props = defineProps({
+defineProps({
   title: {
     type: String,
     default: '健康雷达图'
@@ -244,29 +244,13 @@ const fetchData = async () => {
   loading.value = true
   try {
     // 模拟获取雷达图数据
-    const response = await healthReportAPI.getHealthInsights({
+    const res = await healthReportAPI.getHealthInsights({
       category: 'comprehensive',
       period: selectedPeriod.value
     })
     
-    // 生成模拟的雷达图数据
-    radarData.value = {
-      current: {
-        physical: 75 + Math.random() * 20,
-        mental: 68 + Math.random() * 25,
-        exercise: 82 + Math.random() * 15,
-        nutrition: 71 + Math.random() * 20,
-        sleep: 65 + Math.random() * 25,
-        lifestyle: 78 + Math.random() * 18
-      },
-      previous: {
-        physical: 70 + Math.random() * 20,
-        mental: 65 + Math.random() * 25,
-        exercise: 75 + Math.random() * 20,
-        nutrition: 68 + Math.random() * 22,
-        sleep: 62 + Math.random() * 25,
-        lifestyle: 72 + Math.random() * 20
-      }
+    if (res.success) {
+      radarData.value = res.data
     }
   } catch (error) {
     console.error('获取雷达图数据失败:', error)

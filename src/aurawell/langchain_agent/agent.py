@@ -1,6 +1,6 @@
 """
 LangChain Agent 实现
-基于LangChain框架的AI Agent，整合健康工具
+基于LangChain框架的AI Agent，整合健康工具 + MCP智能工具系统
 """
 
 import logging
@@ -9,7 +9,8 @@ from typing import Dict, Any, Optional, List
 from ..core.agent_router import BaseAgent
 from ..conversation.memory_manager import MemoryManager
 from ..core.deepseek_client import DeepSeekClient
-# from .tools.health_tools import LangChainHealthTools  # 暂时不使用
+# 新增：导入MCP工具管理器
+from .mcp_tools_manager import MCPToolsManager, WorkflowResult
 
 # DeepSeek LLM integration - using direct client instead of LangChain wrapper
 from .services.health_advice_service import HealthAdviceService
@@ -19,19 +20,20 @@ logger = logging.getLogger(__name__)
 
 class HealthAdviceAgent(BaseAgent):
     """
-    AuraWell健康建议生成AI Agent
+    AuraWell健康建议生成AI Agent (MCP智能化版本)
 
-    基于LangChain框架的真正Agent实现，整合三大工具链：
-    - UserProfileLookup (用户档案查询)
-    - CalcMetrics (健康指标计算)
-    - SearchKnowledge (知识检索和AI推理)
+    核心升级：
+    1. 集成13个MCP工具的智能自动化系统
+    2. 智能工作流触发和执行
+    3. 并行工具调用和结果整合
+    4. 数据驱动的个性化健康建议
 
-    核心功能：五模块健康建议生成（饮食、运动、体重、睡眠、心理）
+    兼容性保证：保持所有现有API接口不变
     """
 
     def __init__(self, user_id: str):
         """
-        初始化LangChain Agent
+        初始化MCP智能化LangChain Agent
 
         Args:
             user_id: 用户ID
@@ -44,7 +46,11 @@ class HealthAdviceAgent(BaseAgent):
         self.deepseek_client = None
         self.llm = None
 
-        # LangChain组件
+        # 新增：MCP工具智能管理器
+        self.mcp_manager = MCPToolsManager()
+        logger.info(f"MCP工具管理器已初始化，用户: {user_id}")
+
+        # LangChain组件（保持向后兼容）
         self.tools = []
         self.agent_executor = None
 
@@ -105,11 +111,13 @@ class HealthAdviceAgent(BaseAgent):
             # 注意：使用ChatOpenAI类是因为阿里云DashScope提供OpenAI兼容的API接口
             # 实际调用的是阿里云DashScope的DeepSeek服务，而非OpenAI的服务
             # 参数说明：
-            # - model: DeepSeek模型名称 (deepseek-r1-0528)
+            # - model: DeepSeek模型名称 (从环境变量读取)
             # - api_key: 阿里云DashScope API密钥
             # - api_base: 阿里云DashScope兼容模式URL
+            import os
+            model_name = os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3")
             llm = ChatOpenAI(
-                model="deepseek-r1-0528",
+                model=model_name,
                 openai_api_key=self.deepseek_client.api_key,  # DashScope API Key
                 openai_api_base=self.deepseek_client.base_url,  # DashScope Compatible URL
                 temperature=0.7,
@@ -199,22 +207,14 @@ class HealthAdviceAgent(BaseAgent):
                 ("assistant", "{agent_scratchpad}")
             ])
 
-            # 创建Agent
+            # 创建agent和executor
             agent = create_openai_tools_agent(self.llm, self.tools, prompt)
-
-            # 创建执行器
-            agent_executor = AgentExecutor(
-                agent=agent,
-                tools=self.tools,
-                verbose=True,
-                handle_parsing_errors=True,
-                max_iterations=3
-            )
+            agent_executor = AgentExecutor(agent=agent, tools=self.tools, verbose=True)
 
             return agent_executor
 
         except ImportError as e:
-            logger.warning(f"LangChain组件导入失败: {e}，使用直接服务调用")
+            logger.warning(f"LangChain Agent执行器不可用: {e}")
             return None
         except Exception as e:
             logger.error(f"创建Agent执行器失败: {e}")
@@ -224,63 +224,232 @@ class HealthAdviceAgent(BaseAgent):
         self, message: str, context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        处理用户消息
-
-        Args:
-            message: 用户消息
-            context: 上下文信息
-
-        Returns:
-            Dict[str, Any]: 处理结果
+        智能处理用户消息 (MCP增强版本)
+        
+        新增智能工作流：
+        1. 分析用户意图，自动选择MCP工具组合
+        2. 并行/顺序执行工具调用
+        3. 基于工具结果生成增强的AI响应
+        4. 保持向后兼容的fallback机制
         """
+        logger.info(f"处理用户消息: {message[:100]}...")
+        
         try:
-            logger.info(f"LangChain Agent 处理消息: {message}")
-
-            # 获取对话历史
-            conversation_history = await self.memory_manager.get_conversation_history(
-                user_id=self.user_id, limit=10
-            )
-
-            # 构建上下文
-            full_context = {
-                "user_id": self.user_id,
-                "conversation_history": conversation_history,
-                **(context or {}),
-            }
-
-            # 检测是否是健康建议生成请求
-            if self._is_health_advice_request(message):
-                response = await self._handle_health_advice_request(
-                    message, full_context
-                )
+            # 优先使用MCP智能工作流
+            workflow_result = await self._execute_mcp_workflow(message, context or {})
+            
+            if workflow_result.success and workflow_result.tool_calls:
+                # MCP工具成功执行，生成增强响应
+                logger.info(f"MCP工具执行成功: {workflow_result.tool_calls}")
+                return await self._generate_mcp_enhanced_response(message, workflow_result, context or {})
+            
             else:
-                # 使用标准的LangChain流程处理
-                response = await self._process_with_langchain(message, full_context)
+                # MCP工具未触发或失败，使用传统方式
+                logger.info("使用传统健康建议响应")
+                return await self._process_traditional_message(message, context or {})
+                
+        except Exception as e:
+            logger.error(f"消息处理失败: {e}")
+            # 最后的fallback
+            return await self._get_error_response(message, str(e))
 
-            # 保存对话到记忆
-            await self.memory_manager.store_conversation(
-                user_id=self.user_id,
-                user_message=message,
-                ai_response=response.get("message", ""),
-                intent_type="langchain_chat",
+    async def _execute_mcp_workflow(self, message: str, context: Dict[str, Any]) -> WorkflowResult:
+        """执行MCP智能工作流"""
+        try:
+            # 构建增强的上下文信息
+            enhanced_context = {
+                **context,
+                'user_id': self.user_id,
+                'conversation_history': self._conversation_history[-5:],  # 最近5条对话
+                'tool_context': {
+                    'user_id': self.user_id,
+                    'timestamp': str(asyncio.get_event_loop().time())
+                }
+            }
+            
+            # 执行MCP工具工作流
+            workflow_result = await self.mcp_manager.analyze_and_execute(message, enhanced_context)
+            
+            logger.info(f"MCP工作流执行完成: 成功={workflow_result.success}, "
+                       f"工具调用={len(workflow_result.tool_calls)}, "
+                       f"执行时间={workflow_result.execution_time:.2f}s")
+            
+            return workflow_result
+            
+        except Exception as e:
+            logger.error(f"MCP工作流执行失败: {e}")
+            return WorkflowResult(
+                success=False,
+                results={},
+                tool_calls=[],
+                execution_time=0.0,
+                errors=[str(e)]
             )
 
+    async def _generate_mcp_enhanced_response(self, message: str, workflow_result: WorkflowResult, context: Dict[str, Any]) -> Dict[str, Any]:
+        """基于MCP工具结果生成增强的AI响应"""
+        try:
+            # 构建增强的prompt，包含工具执行结果
+            enhanced_prompt = self._build_mcp_enhanced_prompt(message, workflow_result, context)
+            
+            # 调用DeepSeek生成响应
+            ai_response = await self._get_ai_response_with_tools(enhanced_prompt, context)
+            
+            # 记录对话历史
+            self._conversation_history.append({
+                'user': message,
+                'assistant': ai_response,
+                'mcp_tools_used': workflow_result.tool_calls,
+                'timestamp': asyncio.get_event_loop().time()
+            })
+            
             return {
-                "success": True,
-                "message": response.get("message", ""),
-                "data": response.get("data"),
-                "agent_type": "langchain",
-                "tools_used": response.get("tools_used", []),
+                'success': True,
+                'message': ai_response,
+                'data': {
+                    'response_type': 'mcp_enhanced',
+                    'tools_used': workflow_result.tool_calls,
+                    'tool_results': workflow_result.results,
+                    'execution_time': workflow_result.execution_time,
+                    'intent_analysis': workflow_result.results.get('intent_analysis', {}),
+                    'mcp_stats': self.mcp_manager.get_stats()
+                },
+                'agent_type': 'mcp_enhanced'
+            }
+            
+        except Exception as e:
+            logger.error(f"生成MCP增强响应失败: {e}")
+            # fallback到工具结果的直接展示
+            return {
+                'success': True,
+                'message': self._format_tool_results_as_message(workflow_result),
+                'data': {
+                    'response_type': 'mcp_fallback',
+                    'tools_used': workflow_result.tool_calls,
+                    'error': str(e)
+                },
+                'agent_type': 'mcp_fallback'
             }
 
+    def _build_mcp_enhanced_prompt(self, message: str, workflow_result: WorkflowResult, context: Dict[str, Any]) -> List[Dict[str, str]]:
+        """构建包含MCP工具结果的增强prompt"""
+        
+        # 工具结果摘要
+        tools_summary = []
+        for tool_name, result in workflow_result.results.items():
+            if tool_name != 'intent_analysis' and isinstance(result, dict):
+                tools_summary.append(f"- {tool_name}: {result.get('status', 'executed')}")
+        
+        # 意图分析信息
+        intent_info = workflow_result.results.get('intent_analysis', {})
+        detected_intent = intent_info.get('primary_intent', 'general_chat')
+        confidence = intent_info.get('confidence', 0.0)
+        
+        system_message = f"""你是AuraWell智能健康助手，现在使用MCP工具增强版本。
+
+## 当前用户请求分析
+- 用户ID: {self.user_id}
+- 检测意图: {detected_intent} (置信度: {confidence:.2f})
+- 触发的工具: {', '.join(workflow_result.tool_calls)}
+
+## MCP工具执行结果
+{chr(10).join(tools_summary)}
+
+## 响应要求
+基于以上工具执行结果，请生成：
+1. 数据驱动的个性化健康建议
+2. 引用具体的计算结果和科学依据
+3. 包含可视化图表的描述（如果有图表生成）
+4. 分步骤的执行指导
+5. 友好、专业、鼓励的语气
+
+请注意：所有建议仅供参考，如涉及医疗问题请咨询专业医生。"""
+
+        user_message = f"""用户询问: {message}
+
+请基于MCP工具的执行结果，为用户提供全面、个性化的健康建议。"""
+
+        return [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+
+    async def _get_ai_response_with_tools(self, messages: List[Dict[str, str]], context: Dict[str, Any]) -> str:
+        """使用DeepSeek生成基于工具结果的响应"""
+        try:
+            if self.deepseek_client:
+                response = self.deepseek_client.get_deepseek_response(
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=1500
+                )
+                return response.content
+            else:
+                return "AI服务暂时不可用，但MCP工具已成功执行。请查看工具执行结果。"
+                
         except Exception as e:
-            logger.error(f"LangChain Agent 处理消息失败: {e}")
-            return {
-                "success": False,
-                "message": "处理消息时发生错误",
-                "error": str(e),
-                "agent_type": "langchain",
-            }
+            logger.error(f"AI响应生成失败: {e}")
+            return f"AI响应生成遇到问题：{str(e)}。但MCP工具执行结果可供参考。"
+
+    async def _process_traditional_message(self, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """处理传统消息（保持向后兼容）"""
+        
+        # 检查是否是健康建议请求
+        if self._is_health_advice_request(message):
+            return await self._handle_health_advice_request(message, context)
+        
+        # 使用LangChain处理
+        if self.agent_executor:
+            try:
+                result = await self._process_with_langchain(message, context)
+                return result
+            except Exception as e:
+                logger.warning(f"LangChain处理失败: {e}，使用AI直接响应")
+        
+        # 最后使用AI直接响应
+        ai_response = await self._get_ai_response(message, context)
+        return {
+            'success': True,
+            'message': ai_response,
+            'data': {'response_type': 'traditional_ai'},
+            'agent_type': 'traditional'
+        }
+
+    async def _get_error_response(self, message: str, error: str) -> Dict[str, Any]:
+        """生成错误响应"""
+        return {
+            'success': False,
+            'message': f"抱歉，处理您的请求时遇到了问题。我会尽力帮助您。您的问题是：{message}",
+            'error': error,
+            'data': {'response_type': 'error'},
+            'agent_type': 'error_handler'
+        }
+
+    def _format_tool_results_as_message(self, workflow_result: WorkflowResult) -> str:
+        """将工具执行结果格式化为用户可读的消息"""
+        if not workflow_result.tool_calls:
+            return "我已经分析了您的请求，但没有找到需要特殊工具处理的内容。请提供更多详细信息。"
+        
+        message_parts = [
+            "我已经使用以下智能工具为您分析：",
+            ""
+        ]
+        
+        for tool_call in workflow_result.tool_calls:
+            tool_name = tool_call.split(':')[0]
+            message_parts.append(f"✓ {tool_name} - 已执行")
+        
+        message_parts.extend([
+            "",
+            f"执行时间: {workflow_result.execution_time:.2f}秒",
+            "",
+            "基于工具分析结果，我将为您提供个性化的健康建议。"
+        ])
+        
+        return "\n".join(message_parts)
+
+    # 在现有代码之前插入import
+    import asyncio
 
     def _is_health_advice_request(self, message: str) -> bool:
         """

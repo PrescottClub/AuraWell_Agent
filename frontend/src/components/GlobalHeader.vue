@@ -68,8 +68,8 @@ import {
   TeamOutlined,
   BarChartOutlined
 } from '@ant-design/icons-vue';
-import { useAuthStore } from '../stores/auth.js';
-import { useUserStore } from '../stores/user.js';
+import { useAuthStore } from '../stores/auth';
+import { useUserStore } from '../stores/user';
 import { message } from 'ant-design-vue';
 
 const router = useRouter();
@@ -183,10 +183,24 @@ router.afterEach(() => {
 // 初始化
 updateCurrentMenu();
 
-// 如果用户已登录，获取用户信息
-if (authStore.token && !userStore.userProfile.username) {
-  userStore.fetchUserProfile().catch(console.error);
-}
+// 🔧 开发环境自动认证和获取用户信息
+const initializeAuth = async () => {
+  try {
+    // 确保认证状态
+    const isAuthenticated = await authStore.ensureAuthenticated();
+
+    if (isAuthenticated && !userStore.userProfile.username) {
+      // 获取用户信息
+      await userStore.fetchUserProfile();
+      console.log('✅ 用户信息获取成功');
+    }
+  } catch (error) {
+    console.warn('⚠️ 认证初始化失败:', error);
+  }
+};
+
+// 初始化认证
+initializeAuth();
 </script>
 
 <style scoped>

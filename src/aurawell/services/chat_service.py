@@ -26,6 +26,7 @@ from ..models.family_models import MemberDataContext
 from ..core.agent_router import agent_router
 from ..conversation.memory_manager import MemoryManager
 from ..services.data_sanitization_service import DataSanitizationService
+from ..services.model_fallback_service import get_model_fallback_service, ModelTier
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,16 @@ class ChatService:
         self.chat_repo = ChatRepository()
         self.memory_manager = MemoryManager()
         self.data_sanitization_service = data_sanitization_service
+
+        # 初始化多模型梯度服务
+        try:
+            from ..core.deepseek_client import DeepSeekClient
+            deepseek_client = DeepSeekClient()
+            self.model_fallback_service = get_model_fallback_service(deepseek_client)
+            logger.info("多模型梯度服务初始化成功")
+        except Exception as e:
+            logger.warning(f"多模型梯度服务初始化失败: {e}")
+            self.model_fallback_service = None
 
     async def create_conversation(
         self,
@@ -277,9 +288,9 @@ class ChatService:
         conversation_id: str,
         context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Generate AI response using the agent router"""
+        """Generate AI response using the agent router with multi-model fallback"""
         try:
-            # Use agent router to process the message
+            # 首先尝试使用agent router处理消息
             response = await agent_router.process_message(
                 user_id=user_id,
                 message=message,
@@ -292,6 +303,11 @@ class ChatService:
 
             # Extract reply from response
             reply = response.get("message", "")
+
+            # 如果agent router返回的回复为空或失败，尝试使用多模型服务
+            if not reply or reply.strip() == "" or "抱歉" in reply:
+                logger.info("Agent router响应不理想，尝试使用多模型梯度服务")
+                reply = await self._get_fallback_ai_response(message, conversation_id)
 
             # Generate health-specific suggestions and quick replies
             suggestions, quick_replies = self._generate_health_suggestions(
@@ -307,12 +323,59 @@ class ChatService:
 
         except Exception as e:
             logger.error(f"Failed to generate AI response: {e}")
-            # Return fallback response
-            return {
-                "reply": "抱歉，我现在无法处理您的请求。请稍后再试。",
-                "suggestions": [],
-                "quick_replies": [],
-            }
+            # 尝试使用多模型服务作为最后的备选
+            try:
+                fallback_reply = await self._get_fallback_ai_response(message, conversation_id)
+                return {
+                    "reply": fallback_reply,
+                    "suggestions": [],
+                    "quick_replies": [],
+                }
+            except Exception as fallback_error:
+                logger.error(f"Fallback AI response also failed: {fallback_error}")
+                return {
+                    "reply": "抱歉，我现在无法处理您的请求。请稍后再试。",
+                    "suggestions": [],
+                    "quick_replies": [],
+                }
+
+    async def _get_fallback_ai_response(self, message: str, conversation_id: str) -> str:
+        """使用多模型梯度服务获取AI响应"""
+        if not self.model_fallback_service:
+            return "AI服务暂时不可用，请稍后再试。"
+
+        try:
+            # 构建消息
+            messages = [
+                {
+                    "role": "system",
+                    "content": "你是一个专业的健康助手，请为用户提供有用的健康建议和信息。回答要简洁、准确、有帮助。"
+                },
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ]
+
+            # 使用多模型服务获取响应
+            model_response = await self.model_fallback_service.get_model_response(
+                messages=messages,
+                conversation_id=conversation_id,
+                preferred_tier=ModelTier.HIGH_PRECISION,
+                temperature=0.7,
+                max_tokens=1024
+            )
+
+            if model_response.success:
+                logger.info(f"多模型服务响应成功，使用模型: {model_response.model_used}")
+                return model_response.content
+            else:
+                logger.error(f"多模型服务响应失败: {model_response.error_message}")
+                return "抱歉，AI服务暂时不可用，请稍后再试。"
+
+        except Exception as e:
+            logger.error(f"多模型服务调用失败: {e}")
+            return "抱歉，AI服务暂时不可用，请稍后再试。"
 
     def _generate_health_suggestions(
         self, user_message: str, ai_reply: str

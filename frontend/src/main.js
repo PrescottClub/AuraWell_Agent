@@ -1,3 +1,4 @@
+import './assets/css/main.css' // 全局样式
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
@@ -6,26 +7,49 @@ import Antd from 'ant-design-vue'
 import 'ant-design-vue/dist/reset.css'
 import VChart from 'vue-echarts'
 import { createPinia } from 'pinia'
+import motionPlugin from './plugins/motion.js' // 动效插件
+import i18n from './plugins/i18n.js'; // 国际化插件
+import * as Sentry from "@sentry/vue";
+import { onCLS, onINP, onLCP } from 'web-vitals';
 
-// 条件性加载Mock数据系统 - 只在明确启用时使用
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
-
-if (USE_MOCK) {
-  // 只在明确配置使用Mock时才加载
-  import('./mock/index.js').then(({ initMockData }) => {
-    initMockData()
-    console.log('🔧 Mock数据模式已启用')
-  })
-  import('./mock/devTools.js') // 加载开发工具
-} else {
-  console.log('🌐 真实API模式已启用，连接后端服务器')
-}
+// 初始化Mock数据系统
+import { initMockData } from './mock/index'
+import './mock/devTools' // 加载开发工具
 
 const app = createApp(App)
+
+Sentry.init({
+  app,
+  dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // 请替换为您的真实 DSN
+  integrations: [
+    Sentry.browserTracingIntegration({ router }),
+    Sentry.replayIntegration({
+      maskAllText: false,
+      blockAllMedia: false,
+    }),
+  ],
+  // 性能监控
+  tracesSampleRate: 1.0, 
+  // Session Replay
+  replaysSessionSampleRate: 0.1, 
+  replaysOnErrorSampleRate: 1.0,
+});
+
 const pinia = createPinia()
 
+// 初始化Mock数据
+initMockData()
+
 app.component('v-chart', VChart)
+app.use(motionPlugin) // 注册动效插件
+app.use(i18n) // 注册 i18n 插件
 app.use(router)
 app.use(Antd)
 app.use(pinia)
+
 app.mount('#app')
+
+// Web Vitals 应该在 Sentry 初始化后调用
+onCLS(Sentry.captureFeedback);
+onINP(Sentry.captureFeedback);
+onLCP(Sentry.captureFeedback);

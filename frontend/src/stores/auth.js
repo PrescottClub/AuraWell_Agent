@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { UserAPI } from '../api/user.js'
+import { UserAPI } from '../api/user'
 
 export const useAuthStore = defineStore('auth', () => {
   // 🔧 统一认证状态管理

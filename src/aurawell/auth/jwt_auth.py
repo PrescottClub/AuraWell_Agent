@@ -136,7 +136,7 @@ async def get_current_user_id(
     Raises:
         HTTPException: If authentication fails
     """
-    # 开发环境特殊处理
+    # 开发环境特殊处理 - 优先处理，避免进入复杂的验证逻辑
     if credentials.credentials == "dev-test-token":
         logger.info("Using development test token")
         return "dev_user_001"
@@ -145,24 +145,27 @@ async def get_current_user_id(
 
     try:
         # 1. 检查Token是否在黑名单中
-        from ..core.token_blacklist import get_token_blacklist_manager
-        blacklist_manager = await get_token_blacklist_manager()
+        try:
+            from ..core.token_blacklist import get_token_blacklist_manager
+            blacklist_manager = await get_token_blacklist_manager()
 
-        if await blacklist_manager.is_token_blacklisted(token):
-            logger.warning("Token在黑名单中，拒绝访问")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token已被撤销，请重新登录",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            if await blacklist_manager.is_token_blacklisted(token):
+                logger.warning("Token在黑名单中，拒绝访问")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token已被撤销，请重新登录",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+        except ImportError:
+            # 降级处理：如果黑名单模块不可用，跳过黑名单检查
+            logger.warning("Token黑名单模块不可用，跳过黑名单检查")
+        except Exception as e:
+            # 降级处理：如果黑名单检查失败，跳过黑名单检查
+            logger.warning(f"Token黑名单检查失败，跳过检查: {e}")
 
         # 2. 验证Token并获取用户ID
         return authenticator.get_current_user_id(token)
 
-    except ImportError:
-        # 降级处理：如果黑名单模块不可用，只进行基本Token验证
-        logger.warning("Token黑名单模块不可用，使用基本验证")
-        return authenticator.get_current_user_id(token)
     except HTTPException:
         # 重新抛出HTTP异常
         raise

@@ -1,0 +1,9 @@
+{
+  "header": {
+    "dashboard": "仪表盘",
+    "healthPlan": "健康计划",
+    "reports": "健康报告",
+    "family": "家庭中心"
+  },
+  "welcome": "欢迎使用 AuraWell"
+} 

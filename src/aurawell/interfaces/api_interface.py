@@ -256,6 +256,20 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(ValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
+# ============================================================================
+# HEALTH CHECK ENDPOINTS
+# ============================================================================
+
+@app.get("/health", tags=["Health Check"])
+async def health_check():
+    """健康检查端点"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "AuraWell API",
+        "version": "1.0.0"
+    }
+
 # Global variables for dependency injection
 _db_manager = None
 _user_repo = None
@@ -336,7 +350,9 @@ async def get_user_repository():
                     # 否则转换为Pydantic模型
                     from ..repositories.user_repository import UserRepository
 
-                    return UserRepository.to_pydantic(db_model)
+                    # 创建一个临时的UserRepository实例来调用to_pydantic方法
+                    temp_repo = UserRepository(None)  # session不需要用于转换
+                    return temp_repo.to_pydantic(db_model)
 
             _user_repo = UserRepositoryWrapper(db_manager)
             logger.info("Successfully created real user repository")
@@ -1425,8 +1441,23 @@ async def get_family_members(
     try:
         members = await family_service.get_family_members(family_id, current_user_id)
 
+        # 将FamilyMember对象转换为字典格式，以便Pydantic验证
+        members_data = []
+        for member in members:
+            member_dict = {
+                "user_id": member.user_id,
+                "username": member.username,
+                "display_name": member.display_name,
+                "email": member.email,
+                "role": member.role,  # FamilyRole枚举会自动序列化
+                "joined_at": member.joined_at,
+                "last_active": member.last_active,
+                "is_active": member.is_active
+            }
+            members_data.append(member_dict)
+
         return FamilyMembersResponse(
-            data=members, message=f"Retrieved {len(members)} family members"
+            data=members_data, message=f"Retrieved {len(members)} family members"
         )
 
     except Exception as e:
@@ -2102,56 +2133,7 @@ async def get_conversations(
         )
 
 
-@app.post("/api/v1/chat/message", response_model=HealthChatResponse, tags=["Chat"])
-async def send_health_chat_message(
-    chat_request: ChatRequest,
-    current_user_id: str = Depends(get_current_user_id),
-):
-    """
-    Send a health chat message and get AI response with suggestions
-
-    Args:
-        chat_request: Health chat message and context
-        current_user_id: Authenticated user ID
-
-    Returns:
-        AI response with health suggestions and quick replies
-
-    Raises:
-        HTTPException: If message processing fails
-    """
-    try:
-        # 使用agent_router处理消息，保持API兼容性
-        enhanced_context = chat_request.context or {}
-
-        response = await agent_router.process_message(
-            user_id=current_user_id,
-            message=chat_request.message,
-            context={
-                "conversation_id": chat_request.conversation_id,
-                "request_type": "health_chat",
-                **enhanced_context,
-            },
-        )
-
-        # 生成对话ID（如果没有提供）
-        conversation_id = chat_request.conversation_id or f"conv_{current_user_id}_{int(datetime.now().timestamp())}"
-
-        return HealthChatResponse(
-            message="Chat processed successfully",
-            reply=response.get("message", ""),
-            conversation_id=conversation_id,
-            message_id=f"msg_{int(datetime.now().timestamp())}",
-            timestamp=datetime.now(),
-            suggestions=[],  # 可以根据需要添加建议
-            quick_replies=[],  # 可以根据需要添加快速回复
-        )
-    except Exception as e:
-        logger.error(f"Failed to process health chat message: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process chat message",
-        )
+# Removed duplicate endpoint - using frontend compatible version at line 5246
 
 
 @app.get("/api/v1/chat/history", response_model=ChatHistoryResponse, tags=["Chat"])
@@ -2542,9 +2524,23 @@ async def get_user_profile_frontend_compatible(
         # 调用现有的get_user_profile函数
         profile_response = await get_user_profile(current_user_id, user_repo)
 
+        # 将UserProfileResponse转换为字典格式
+        profile_data = {
+            "user_id": profile_response.user_id,
+            "display_name": profile_response.display_name,
+            "email": profile_response.email,
+            "age": profile_response.age,
+            "gender": profile_response.gender,
+            "height_cm": profile_response.height_cm,
+            "weight_kg": profile_response.weight_kg,
+            "activity_level": profile_response.activity_level,
+            "created_at": profile_response.created_at.isoformat() if profile_response.created_at else None,
+            "updated_at": profile_response.updated_at.isoformat() if profile_response.updated_at else None,
+        }
+
         # 适配为前端期望格式
         return adapt_response_for_frontend(
-            profile_response.data,
+            profile_data,
             "获取用户档案成功"
         )
     except Exception as e:
@@ -2575,9 +2571,23 @@ async def update_user_profile_frontend_compatible(
         # 调用现有的update_user_profile函数
         profile_response = await update_user_profile(profile_update, current_user_id, user_repo)
 
+        # 将UserProfileResponse转换为字典格式
+        profile_data = {
+            "user_id": profile_response.user_id,
+            "display_name": profile_response.display_name,
+            "email": profile_response.email,
+            "age": profile_response.age,
+            "gender": profile_response.gender,
+            "height_cm": profile_response.height_cm,
+            "weight_kg": profile_response.weight_kg,
+            "activity_level": profile_response.activity_level,
+            "created_at": profile_response.created_at.isoformat() if profile_response.created_at else None,
+            "updated_at": profile_response.updated_at.isoformat() if profile_response.updated_at else None,
+        }
+
         # 适配为前端期望格式
         return adapt_response_for_frontend(
-            profile_response.data,
+            profile_data,
             "更新用户档案成功"
         )
     except Exception as e:
@@ -5241,7 +5251,52 @@ async def create_family_challenge(
 # FRONTEND COMPATIBILITY API ENDPOINTS
 # ============================================================================
 
-# 重复的路由已删除 - 使用第2105行的send_health_chat_message端点
+# 添加前端兼容的聊天消息端点
+
+@app.post("/api/v1/chat/message", response_model=Dict[str, Any], tags=["Chat"])
+async def chat_message_frontend_compatible(
+    request: ChatRequest,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    发送聊天消息 - 前端兼容端点
+    这是前端期望的主要聊天API端点，映射到健康咨询功能
+    """
+    try:
+        # 使用agent_router处理消息，保持API兼容性
+        response = await agent_router.process_message(
+            user_id=current_user_id,
+            message=request.message,
+            context={
+                "conversation_id": request.conversation_id,
+                "request_type": "health_chat",
+                **(request.context or {}),
+            },
+        )
+
+        # 生成对话ID（如果没有提供）
+        conversation_id = request.conversation_id or f"conv_{current_user_id}_{int(datetime.now().timestamp())}"
+
+        # 适配为前端期望格式
+        return {
+            "reply": response.get("message", ""),
+            "conversation_id": conversation_id,
+            "timestamp": datetime.now().isoformat(),
+            "suggestions": [],
+            "quick_replies": [],
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"Chat message failed: {e}")
+        return {
+            "reply": "抱歉，我现在遇到了一些技术问题。请稍后再试。",
+            "conversation_id": request.conversation_id,
+            "timestamp": datetime.now().isoformat(),
+            "suggestions": [],
+            "quick_replies": [],
+            "status": "error",
+            "error": str(e)
+        }
 
 
 @app.get("/api/v1/user/profile", response_model=Dict[str, Any], tags=["User Profile"])
@@ -5256,6 +5311,22 @@ async def get_user_profile_frontend_alias(
     return await get_user_profile_frontend_compatible(current_user_id, user_repo)
 
 
+# ============================================================================
+# AUTH PROFILE API ENDPOINTS (Frontend Compatibility)
+# ============================================================================
+
+@app.get("/api/v1/auth/profile", response_model=Dict[str, Any], tags=["Authentication"])
+async def get_auth_profile(
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    """
+    获取用户档案 - 认证模块兼容接口
+    前端调用 /api/v1/auth/profile 的兼容接口
+    """
+    return await get_user_profile_frontend_compatible(current_user_id, user_repo)
+
+
 @app.put("/api/v1/user/profile", response_model=Dict[str, Any], tags=["User Profile"])
 async def update_user_profile_frontend_alias(
     profile_update: UserProfileRequest,
@@ -5265,6 +5336,19 @@ async def update_user_profile_frontend_alias(
     """
     更新用户档案 - 前端兼容别名
     这是前端期望的用户档案更新API端点
+    """
+    return await update_user_profile_frontend_compatible(profile_update, current_user_id, user_repo)
+
+
+@app.put("/api/v1/auth/profile", response_model=Dict[str, Any], tags=["Authentication"])
+async def update_auth_profile(
+    profile_update: UserProfileRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    """
+    更新用户档案 - 认证模块兼容接口
+    前端调用 /api/v1/auth/profile 的兼容接口
     """
     return await update_user_profile_frontend_compatible(profile_update, current_user_id, user_repo)
 

@@ -42,11 +42,13 @@ from ...core.exceptions import (
 
 logger = logging.getLogger(__name__)
 
-# 模型选择配置
+# 模型选择配置 - 从环境变量读取
+import os
+
 MODEL_CONFIG = {
-    "reasoning_tasks": "deepseek-r1-0528",  # 复杂推理任务
-    "chat_tasks": "deepseek-r1-0528",       # 简单对话任务
-    "default": "deepseek-r1-0528"           # 默认使用推理模型
+    "reasoning_tasks": os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3"),  # 复杂推理任务
+    "chat_tasks": os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3"),       # 简单对话任务
+    "default": os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3")           # 默认使用推理模型
 }
 
 
@@ -756,7 +758,7 @@ class HealthAdviceService:
             ExternalServiceError: API调用失败
         """
         import asyncio
-        from aurawell.core.exceptions import ExternalServiceError
+        from ...core.exceptions import ExternalServiceError
 
         last_error = None
 

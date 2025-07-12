@@ -1,0 +1,9 @@
+{
+  "header": {
+    "dashboard": "Dashboard",
+    "healthPlan": "Health Plan",
+    "reports": "Reports",
+    "family": "Family"
+  },
+  "welcome": "Welcome to AuraWell"
+} 

@@ -186,7 +186,7 @@
               type="primary"
               block
               class="mb-3"
-              @click="$router.push('/family/members')"
+              @click="router.push('/family/members')"
             >
               <TeamOutlined />
               管理成员
@@ -195,7 +195,7 @@
             <a-button
               block
               class="mb-3"
-              @click="$router.push('/family/challenges')"
+              @click="router.push('/family/challenges')"
             >
               <TrophyOutlined />
               管理挑战
@@ -204,7 +204,7 @@
             <a-button
               block
               class="mb-3"
-              @click="$router.push('/family/alerts')"
+              @click="router.push('/family/alerts')"
             >
               <BellOutlined />
               查看告警
@@ -265,8 +265,11 @@ import {
 } from '@ant-design/icons-vue'
 import { useFamilyStore } from '@/stores/family'
 import { familyAPI } from '@/api/family'
+import { useRoute, useRouter } from 'vue-router'
 
 const familyStore = useFamilyStore()
+const route = useRoute()
+const router = useRouter()
 
 // 响应式数据
 const updating = ref(false)

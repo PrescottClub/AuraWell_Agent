@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';
 import path from 'path'
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -14,6 +15,12 @@ export default defineConfig({
           importStyle: false, // css in js
         }),
       ],
+    }),
+    process.env.VISUALIZER && visualizer({
+      open: true,
+      filename: 'stats.html',
+      gzipSize: true,
+      brotliSize: true,
     }),
   ],
   resolve: {
@@ -28,20 +35,9 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api/v1': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
         secure: false,
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.log('proxy error', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('Sending Request:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log('Received Response:', proxyRes.statusCode, req.url);
-          });
-        }
       }
     }
   },
@@ -53,7 +49,18 @@ export default defineConfig({
       output: {
         chunkFileNames: 'js/[name]-[hash].js',
         entryFileNames: 'js/[name]-[hash].js',
-        assetFileNames: '[ext]/[name]-[hash].[ext]'
+        assetFileNames: '[ext]/[name]-[hash].[ext]',
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('echarts') || id.includes('zrender')) {
+              return 'vendor_charts';
+            }
+            if (id.includes('ant-design-vue')) {
+              return 'vendor_ui';
+            }
+            return 'vendor'; // all other vendors
+          }
+        },
       }
     }
   }
