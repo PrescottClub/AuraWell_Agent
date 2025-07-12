@@ -256,18 +256,156 @@ class PromptOptimizerService:
             }
     
     async def _get_all_versions_performance(self, scenario: str, days: int) -> Dict[str, Dict[str, Any]]:
-        """获取所有版本的性能数据"""
-        # 这里应该查询数据库获取所有版本
-        # 目前返回模拟数据
-        versions = ["v3_0", "v3_1"]
+        """
+        从数据库获取所有版本的性能数据
+
+        Args:
+            scenario: 场景名称
+            days: 统计天数
+
+        Returns:
+            版本性能数据字典
+        """
+        try:
+            from ..database.connection import get_async_session
+            from ..database.models import PromptVersionDB, PromptPerformanceLogDB
+            from sqlalchemy import select, func, and_
+            from datetime import datetime, timedelta
+
+            results = {}
+            since_date = datetime.utcnow() - timedelta(days=days)
+
+            async with get_async_session() as session:
+                # 查询所有活跃版本
+                version_stmt = select(PromptVersionDB).where(
+                    and_(
+                        PromptVersionDB.scenario == scenario,
+                        PromptVersionDB.is_active == True
+                    )
+                )
+                version_result = await session.execute(version_stmt)
+                versions = version_result.scalars().all()
+
+                # 为每个版本聚合性能数据
+                for version_record in versions:
+                    version = version_record.version
+
+                    # 聚合性能日志数据
+                    perf_stmt = select(
+                        func.count(PromptPerformanceLogDB.id).label('total_uses'),
+                        func.avg(PromptPerformanceLogDB.user_rating).label('avg_rating'),
+                        func.avg(PromptPerformanceLogDB.response_relevance).label('avg_relevance'),
+                        func.avg(PromptPerformanceLogDB.response_helpfulness).label('avg_helpfulness'),
+                        func.avg(PromptPerformanceLogDB.response_accuracy).label('avg_accuracy'),
+                        func.avg(PromptPerformanceLogDB.response_time_ms).label('avg_response_time'),
+                        func.avg(PromptPerformanceLogDB.tool_call_success.cast(sa.Float)).label('tool_success_rate'),
+                        func.sum(PromptPerformanceLogDB.error_occurred.cast(sa.Integer)).label('error_count')
+                    ).where(
+                        and_(
+                            PromptPerformanceLogDB.prompt_scenario == scenario,
+                            PromptPerformanceLogDB.prompt_version == version,
+                            PromptPerformanceLogDB.created_at >= since_date
+                        )
+                    )
+
+                    perf_result = await session.execute(perf_stmt)
+                    stats = perf_result.first()
+
+                    if stats and stats.total_uses > 0:
+                        # 计算错误率
+                        error_rate = (stats.error_count / stats.total_uses * 100) if stats.total_uses > 0 else 0
+
+                        # 计算综合性能分数
+                        performance_score = self._calculate_composite_score({
+                            'average_rating': stats.avg_rating,
+                            'average_relevance': stats.avg_relevance,
+                            'tool_success_rate': stats.tool_success_rate,
+                            'error_rate_percent': error_rate
+                        })
+
+                        results[version] = {
+                            'total_uses': stats.total_uses,
+                            'average_rating': round(stats.avg_rating, 2) if stats.avg_rating else None,
+                            'average_relevance': round(stats.avg_relevance, 3) if stats.avg_relevance else None,
+                            'average_helpfulness': round(stats.avg_helpfulness, 3) if stats.avg_helpfulness else None,
+                            'average_accuracy': round(stats.avg_accuracy, 3) if stats.avg_accuracy else None,
+                            'average_response_time_ms': round(stats.avg_response_time, 1) if stats.avg_response_time else None,
+                            'tool_success_rate': round(stats.tool_success_rate, 3) if stats.tool_success_rate else None,
+                            'error_rate_percent': round(error_rate, 2),
+                            'performance_score': round(performance_score, 3),
+                            'version_metadata': {
+                                'name': version_record.name,
+                                'description': version_record.description,
+                                'is_experimental': version_record.is_experimental,
+                                'created_at': version_record.created_at.isoformat() if version_record.created_at else None
+                            }
+                        }
+
+                        self.logger.debug(f"Aggregated performance data for {scenario}_{version}: {stats.total_uses} samples")
+
+            return results
+
+        except Exception as e:
+            self.logger.error(f"Error getting versions performance from database: {e}")
+            # 降级到服务调用
+            return await self._get_versions_performance_fallback(scenario, days)
+
+    async def _get_versions_performance_fallback(self, scenario: str, days: int) -> Dict[str, Dict[str, Any]]:
+        """降级方案：通过服务获取性能数据"""
+        versions = ["v3_0", "v3_1", "v3_2_test"]
         results = {}
-        
+
         for version in versions:
-            stats = await prompt_performance_service.get_performance_stats(scenario, version, days)
-            if stats:
-                results[version] = stats
-        
+            try:
+                stats = await prompt_performance_service.get_performance_stats(scenario, version, days)
+                if stats and stats.get('total_uses', 0) > 0:
+                    results[version] = stats
+            except Exception as e:
+                self.logger.warning(f"Failed to get stats for {version}: {e}")
+
         return results
+
+    def _calculate_composite_score(self, metrics: Dict[str, Any]) -> float:
+        """
+        计算综合性能分数
+
+        Args:
+            metrics: 性能指标字典
+
+        Returns:
+            综合分数 (0-1)
+        """
+        try:
+            score = 0.0
+            weight_sum = 0.0
+
+            # 用户评分权重 40%
+            if metrics.get('average_rating'):
+                score += (metrics['average_rating'] / 5.0) * 0.4
+                weight_sum += 0.4
+
+            # 响应相关性权重 25%
+            if metrics.get('average_relevance'):
+                score += metrics['average_relevance'] * 0.25
+                weight_sum += 0.25
+
+            # 工具成功率权重 20%
+            if metrics.get('tool_success_rate'):
+                score += metrics['tool_success_rate'] * 0.2
+                weight_sum += 0.2
+
+            # 错误率权重 15% (反向)
+            if metrics.get('error_rate_percent') is not None:
+                error_score = max(0, 1 - (metrics['error_rate_percent'] / 100))
+                score += error_score * 0.15
+                weight_sum += 0.15
+
+            # 标准化分数
+            return score / weight_sum if weight_sum > 0 else 0.0
+
+        except Exception as e:
+            self.logger.error(f"Error calculating composite score: {e}")
+            return 0.0
     
     def _identify_best_worst_versions(self, versions_data: Dict[str, Dict[str, Any]]) -> Tuple[str, str]:
         """识别最佳和最差版本"""
