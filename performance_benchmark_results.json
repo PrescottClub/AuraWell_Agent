@@ -1,0 +1,73 @@
+{
+  "timestamp": "2025-07-12 20:57:00",
+  "test_environment": {
+    "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "platform": "win32"
+  },
+  "mcp_tools": {
+    "calculator": {
+      "iterations": 100,
+      "avg_time_ms": 0.0892939988989383,
+      "min_time_ms": 0.05060000694356859,
+      "max_time_ms": 0.2297000028192997,
+      "std_dev_ms": 0.031542481042695705
+    },
+    "quickchart": {
+      "iterations": 20,
+      "avg_time_ms": 1870.2175250044093,
+      "min_time_ms": 1599.5946000039112,
+      "max_time_ms": 2887.564000004204,
+      "std_dev_ms": 363.3405710853565
+    }
+  },
+  "error_handling": {
+    "success_scenarios": {
+      "iterations": 1000,
+      "avg_time_ms": 0.1002779008122161,
+      "min_time_ms": 0.047900015488266945,
+      "max_time_ms": 0.5341999931260943,
+      "p95_time_ms": 0.21039500134065747
+    },
+    "error_scenarios": {
+      "iterations": 100,
+      "avg_time_ms": 0.08503600169206038,
+      "min_time_ms": 0.059600017266348004,
+      "max_time_ms": 0.20039998344145715,
+      "p95_time_ms": 0.16078000771813095
+    }
+  },
+  "performance_monitor": {
+    "collection_performance": {
+      "iterations": 15,
+      "avg_time_ms": 1006.6344133326007,
+      "max_time_ms": 1008.3599000063259,
+      "min_time_ms": 1004.7571999893989
+    },
+    "monitoring_summary": {
+      "summary": {
+        "total_data_points": 15,
+        "recent_hour_points": 15,
+        "avg_cpu_1h": 7.88,
+        "avg_memory_1h": 45.57,
+        "avg_response_time_1h": 97.3
+      },
+      "current_alerts": [],
+      "request_stats": {
+        "total_requests": 15,
+        "total_errors": 0,
+        "current_error_rate": 0.0
+      },
+      "last_updated": "2025-07-12T20:58:08.526403"
+    },
+    "data_points_collected": 15
+  },
+  "concurrent_operations": {
+    "total_time_ms": 15.832300006877631,
+    "concurrent_tasks": 50,
+    "successful_tasks": 50,
+    "failed_tasks": 0,
+    "success_rate": 100.0,
+    "avg_task_time_ms": 0.29606600059196353,
+    "throughput_tasks_per_second": 3158.100843104271
+  }
+}
