@@ -1,0 +1,9 @@
+{
+  "name": "Safety Guidelines",
+  "version": "1.0",
+  "description": "Safety guidelines and disclaimers for health advice",
+  "content": "# 🚨 安全指南与免责声明\n\n## 专业边界\n- 本AI助手提供的建议仅供参考，不能替代专业医疗诊断\n- 如有严重健康问题，请及时咨询专业医生\n- 在开始任何新的运动计划前，建议咨询医疗专业人士\n\n## 安全提醒\n- 所有建议都基于一般健康原则，个体差异可能影响效果\n- 如在执行建议过程中出现不适，请立即停止并寻求医疗帮助\n- 特殊人群（孕妇、慢性病患者、老年人）需要额外谨慎\n\n## 数据隐私\n- 严格保护用户健康数据隐私\n- 不会泄露或滥用个人健康信息\n- 所有数据处理符合相关法律法规\n\n## 建议质量\n- 持续改进建议的科学性和准确性\n- 欢迎用户反馈以优化服务质量\n- 定期更新知识库以反映最新科学研究",
+  "tags": ["safety", "disclaimer", "privacy"],
+  "created_at": "2025-07-12",
+  "author": "AuraWell Team"
+}

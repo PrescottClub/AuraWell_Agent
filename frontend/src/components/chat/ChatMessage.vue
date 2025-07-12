@@ -55,10 +55,49 @@
             </div>
         </div>
 
+        <!-- Feedback Buttons (only for AI messages) -->
+        <div v-if="message.sender === 'agent'" class="mt-3 flex items-center gap-2 pt-2 border-t border-border/30">
+          <span class="text-xs text-text-secondary">这个回答对您有帮助吗？</span>
+          <div class="flex gap-1">
+            <button
+              @click="submitFeedback('like')"
+              :class="[
+                'p-1.5 rounded-full transition-all duration-200',
+                userFeedback === 'like'
+                  ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                  : 'text-text-secondary hover:bg-secondary hover:text-green-600'
+              ]"
+              :title="userFeedback === 'like' ? '已点赞' : '点赞'"
+            >
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+              </svg>
+            </button>
+            <button
+              @click="submitFeedback('dislike')"
+              :class="[
+                'p-1.5 rounded-full transition-all duration-200',
+                userFeedback === 'dislike'
+                  ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                  : 'text-text-secondary hover:bg-secondary hover:text-red-600'
+              ]"
+              :title="userFeedback === 'dislike' ? '已点踩' : '点踩'"
+            >
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.106-1.79l-.05-.025A4 4 0 0011.057 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+              </svg>
+            </button>
+          </div>
+          <!-- Feedback submitted indicator -->
+          <span v-if="feedbackSubmitted" class="text-xs text-green-600 ml-2">
+            ✓ 感谢您的反馈
+          </span>
+        </div>
+
         <!-- Quick Replies -->
         <div v-if="message.quickReplies && message.quickReplies.length > 0" class="mt-4 flex flex-wrap gap-2">
-          <button 
-            v-for="(reply, index) in message.quickReplies" 
+          <button
+            v-for="(reply, index) in message.quickReplies"
             :key="index"
             @click="handleQuickReply(reply)"
             class="px-3 py-1.5 text-sm font-medium text-primary bg-secondary rounded-full hover:bg-primary/20 transition-colors"
@@ -77,7 +116,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { UserOutlined } from '@ant-design/icons-vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -107,7 +146,11 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['quick-reply'])
+const emit = defineEmits(['quick-reply', 'feedback'])
+
+// Feedback state
+const userFeedback = ref(null) // 'like' | 'dislike' | null
+const feedbackSubmitted = ref(false)
 
 // Configure `marked` with `highlight.js`
 marked.setOptions({
@@ -158,6 +201,28 @@ const getMetricLabel = (key) => {
 
 const handleQuickReply = (reply) => {
   emit('quick-reply', reply)
+}
+
+// Feedback handling
+const submitFeedback = async (type) => {
+  if (feedbackSubmitted.value) return
+
+  userFeedback.value = type
+  feedbackSubmitted.value = true
+
+  // Emit feedback event to parent component
+  emit('feedback', {
+    messageId: props.message.id,
+    sessionId: props.message.sessionId,
+    feedbackType: type,
+    rating: type === 'like' ? 5 : 1, // Convert to 1-5 scale
+    timestamp: new Date().toISOString()
+  })
+
+  // Auto-hide feedback confirmation after 3 seconds
+  setTimeout(() => {
+    feedbackSubmitted.value = false
+  }, 3000)
 }
 
 const hasSpecialContent = computed(() => hasCalculatorData.value || hasChartUrls.value || hasResearchEvidence.value)

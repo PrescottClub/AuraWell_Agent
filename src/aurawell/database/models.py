@@ -670,3 +670,151 @@ class HealthPlanTemplateDB(Base):
         Index("idx_health_plan_template_difficulty", "difficulty_level"),
         Index("idx_health_plan_template_active", "is_active"),
     )
+
+
+class PromptPerformanceLogDB(Base):
+    """
+    Prompt性能监控日志模型
+
+    用于记录和分析Prompt的性能表现，支持：
+    - 用户反馈评分
+    - 响应质量评估
+    - 工具调用成功率
+    - A/B测试数据
+    """
+
+    __tablename__ = "prompt_performance_logs"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Session and user info
+    session_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+
+    # Prompt information
+    prompt_scenario: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    prompt_version: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    prompt_hash: Mapped[Optional[str]] = mapped_column(String(64))  # MD5 hash of prompt content
+
+    # User interaction data
+    user_message: Mapped[str] = mapped_column(Text, nullable=False)
+    ai_response: Mapped[str] = mapped_column(Text, nullable=False)
+    response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)  # Response time in milliseconds
+
+    # Performance metrics
+    user_rating: Mapped[Optional[int]] = mapped_column(Integer)  # 1-5 scale user rating
+    response_relevance: Mapped[Optional[float]] = mapped_column(Float)  # Model-based evaluation score (0-1)
+    response_helpfulness: Mapped[Optional[float]] = mapped_column(Float)  # Model-based helpfulness score (0-1)
+    response_accuracy: Mapped[Optional[float]] = mapped_column(Float)  # Model-based accuracy score (0-1)
+
+    # Tool usage metrics
+    tools_called: Mapped[List[str]] = mapped_column(JSON, default=list)  # List of tools called
+    tool_call_success: Mapped[Optional[bool]] = mapped_column(Boolean)  # Overall tool success
+    tool_call_count: Mapped[int] = mapped_column(Integer, default=0)
+    tool_errors: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list)  # Tool error details
+
+    # Context and metadata
+    user_context: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # User context data
+    conversation_turn: Mapped[int] = mapped_column(Integer, default=1)  # Turn number in conversation
+    intent_detected: Mapped[Optional[str]] = mapped_column(String(100))  # Detected user intent
+    intent_confidence: Mapped[Optional[float]] = mapped_column(Float)  # Intent detection confidence
+
+    # A/B Testing
+    ab_test_group: Mapped[Optional[str]] = mapped_column(String(50))  # A/B test group identifier
+    ab_test_variant: Mapped[Optional[str]] = mapped_column(String(50))  # Specific variant within group
+
+    # Error tracking
+    error_occurred: Mapped[bool] = mapped_column(Boolean, default=False)
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    error_type: Mapped[Optional[str]] = mapped_column(String(100))
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    feedback_updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True)
+    )  # When user feedback was last updated
+
+    # Constraints and indexes
+    __table_args__ = (
+        Index("idx_prompt_perf_session", "session_id"),
+        Index("idx_prompt_perf_user", "user_id"),
+        Index("idx_prompt_perf_scenario_version", "prompt_scenario", "prompt_version"),
+        Index("idx_prompt_perf_created", "created_at"),
+        Index("idx_prompt_perf_rating", "user_rating"),
+        Index("idx_prompt_perf_ab_test", "ab_test_group", "ab_test_variant"),
+        Index("idx_prompt_perf_intent", "intent_detected"),
+    )
+
+
+class PromptVersionDB(Base):
+    """
+    Prompt版本管理模型
+
+    用于管理不同版本的Prompt，支持：
+    - 版本控制和历史追踪
+    - A/B测试配置
+    - 性能统计
+    - 自动版本选择
+    """
+
+    __tablename__ = "prompt_versions"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Version identification
+    scenario: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(50), nullable=False)
+    version_hash: Mapped[str] = mapped_column(String(64), nullable=False)  # MD5 hash of prompt content
+
+    # Version metadata
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    author: Mapped[Optional[str]] = mapped_column(String(100))
+    tags: Mapped[List[str]] = mapped_column(JSON, default=list)
+
+    # Status and configuration
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_experimental: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # A/B Testing configuration
+    ab_test_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    ab_test_traffic_percentage: Mapped[float] = mapped_column(Float, default=0.0)  # 0-100
+    ab_test_start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    ab_test_end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    # Performance statistics (cached from PromptPerformanceLogDB)
+    total_uses: Mapped[int] = mapped_column(Integer, default=0)
+    average_rating: Mapped[Optional[float]] = mapped_column(Float)  # Average user rating
+    average_relevance: Mapped[Optional[float]] = mapped_column(Float)  # Average relevance score
+    average_response_time: Mapped[Optional[float]] = mapped_column(Float)  # Average response time
+    tool_success_rate: Mapped[Optional[float]] = mapped_column(Float)  # Tool call success rate
+    error_rate: Mapped[Optional[float]] = mapped_column(Float)  # Error rate percentage
+
+    # Performance comparison
+    performance_score: Mapped[Optional[float]] = mapped_column(Float)  # Composite performance score
+    confidence_interval: Mapped[Optional[float]] = mapped_column(Float)  # Statistical confidence
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+    )
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    stats_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    # Constraints and indexes
+    __table_args__ = (
+        UniqueConstraint("scenario", "version", name="uq_prompt_scenario_version"),
+        Index("idx_prompt_version_scenario", "scenario"),
+        Index("idx_prompt_version_active", "is_active"),
+        Index("idx_prompt_version_default", "is_default"),
+        Index("idx_prompt_version_performance", "performance_score"),
+        Index("idx_prompt_version_ab_test", "ab_test_enabled"),
+    )

@@ -1,0 +1,9 @@
+{
+  "name": "Chain of Thought Reasoning",
+  "version": "1.0",
+  "description": "Structured thinking framework for health advice generation",
+  "content": "# 🤔 决策推理框架 (Chain-of-Thought)\n\n在生成任何建议前，请在内心遵循以下思考步骤，并以简洁的形式向用户展示关键推理：\n\n## 1. 数据洞察 (Data Insight)\n分析用户数据，关键指标是什么？\n- 示例：用户近7天平均步数5200，低于目标8000\n- 关注：异常值、趋势变化、关键指标偏差\n\n## 2. 模式识别 (Pattern Recognition)\n数据反映了什么趋势或行为模式？\n- 示例：工作日活跃度低，周末活跃度高\n- 分析：时间模式、季节性变化、生活习惯影响\n\n## 3. 问题定义 (Problem Definition)\n核心问题或优化点是什么？\n- 示例：平日久坐不动是主要健康风险\n- 明确：根本原因、优先级、可改善空间\n\n## 4. 科学依据 (Scientific Backing)\n我的建议基于什么科学原理或研究？\n- 示例：引用《WHO身体活动指南》\n- 要求：权威来源、最新研究、循证医学\n\n## 5. 个性化适配 (Personalization)\n如何结合用户偏好和限制来调整建议？\n- 示例：喜欢游泳 + 膝盖有旧伤 = 推荐水中运动\n- 考虑：身体条件、时间限制、兴趣偏好、环境因素\n\n## 6. 方案生成 (Solution Generation)\n制定具体、可行的行动方案\n- 要求：SMART原则（具体、可测量、可达成、相关、有时限）\n- 包含：分步骤计划、监测指标、调整机制",
+  "tags": ["reasoning", "cot", "thinking"],
+  "created_at": "2025-07-12",
+  "author": "AuraWell Team"
+}

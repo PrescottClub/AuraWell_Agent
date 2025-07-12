@@ -110,6 +110,11 @@ from ..models.api_models import (
     # RAG Models (v1.1 特种作战装备)
     RAGQueryRequest,
     RAGQueryResponse,
+    # Prompt Feedback Models
+    PromptFeedbackRequest,
+    PromptFeedbackResponse,
+    PromptPerformanceStatsResponse,
+    PromptVersionComparisonResponse,
 )
 from ..models.error_codes import ErrorCode
 from ..middleware.error_handler import (
@@ -2052,6 +2057,153 @@ async def chat(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Chat processing failed",
+        )
+
+
+# ============================================================================
+# PROMPT FEEDBACK ENDPOINTS
+# ============================================================================
+
+@app.post(
+    "/api/v1/chat/feedback",
+    response_model=PromptFeedbackResponse,
+    tags=["Chat", "Feedback"]
+)
+async def submit_prompt_feedback(
+    feedback_request: PromptFeedbackRequest,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    提交Prompt反馈
+
+    用于收集用户对AI响应的反馈，支持：
+    - 点赞/点踩反馈
+    - 1-5分评分
+    - 额外文字反馈
+    """
+    try:
+        from ..services.prompt_performance_service import prompt_performance_service
+
+        # 记录反馈数据
+        feedback_id = await prompt_performance_service.log_prompt_usage(
+            session_id=feedback_request.session_id,
+            user_id=current_user_id,
+            prompt_scenario="health_advice",  # 默认场景
+            prompt_version="v3_1",  # 默认版本
+            user_message=feedback_request.user_message or "",
+            ai_response=feedback_request.ai_response or "",
+            response_time_ms=feedback_request.response_time_ms,
+            conversation_turn=1
+        )
+
+        # 更新用户反馈
+        await prompt_performance_service.update_user_feedback(
+            log_id=feedback_id,
+            user_rating=feedback_request.rating,
+            response_relevance=0.8 if feedback_request.feedback_type == 'like' else 0.2,
+            response_helpfulness=0.9 if feedback_request.feedback_type == 'like' else 0.1,
+            response_accuracy=0.85 if feedback_request.feedback_type == 'like' else 0.15
+        )
+
+        logger.info(f"Prompt feedback submitted: {feedback_id} by user {current_user_id}")
+
+        return PromptFeedbackResponse(
+            feedback_id=feedback_id,
+            message="感谢您的反馈！这将帮助我们改进AI助手的回答质量。"
+        )
+
+    except Exception as e:
+        logger.error(f"Error submitting prompt feedback: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="提交反馈失败，请稍后重试"
+        )
+
+
+@app.get(
+    "/api/v1/admin/prompt/stats",
+    response_model=PromptPerformanceStatsResponse,
+    tags=["Admin", "Prompt Analytics"]
+)
+async def get_prompt_performance_stats(
+    scenario: str = "health_advice",
+    version: Optional[str] = None,
+    days: int = 30,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    获取Prompt性能统计（管理员接口）
+
+    返回指定场景和版本的性能数据：
+    - 使用次数
+    - 平均评分
+    - 响应时间
+    - 工具成功率
+    - 错误率
+    """
+    try:
+        from ..services.prompt_performance_service import prompt_performance_service
+
+        stats = await prompt_performance_service.get_performance_stats(
+            scenario=scenario,
+            version=version,
+            days=days
+        )
+
+        return PromptPerformanceStatsResponse(
+            stats=stats,
+            message=f"成功获取 {scenario} 的性能统计数据"
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting prompt performance stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取性能统计失败"
+        )
+
+
+@app.get(
+    "/api/v1/admin/prompt/compare",
+    response_model=PromptVersionComparisonResponse,
+    tags=["Admin", "Prompt Analytics"]
+)
+async def compare_prompt_versions(
+    scenario: str = "health_advice",
+    version_a: str = "v3_0",
+    version_b: str = "v3_1",
+    days: int = 30,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    比较Prompt版本性能（管理员接口）
+
+    对比两个版本的性能指标：
+    - 用户评分对比
+    - 响应时间对比
+    - 工具成功率对比
+    - 错误率对比
+    """
+    try:
+        from ..services.prompt_performance_service import prompt_performance_service
+
+        comparison = await prompt_performance_service.compare_versions(
+            scenario=scenario,
+            version_a=version_a,
+            version_b=version_b,
+            days=days
+        )
+
+        return PromptVersionComparisonResponse(
+            comparison=comparison,
+            message=f"成功比较版本 {version_a} 和 {version_b}"
+        )
+
+    except Exception as e:
+        logger.error(f"Error comparing prompt versions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="版本比较失败"
         )
 
 

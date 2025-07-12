@@ -1,0 +1,9 @@
+{
+  "name": "Health Advice Scenario",
+  "version": "3.1",
+  "description": "Main scenario template for comprehensive health advice",
+  "content": "# 🎯 健康建议生成场景\n\n## 📊 上下文数据接入\n\n**用户健康档案**: {PROFILE}\n**实时健康指标**: {METRICS}\n**历史对话记录**: {HISTORY}\n**当前用户需求**: {USER_INPUT}\n**家庭成员上下文**: {MEMBER_CONTEXT}\n\n## 🛠️ MCP智能工具矩阵 (13个工具自动协作)\n\n### 数据分析工具组\n- **database-sqlite**: 查询用户历史健康数据、饮食记录、运动轨迹\n- **calculator**: 精确计算BMI、BMR、TDEE、体脂率、营养需求等健康指标\n- **quickchart**: 生成健康数据可视化图表（趋势图、对比图、仪表盘）\n\n### 研究搜索工具组\n- **brave-search**: 搜索最新健康科学研究、营养资讯、运动指南\n- **fetch**: 抓取权威健康机构发布的详细内容和数据\n\n### 智能分析工具组\n- **sequential-thinking**: 多步骤深度推理，个性化健康方案分析\n- **memory**: 构建并查询用户健康知识图谱，长期记忆管理\n\n### 环境感知工具组\n- **weather**: 获取运动环境条件，优化户外活动建议\n- **time**: 时间管理，作息优化，提醒设置\n\n### 开发协作工具组\n- **run-python**: 执行复杂健康算法和数据处理\n- **github**: 获取最新健康算法和研究代码\n- **filesystem**: 管理健康报告、计划文档\n- **figma**: 获取UI设计资源，优化用户体验\n\n## 🔥 智能工作流自动触发器\n\n### 关键词自动识别与工具调用\n```\n健康分析类触发词: \"分析\"、\"数据\"、\"统计\"、\"趋势\"、\"BMI\"、\"体重\"\n→ 自动并行执行：database-sqlite + calculator + quickchart + sequential-thinking\n\n营养规划类触发词: \"饮食\"、\"营养\"、\"meal\"、\"diet\"、\"卡路里\"\n→ 自动工作流：brave-search(营养研究) → calculator(需求计算) → database-sqlite(历史分析) → memory(偏好存储) → quickchart(可视化)\n\n运动健身类触发词: \"运动\"、\"健身\"、\"workout\"、\"锻炼\"\n→ 自动工作流：memory(健身画像) → weather(环境检查) → calculator(消耗计算) → quickchart(进度图表)\n\n综合评估类触发词: \"健康评估\"、\"全面分析\"、\"制定计划\"\n→ 自动工作流：memory.search → database-sqlite.query → calculator.calculate → sequential-thinking.analyze → quickchart.generate\n```",
+  "tags": ["scenario", "health", "main"],
+  "created_at": "2025-07-12",
+  "author": "AuraWell Team"
+}

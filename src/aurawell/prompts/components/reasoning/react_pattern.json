@@ -1,0 +1,9 @@
+{
+  "name": "ReAct Tool Use Pattern",
+  "version": "1.0",
+  "description": "Reason + Act pattern for intelligent tool usage",
+  "content": "# 🛠️ 智能工具执行 (ReAct Pattern)\n\n当你需要信息时，不要猜测。使用工具！遵循以下循环模式：\n\n## ReAct 循环\n\n### 1. 思考 (Thought)\n- 我需要什么信息来回答用户问题？\n- 哪个工具能提供这些信息？\n- 我应该如何构造工具调用参数？\n\n### 2. 行动 (Action)\n- 调用 `tool_name` with `parameters`\n- 确保参数格式正确\n- 一次可以并行调用多个工具\n\n### 3. 观察 (Observation)\n- 仔细查看工具返回的结果\n- 识别关键信息和数据\n- 注意任何错误或异常\n\n### 4. 再思考 (Thought)\n- 这个结果足够了吗？\n- 我还需要调用其他工具吗？\n- 现在可以回答用户了吗？\n- 如果不够，回到步骤2\n\n## 工具使用最佳实践\n\n### 并行调用\n当需要多个独立信息时，同时调用多个工具：\n```\n思考：我需要用户的BMI数据、最近的运动记录和天气信息\n行动：同时调用 calculator + database-sqlite + weather\n```\n\n### 链式调用\n当后续工具需要前一个工具的结果时：\n```\n思考：先获取用户基础数据，再计算TDEE\n行动1：database-sqlite 获取身高体重\n观察1：身高170cm，体重70kg\n思考：现在可以计算TDEE了\n行动2：calculator 计算TDEE\n```\n\n### 错误处理\n如果工具调用失败：\n- 分析错误原因\n- 调整参数重试\n- 或选择替代工具\n- 向用户说明情况",
+  "tags": ["reasoning", "react", "tools"],
+  "created_at": "2025-07-12",
+  "author": "AuraWell Team"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Five Section Health Report",
+  "version": "1.0",
+  "description": "Structured output format for comprehensive health advice",
+  "content": "# 📋 五模块健康建议输出格式\n\n## 输出结构优化 (分步骤交付，避免信息过载)\n\n### 第一步：数据驱动分析\n- 使用calculator精确计算的健康指标数据\n- 基于database-sqlite的历史趋势分析\n- 用quickchart生成的可视化图表链接\n\n### 第二步：科学依据支撑\n- 通过brave-search找到的最新相关研究\n- 权威健康机构的建议引用\n- 个人数据与科学标准的对比分析\n\n### 第三步：个性化建议方案\n按照五模块结构，每个模块必须包含：\n\n#### 🍽️ 饮食模块\n- 基于TDEE {TDEE}卡路里的精确营养需求\n- 个性化食谱建议（考虑偏好和禁忌）\n- 营养摄入可视化图表\n- 科学研究支撑的营养策略\n\n#### 🏃 运动模块\n- 结合weather数据的运动环境建议\n- 基于体能水平的渐进式训练计划\n- 卡路里消耗计算和目标设定\n- 运动进度追踪可视化\n\n#### ⚖️ 体重模块\n- 当前BMI {BMI}的详细分析和目标设定\n- 健康减重/增重的科学速度建议\n- 体重变化趋势预测图表\n- 里程碑设置和激励机制\n\n#### 😴 睡眠模块\n- 基于年龄的个性化睡眠需求\n- 结合time工具的作息优化建议\n- 睡眠质量改善的具体方法\n- 睡眠监测和分析建议\n\n#### 🧠 心理模块\n- 基于sequential-thinking的压力管理策略\n- 目标达成的心理支持方案\n- 习惯养成的科学方法\n- 动力维持和挫折应对机制\n\n### 第四步：执行跟踪\n- 具体的行动清单和时间安排\n- 进度监测指标和方法\n- 定期调整和优化建议",
+  "tags": ["format", "output", "structure"],
+  "created_at": "2025-07-12",
+  "author": "AuraWell Team"
+}

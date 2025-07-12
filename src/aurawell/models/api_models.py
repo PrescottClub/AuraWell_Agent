@@ -1900,3 +1900,63 @@ class RAGQueryResponse(BaseResponse):
     results: List[str] = Field(default_factory=list, description="捕获的核心情报列表")
     query: str = Field(..., description="原始渗透目标")
     total_found: int = Field(default=0, description="发现的情报总数")
+
+
+# ============================================================================
+# PROMPT FEEDBACK MODELS
+# ============================================================================
+
+class PromptFeedbackRequest(BaseModel):
+    """Prompt反馈请求模型"""
+
+    message_id: Optional[str] = Field(None, description="消息ID")
+    session_id: str = Field(..., description="会话ID")
+    feedback_type: str = Field(..., description="反馈类型: like/dislike")
+    rating: int = Field(..., ge=1, le=5, description="用户评分 (1-5)")
+    user_message: Optional[str] = Field(None, description="用户原始消息")
+    ai_response: Optional[str] = Field(None, description="AI响应内容")
+    response_time_ms: Optional[int] = Field(None, description="响应时间(毫秒)")
+    additional_feedback: Optional[str] = Field(None, max_length=500, description="额外反馈文本")
+
+    @field_validator('feedback_type')
+    @classmethod
+    def validate_feedback_type(cls, v):
+        if v not in ['like', 'dislike']:
+            raise ValueError('feedback_type must be either "like" or "dislike"')
+        return v
+
+
+class PromptFeedbackResponse(BaseResponse):
+    """Prompt反馈响应模型"""
+
+    feedback_id: int = Field(..., description="反馈记录ID")
+    message: str = Field(default="反馈已成功记录", description="响应消息")
+
+
+class PromptPerformanceStatsRequest(BaseModel):
+    """Prompt性能统计请求模型"""
+
+    scenario: str = Field(..., description="场景名称")
+    version: Optional[str] = Field(None, description="版本号")
+    days: int = Field(default=30, ge=1, le=365, description="统计天数")
+
+
+class PromptPerformanceStatsResponse(BaseResponse):
+    """Prompt性能统计响应模型"""
+
+    stats: Dict[str, Any] = Field(default_factory=dict, description="性能统计数据")
+
+
+class PromptVersionComparisonRequest(BaseModel):
+    """Prompt版本比较请求模型"""
+
+    scenario: str = Field(..., description="场景名称")
+    version_a: str = Field(..., description="版本A")
+    version_b: str = Field(..., description="版本B")
+    days: int = Field(default=30, ge=1, le=365, description="比较天数")
+
+
+class PromptVersionComparisonResponse(BaseResponse):
+    """Prompt版本比较响应模型"""
+
+    comparison: Dict[str, Any] = Field(default_factory=dict, description="版本比较结果")

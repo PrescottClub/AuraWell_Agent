@@ -11,6 +11,8 @@ from ..conversation.memory_manager import MemoryManager
 from ..core.deepseek_client import DeepSeekClient
 # 新增：导入MCP工具管理器
 from .mcp_tools_manager import MCPToolsManager, WorkflowResult
+# 新增：导入智能Prompt管理器
+from ..core.prompt_manager import prompt_manager
 
 # DeepSeek LLM integration - using direct client instead of LangChain wrapper
 from .services.health_advice_service import HealthAdviceService
@@ -59,6 +61,20 @@ class HealthAdviceAgent(BaseAgent):
 
         # 初始化组件
         self._initialize_components()
+
+    def _format_conversation_history(self) -> str:
+        """格式化对话历史为文本"""
+        if not self._conversation_history:
+            return "首次对话"
+
+        recent_history = self._conversation_history[-3:]  # 最近3轮对话
+        formatted = []
+        for i, conv in enumerate(recent_history, 1):
+            user_msg = conv.get('user', '')[:100]
+            assistant_msg = conv.get('assistant', '')[:150]
+            formatted.append(f"第{i}轮 - 用户: {user_msg}... | 助手: {assistant_msg}...")
+
+        return " | ".join(formatted)
 
     def _initialize_components(self):
         """初始化所有组件"""
@@ -290,7 +306,7 @@ class HealthAdviceAgent(BaseAgent):
         """基于MCP工具结果生成增强的AI响应"""
         try:
             # 构建增强的prompt，包含工具执行结果
-            enhanced_prompt = self._build_mcp_enhanced_prompt(message, workflow_result, context)
+            enhanced_prompt = await self._build_mcp_enhanced_prompt(message, workflow_result, context)
             
             # 调用DeepSeek生成响应
             ai_response = await self._get_ai_response_with_tools(enhanced_prompt, context)
@@ -331,48 +347,68 @@ class HealthAdviceAgent(BaseAgent):
                 'agent_type': 'mcp_fallback'
             }
 
-    def _build_mcp_enhanced_prompt(self, message: str, workflow_result: WorkflowResult, context: Dict[str, Any]) -> List[Dict[str, str]]:
-        """构建包含MCP工具结果的增强prompt"""
-        
-        # 工具结果摘要
-        tools_summary = []
-        for tool_name, result in workflow_result.results.items():
-            if tool_name != 'intent_analysis' and isinstance(result, dict):
-                tools_summary.append(f"- {tool_name}: {result.get('status', 'executed')}")
-        
-        # 意图分析信息
-        intent_info = workflow_result.results.get('intent_analysis', {})
-        detected_intent = intent_info.get('primary_intent', 'general_chat')
-        confidence = intent_info.get('confidence', 0.0)
-        
-        system_message = f"""你是AuraWell智能健康助手，现在使用MCP工具增强版本。
+    async def _build_mcp_enhanced_prompt(self, message: str, workflow_result: WorkflowResult, context: Dict[str, Any]) -> List[Dict[str, str]]:
+        """构建包含MCP工具结果的增强prompt - 使用新的PromptManager"""
 
-## 当前用户请求分析
-- 用户ID: {self.user_id}
+        try:
+            # 工具结果摘要
+            tools_summary = []
+            for tool_name, result in workflow_result.results.items():
+                if tool_name != 'intent_analysis' and isinstance(result, dict):
+                    tools_summary.append(f"- {tool_name}: {result.get('status', 'executed')}")
+
+            # 意图分析信息
+            intent_info = workflow_result.results.get('intent_analysis', {})
+            detected_intent = intent_info.get('primary_intent', 'general_chat')
+            confidence = intent_info.get('confidence', 0.0)
+
+            # 构建上下文数据
+            prompt_context = {
+                "PROFILE": context.get('user_profile', f"用户ID: {self.user_id}"),
+                "METRICS": context.get('health_metrics', "待获取健康指标"),
+                "HISTORY": context.get('conversation_history', "首次对话"),
+                "USER_INPUT": message,
+                "MEMBER_CONTEXT": context.get('family_context', ""),
+                "TDEE": context.get('tdee', "待计算"),
+                "BMI": context.get('bmi', "待计算"),
+                # MCP工具增强信息
+                "MCP_TOOLS_SUMMARY": "\n".join(tools_summary),
+                "DETECTED_INTENT": detected_intent,
+                "CONFIDENCE": f"{confidence:.2f}",
+                "TRIGGERED_TOOLS": ", ".join(workflow_result.tool_calls)
+            }
+
+            # 使用PromptManager构建智能Prompt
+            messages = await prompt_manager.construct_prompt(
+                scenario="health_advice",
+                context=prompt_context,
+                user_id=self.user_id,
+                include_reasoning=True
+            )
+
+            # 在系统消息中添加MCP工具执行结果
+            mcp_enhancement = f"""
+
+## 🔧 MCP工具执行结果
 - 检测意图: {detected_intent} (置信度: {confidence:.2f})
 - 触发的工具: {', '.join(workflow_result.tool_calls)}
-
-## MCP工具执行结果
+- 工具执行摘要:
 {chr(10).join(tools_summary)}
 
-## 响应要求
-基于以上工具执行结果，请生成：
-1. 数据驱动的个性化健康建议
-2. 引用具体的计算结果和科学依据
-3. 包含可视化图表的描述（如果有图表生成）
-4. 分步骤的执行指导
-5. 友好、专业、鼓励的语气
+基于以上工具执行结果，请生成数据驱动、科学支撑的个性化健康建议。"""
 
-请注意：所有建议仅供参考，如涉及医疗问题请咨询专业医生。"""
+            messages[0]["content"] += mcp_enhancement
 
-        user_message = f"""用户询问: {message}
+            logger.info(f"Enhanced prompt built with PromptManager for intent: {detected_intent}")
+            return messages
 
-请基于MCP工具的执行结果，为用户提供全面、个性化的健康建议。"""
-
-        return [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
-        ]
+        except Exception as e:
+            logger.error(f"Error building enhanced prompt with PromptManager: {e}")
+            # 降级到简单版本
+            return [
+                {"role": "system", "content": f"你是AuraWell健康助手。用户意图: {detected_intent}"},
+                {"role": "user", "content": message}
+            ]
 
     async def _get_ai_response_with_tools(self, messages: List[Dict[str, str]], context: Dict[str, Any]) -> str:
         """使用DeepSeek生成基于工具结果的响应"""
@@ -724,32 +760,39 @@ class HealthAdviceAgent(BaseAgent):
             }
 
     async def _get_ai_response(self, message: str, context: Dict[str, Any]) -> str:
-        """使用DeepSeek API生成AI响应"""
+        """使用DeepSeek API生成AI响应 - 使用新的PromptManager"""
         try:
-            _ = context  # 避免未使用参数警告
-            # 构建对话历史
-            messages = []
+            # 构建上下文数据
+            prompt_context = {
+                "PROFILE": context.get('user_profile', f"用户ID: {self.user_id}"),
+                "METRICS": context.get('health_metrics', "待获取健康指标"),
+                "HISTORY": self._format_conversation_history(),
+                "USER_INPUT": message,
+                "MEMBER_CONTEXT": context.get('family_context', ""),
+                "TDEE": context.get('tdee', "待计算"),
+                "BMI": context.get('bmi', "待计算")
+            }
 
-            # 添加系统提示
-            system_prompt = """你是AuraWell健康助手，一个专业的健康管理AI助手。你的职责是：
-1. 回答用户的健康相关问题
-2. 提供个性化的健康建议
-3. 帮助用户管理健康数据
-4. 推荐合适的运动和营养方案
-5. 生成完整的五模块健康建议（饮食、运动、体重、睡眠、心理）
-
-请用友好、专业的语气回答用户问题。如果涉及医疗诊断，请建议用户咨询专业医生。"""
-
-            messages.append({"role": "system", "content": system_prompt})
-
-            # 添加最近的对话历史
-            recent_history = (
-                self._conversation_history[-10:] if self._conversation_history else []
+            # 使用PromptManager构建智能Prompt
+            messages = await prompt_manager.construct_prompt(
+                scenario="health_advice",
+                context=prompt_context,
+                user_id=self.user_id,
+                include_reasoning=True
             )
-            messages.extend(recent_history)
 
-            # 添加当前消息
-            messages.append({"role": "user", "content": message})
+            # 添加最近的对话历史到用户消息前
+            recent_history = (
+                self._conversation_history[-5:] if self._conversation_history else []
+            )
+
+            if recent_history:
+                history_text = "\n\n## 最近对话历史:\n"
+                for i, conv in enumerate(recent_history, 1):
+                    history_text += f"{i}. 用户: {conv.get('user', '')}\n"
+                    history_text += f"   助手: {conv.get('assistant', '')[:100]}...\n"
+
+                messages[1]["content"] = history_text + "\n\n" + messages[1]["content"]
 
             # 调用DeepSeek API
             response = self.deepseek_client.get_deepseek_response(
