@@ -203,21 +203,84 @@ const handleQuickReply = (reply) => {
   emit('quick-reply', reply)
 }
 
-// Feedback handling
+// Feedback handling with API integration
 const submitFeedback = async (type) => {
   if (feedbackSubmitted.value) return
 
   userFeedback.value = type
   feedbackSubmitted.value = true
 
-  // Emit feedback event to parent component
-  emit('feedback', {
-    messageId: props.message.id,
-    sessionId: props.message.sessionId,
-    feedbackType: type,
-    rating: type === 'like' ? 5 : 1, // Convert to 1-5 scale
-    timestamp: new Date().toISOString()
-  })
+  try {
+    // Prepare feedback data
+    const feedbackData = {
+      message_id: props.message.id || `msg_${Date.now()}`,
+      session_id: props.message.sessionId || `session_${Date.now()}`,
+      feedback_type: type,
+      rating: type === 'like' ? 5 : 1, // Convert to 1-5 scale
+      user_message: props.message.userMessage || '',
+      ai_response: props.message.content || '',
+      response_time_ms: props.message.responseTime || null,
+      additional_feedback: null
+    }
+
+    // Call backend API
+    const response = await fetch('/api/v1/chat/feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(feedbackData)
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // Log successful feedback submission
+    console.log('Feedback submitted successfully:', result)
+
+    // Emit feedback event to parent component for UI updates
+    emit('feedback', {
+      messageId: feedbackData.message_id,
+      sessionId: feedbackData.session_id,
+      feedbackType: type,
+      rating: feedbackData.rating,
+      timestamp: new Date().toISOString(),
+      apiResponse: result,
+      success: true
+    })
+
+    // Show success message
+    if (result.message) {
+      // Could integrate with notification system here
+      console.log('Feedback response:', result.message)
+    }
+
+  } catch (error) {
+    console.error('Failed to submit feedback:', error)
+
+    // Emit error event
+    emit('feedback', {
+      messageId: props.message.id,
+      sessionId: props.message.sessionId,
+      feedbackType: type,
+      rating: type === 'like' ? 5 : 1,
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      success: false
+    })
+
+    // Reset feedback state on error
+    userFeedback.value = null
+    feedbackSubmitted.value = false
+
+    // Could show error notification here
+    console.warn('反馈提交失败，请稍后重试')
+    return
+  }
 
   // Auto-hide feedback confirmation after 3 seconds
   setTimeout(() => {

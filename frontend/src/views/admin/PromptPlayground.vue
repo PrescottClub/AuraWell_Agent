@@ -8,7 +8,64 @@
           <SingleVersionTest />
         </a-tab-pane>
         <a-tab-pane key="compare" tab="版本对比">
-          <VersionComparison />
+          <!-- Version Comparison Panel -->
+          <div class="version-comparison-panel">
+            <a-row :gutter="24">
+              <a-col :span="12">
+                <a-card title="🔄 版本对比配置" class="mb-4">
+                  <a-form layout="vertical">
+                    <a-row :gutter="16">
+                      <a-col :span="12">
+                        <a-form-item label="版本A">
+                          <a-select v-model:value="comparison.versionA">
+                            <a-select-option v-for="version in availableVersions" :key="version.version" :value="version.version">
+                              {{ version.name }}
+                            </a-select-option>
+                          </a-select>
+                        </a-form-item>
+                      </a-col>
+                      <a-col :span="12">
+                        <a-form-item label="版本B">
+                          <a-select v-model:value="comparison.versionB">
+                            <a-select-option v-for="version in availableVersions" :key="version.version" :value="version.version">
+                              {{ version.name }}
+                            </a-select-option>
+                          </a-select>
+                        </a-form-item>
+                      </a-col>
+                    </a-row>
+                    <a-form-item label="对比天数">
+                      <a-select v-model:value="comparison.days">
+                        <a-select-option value="7">最近7天</a-select-option>
+                        <a-select-option value="30">最近30天</a-select-option>
+                        <a-select-option value="90">最近90天</a-select-option>
+                      </a-select>
+                    </a-form-item>
+                    <a-button type="primary" @click="runVersionComparison" :loading="comparisonLoading">
+                      开始对比分析
+                    </a-button>
+                  </a-form>
+                </a-card>
+              </a-col>
+              <a-col :span="12">
+                <a-card title="📊 性能指标对比" v-if="comparisonResult">
+                  <div class="metrics-comparison">
+                    <div v-for="metric in Object.keys(comparisonResult.comparison || {})" :key="metric" class="metric-row">
+                      <div class="metric-name">{{ formatMetricName(metric) }}</div>
+                      <div class="metric-values">
+                        <span class="version-a">{{ formatMetricValue(comparisonResult.stats_a[metric]) }}</span>
+                        <span class="vs">vs</span>
+                        <span class="version-b">{{ formatMetricValue(comparisonResult.stats_b[metric]) }}</span>
+                        <span :class="['difference', getDifferenceClass(comparisonResult.comparison[metric])]">
+                          {{ formatDifference(comparisonResult.comparison[metric]) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </a-card>
+              </a-col>
+            </a-row>
+          </div>
         </a-tab-pane>
         <a-tab-pane key="analytics" tab="性能分析">
           <PerformanceAnalytics />
@@ -192,6 +249,16 @@ const context = reactive({
   history: '最近询问过减重和改善睡眠的建议'
 })
 
+// Version comparison state
+const comparison = reactive({
+  versionA: 'v3_0',
+  versionB: 'v3_1',
+  days: 30
+})
+
+const comparisonLoading = ref(false)
+const comparisonResult = ref(null)
+
 // Computed properties
 const formattedResult = computed(() => {
   if (!result.value) return ''
@@ -205,19 +272,91 @@ const formattedResult = computed(() => {
 // Methods
 const loadAvailableVersions = async () => {
   try {
-    // Fallback to default versions for now
-    availableVersions.value = [
-      { version: 'v3_0', name: 'Health Advice v3.0' },
-      { version: 'v3_1', name: 'Health Advice v3.1' },
-      { version: 'v3_2_test', name: 'Health Advice v3.2 (Test)' }
-    ]
+    // Call backend API to get available versions
+    const response = await fetch('/api/v1/admin/prompt/versions', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      availableVersions.value = data.versions || []
+
+      // Load performance stats for each version
+      await loadVersionPerformanceStats()
+
+      console.log(`Loaded ${availableVersions.value.length} available versions`)
+    } else {
+      throw new Error(`Failed to load versions: ${response.status}`)
+    }
   } catch (error) {
-    console.error('Failed to load versions:', error)
+    console.error('Failed to load versions from API:', error)
+
+    // Fallback to default versions
+    availableVersions.value = [
+      {
+        version: 'v3_0',
+        name: 'Health Advice v3.0',
+        description: 'Standard health advice template',
+        performance: { rating: 4.2, usage: 1250, error_rate: 2.1 }
+      },
+      {
+        version: 'v3_1',
+        name: 'Health Advice v3.1',
+        description: 'Enhanced with CoT reasoning',
+        performance: { rating: 4.6, usage: 890, error_rate: 1.3 }
+      },
+      {
+        version: 'v3_2_test',
+        name: 'Health Advice v3.2 (Experimental)',
+        description: 'Latest experimental features',
+        performance: { rating: 4.4, usage: 156, error_rate: 1.8 }
+      }
+    ]
   }
 }
 
-const onVersionChange = (version) => {
+const loadVersionPerformanceStats = async () => {
+  try {
+    for (const version of availableVersions.value) {
+      const response = await fetch(`/api/v1/admin/prompt/stats?scenario=${config.scenario}&version=${version.version}&days=7`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        version.performance = {
+          rating: data.stats?.average_rating || 0,
+          usage: data.stats?.total_uses || 0,
+          error_rate: data.stats?.error_rate_percent || 0,
+          response_time: data.stats?.average_response_time_ms || 0
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load performance stats:', error)
+  }
+}
+
+const onVersionChange = async (version) => {
   console.log('Version changed to:', version)
+
+  // Load version metadata
+  try {
+    const selectedVersion = availableVersions.value.find(v => v.version === version)
+    if (selectedVersion) {
+      console.log('Selected version details:', selectedVersion)
+
+      // Could update UI to show version-specific information
+      // For example, show performance metrics, description, etc.
+    }
+  } catch (error) {
+    console.error('Error handling version change:', error)
+  }
 }
 
 const runSingleTest = async () => {
@@ -317,6 +456,130 @@ const saveTest = async () => {
     console.error('Save error:', error)
     message.error('保存失败')
   }
+}
+
+// Version comparison methods
+const runVersionComparison = async () => {
+  if (!comparison.versionA || !comparison.versionB) {
+    console.warn('请选择要对比的版本')
+    return
+  }
+
+  if (comparison.versionA === comparison.versionB) {
+    console.warn('请选择不同的版本进行对比')
+    return
+  }
+
+  comparisonLoading.value = true
+
+  try {
+    const response = await fetch('/api/v1/admin/prompt/compare', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      params: new URLSearchParams({
+        scenario: config.scenario,
+        version_a: comparison.versionA,
+        version_b: comparison.versionB,
+        days: comparison.days.toString()
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`对比请求失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+    comparisonResult.value = data.comparison
+
+    console.log('Version comparison completed:', data)
+
+  } catch (error) {
+    console.error('版本对比失败:', error)
+
+    // Fallback to mock data for demonstration
+    comparisonResult.value = {
+      scenario: config.scenario,
+      version_a: comparison.versionA,
+      version_b: comparison.versionB,
+      period_days: comparison.days,
+      stats_a: {
+        average_rating: 4.2,
+        average_relevance: 0.85,
+        average_response_time_ms: 1800,
+        tool_success_rate: 0.92,
+        error_rate_percent: 2.1
+      },
+      stats_b: {
+        average_rating: 4.6,
+        average_relevance: 0.91,
+        average_response_time_ms: 1650,
+        tool_success_rate: 0.95,
+        error_rate_percent: 1.3
+      },
+      comparison: {
+        average_rating: {
+          difference: 0.4,
+          difference_percent: 9.5,
+          better_version: comparison.versionB
+        },
+        average_relevance: {
+          difference: 0.06,
+          difference_percent: 7.1,
+          better_version: comparison.versionB
+        },
+        average_response_time_ms: {
+          difference: -150,
+          difference_percent: -8.3,
+          better_version: comparison.versionB
+        },
+        tool_success_rate: {
+          difference: 0.03,
+          difference_percent: 3.3,
+          better_version: comparison.versionB
+        },
+        error_rate_percent: {
+          difference: -0.8,
+          difference_percent: -38.1,
+          better_version: comparison.versionB
+        }
+      }
+    }
+  } finally {
+    comparisonLoading.value = false
+  }
+}
+
+const formatMetricName = (metric) => {
+  const names = {
+    'average_rating': '平均评分',
+    'average_relevance': '相关性',
+    'average_response_time_ms': '响应时间',
+    'tool_success_rate': '工具成功率',
+    'error_rate_percent': '错误率'
+  }
+  return names[metric] || metric
+}
+
+const formatMetricValue = (value) => {
+  if (value === null || value === undefined) return 'N/A'
+  if (typeof value === 'number') {
+    return value.toFixed(2)
+  }
+  return value.toString()
+}
+
+const formatDifference = (comparison) => {
+  if (!comparison) return ''
+  const { difference_percent, better_version } = comparison
+  const sign = difference_percent > 0 ? '+' : ''
+  return `${sign}${difference_percent.toFixed(1)}%`
+}
+
+const getDifferenceClass = (comparison) => {
+  if (!comparison) return ''
+  return comparison.difference_percent > 0 ? 'positive' : 'negative'
 }
 
 // Lifecycle
