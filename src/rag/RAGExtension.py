@@ -106,7 +106,7 @@ class Document:
         # 阿里云docmind服务的节点地址，写成类属性是为了方便未来更换
         self.docmind_endpoint = f'docmind-api.cn-hangzhou.aliyuncs.com'
         # 阿里云的向量数据库服务的节点地址
-        self.vectorDB_endpoint = "vrs-cn-6sa4axaiv0001c.dashvector.cn-shanghai.aliyuncs.com"
+        self.vectorDB_endpoint = "vrs-cn-aay4bcauu00024.dashvector.cn-hangzhou.aliyuncs.com"
         self.bailian_endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1"
         self.region_id = "cn-hangzhou"
 
@@ -338,7 +338,7 @@ class Document:
             api_key=self.dash_vector_key,
             endpoint=self.vectorDB_endpoint
         )
-        collection = client.get(name='simple_collection')
+        collection = client.get(name='aurawell_knowledge')
         for i in range(len(vector_pairs)):
             ret = collection.insert(
                 Doc(
@@ -381,7 +381,7 @@ class UserRetrieve:
 
         # 访问的域名
         # 阿里云的向量数据库服务的节点地址
-        self.vectorDB_endpoint = "vrs-cn-6sa4axaiv0001c.dashvector.cn-shanghai.aliyuncs.com"
+        self.vectorDB_endpoint = "vrs-cn-aay4bcauu00024.dashvector.cn-hangzhou.aliyuncs.com"
         self.bailian_endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
         print("✅ UserRetrieve类初始化完成")
@@ -406,7 +406,7 @@ class UserRetrieve:
             api_key=self.dash_vector_key,
             endpoint=self.vectorDB_endpoint
         )
-        collection = client.get(name='simple_collection')
+        collection = client.get(name='aurawell_knowledge')
         vectorised_user_input = self.__user_query_vectorised(user_query)
 
 
