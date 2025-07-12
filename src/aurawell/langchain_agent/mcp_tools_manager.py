@@ -511,81 +511,448 @@ class MCPToolsManager:
         """获取执行统计信息"""
         return self.execution_stats.copy()
     
-    # MCP工具调用方法（占位符，后续实现具体逻辑）
+    # ============================================================================
+    # 通用工具执行框架
+    # ============================================================================
+
+    async def _execute_tool_with_error_handling(
+        self,
+        tool_name: str,
+        action: str,
+        parameters: Dict[str, Any],
+        tool_executor: callable
+    ) -> Dict[str, Any]:
+        """
+        通用工具执行框架，统一处理错误、日志和性能监控
+
+        Args:
+            tool_name: 工具名称
+            action: 操作类型
+            parameters: 参数
+            tool_executor: 具体的工具执行函数
+
+        Returns:
+            标准化的工具执行结果
+        """
+        start_time = asyncio.get_event_loop().time()
+
+        try:
+            logger.debug(f"🔧 执行工具: {tool_name}.{action} with {parameters}")
+
+            # 执行具体的工具逻辑
+            result = await tool_executor(action, parameters)
+
+            # 计算执行时间
+            execution_time = (asyncio.get_event_loop().time() - start_time) * 1000
+
+            # 构建成功响应
+            response = {
+                'success': True,
+                'data': result,
+                'action': action,
+                'tool': tool_name,
+                'execution_time_ms': round(execution_time, 2)
+            }
+
+            logger.info(f"✅ 工具执行成功: {tool_name}.{action} ({execution_time:.2f}ms)")
+            return response
+
+        except Exception as e:
+            execution_time = (asyncio.get_event_loop().time() - start_time) * 1000
+            error_msg = f"{tool_name}工具调用失败: {e}"
+
+            logger.error(f"❌ {error_msg} ({execution_time:.2f}ms)")
+
+            return {
+                'success': False,
+                'error': str(e),
+                'action': action,
+                'tool': tool_name,
+                'execution_time_ms': round(execution_time, 2)
+            }
+
+    # ============================================================================
+    # 重构后的MCP工具调用方法
+    # ============================================================================
+
     async def _call_database_sqlite(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用database-sqlite工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用database-sqlite: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'database-sqlite'}
-    
+        async def _database_executor(action: str, params: Dict[str, Any]):
+            from ...database import get_database_manager
+
+            db_manager = get_database_manager()
+
+            if action == "query":
+                query = params.get("query", "")
+                query_params = params.get("params", [])
+
+                async with db_manager.get_session() as session:
+                    result = await session.execute(query, query_params)
+                    rows = result.fetchall()
+                    return [dict(row) for row in rows]
+
+            elif action == "health_metrics":
+                user_id = params.get("user_id")
+                if not user_id:
+                    raise ValueError("user_id is required for health_metrics action")
+
+                from ...database.models import UserProfileDB
+
+                async with db_manager.get_session() as session:
+                    user_profile = await session.get(UserProfileDB, user_id)
+                    recent_activities = await session.execute(
+                        "SELECT * FROM activity_summaries WHERE user_id = ? ORDER BY date DESC LIMIT 7",
+                        [user_id]
+                    )
+                    activities = recent_activities.fetchall()
+
+                    return {
+                        'user_profile': dict(user_profile) if user_profile else None,
+                        'recent_activities': [dict(activity) for activity in activities]
+                    }
+            else:
+                raise ValueError(f"Unsupported database action: {action}")
+
+        return await self._execute_tool_with_error_handling(
+            'database-sqlite', action, parameters, _database_executor
+        )
+
     async def _call_calculator(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用calculator工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用calculator: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'calculator'}
-    
+        async def _calculator_executor(action: str, params: Dict[str, Any]):
+            if action == "bmi":
+                return await self._calculate_bmi(params)
+            elif action == "bmr":
+                return await self._calculate_bmr(params)
+            elif action == "tdee":
+                return await self._calculate_tdee(params)
+            else:
+                raise ValueError(f"Unsupported calculator action: {action}")
+
+        return await self._execute_tool_with_error_handling(
+            'calculator', action, parameters, _calculator_executor
+        )
+
+    async def _calculate_bmi(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """计算BMI"""
+        weight = float(params.get("weight", 0))
+        height = float(params.get("height", 0))
+
+        if weight <= 0 or height <= 0:
+            raise ValueError("Weight and height must be positive numbers")
+
+        # 身高转换为米
+        height_m = height / 100 if height > 3 else height
+        bmi = weight / (height_m ** 2)
+
+        # BMI分类
+        category_map = {
+            (0, 18.5): "偏瘦",
+            (18.5, 24): "正常",
+            (24, 28): "超重",
+            (28, float('inf')): "肥胖"
+        }
+
+        category = next(cat for (low, high), cat in category_map.items() if low <= bmi < high)
+
+        return {
+            'bmi': round(bmi, 2),
+            'category': category,
+            'weight': weight,
+            'height': height
+        }
+
+    async def _calculate_bmr(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """计算BMR（基础代谢率）"""
+        weight = float(params.get("weight", 0))
+        height = float(params.get("height", 0))
+        age = int(params.get("age", 0))
+        gender = params.get("gender", "male").lower()
+
+        if weight <= 0 or height <= 0 or age <= 0:
+            raise ValueError("Weight, height, and age must be positive numbers")
+
+        # Harris-Benedict公式
+        if gender == "male":
+            bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
+        else:
+            bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
+
+        return {
+            'bmr': round(bmr, 2),
+            'weight': weight,
+            'height': height,
+            'age': age,
+            'gender': gender
+        }
+
+    async def _calculate_tdee(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """计算TDEE（总日消耗热量）"""
+        bmr = float(params.get("bmr", 0))
+        activity_level = params.get("activity_level", "sedentary")
+
+        activity_multipliers = {
+            "sedentary": 1.2,
+            "lightly_active": 1.375,
+            "moderately_active": 1.55,
+            "very_active": 1.725,
+            "extremely_active": 1.9
+        }
+
+        multiplier = activity_multipliers.get(activity_level, 1.2)
+        tdee = bmr * multiplier
+
+        return {
+            'tdee': round(tdee, 2),
+            'bmr': bmr,
+            'activity_level': activity_level,
+            'multiplier': multiplier
+        }
+
     async def _call_quickchart(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用quickchart工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用quickchart: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'quickchart'}
+        async def _quickchart_executor(action: str, params: Dict[str, Any]):
+            if action == "generate_chart":
+                return await self._generate_chart(params)
+            else:
+                raise ValueError(f"Unsupported quickchart action: {action}")
+
+        return await self._execute_tool_with_error_handling(
+            'quickchart', action, parameters, _quickchart_executor
+        )
+
+    async def _generate_chart(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """生成图表"""
+        import aiohttp
+        import json
+
+        chart_type = params.get("type", "line")
+        data = params.get("data", [])
+        labels = params.get("labels", [])
+
+        # 构建QuickChart配置
+        quickchart_config = {
+            "type": chart_type,
+            "data": {
+                "labels": labels,
+                "datasets": [{
+                    "label": params.get("label", "数据"),
+                    "data": data,
+                    "backgroundColor": params.get("backgroundColor", "rgba(75, 192, 192, 0.2)"),
+                    "borderColor": params.get("borderColor", "rgba(75, 192, 192, 1)"),
+                    "borderWidth": 1
+                }]
+            },
+            "options": {
+                "responsive": True,
+                "plugins": {
+                    "title": {
+                        "display": True,
+                        "text": params.get("title", "健康数据图表")
+                    }
+                }
+            }
+        }
+
+        # 调用QuickChart API
+        quickchart_url = "https://quickchart.io/chart"
+        chart_url = f"{quickchart_url}?c={json.dumps(quickchart_config)}"
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(chart_url) as response:
+                if response.status == 200:
+                    return {
+                        'chart_url': chart_url,
+                        'config': quickchart_config,
+                        'type': chart_type
+                    }
+                else:
+                    raise Exception(f"QuickChart API返回错误: {response.status}")
     
+    # ============================================================================
+    # 简化的占位符工具实现（使用通用框架）
+    # ============================================================================
+
     async def _call_brave_search(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用brave-search工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用brave-search: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'brave-search'}
-    
+        async def _search_executor(action: str, params: Dict[str, Any]):
+            query = params.get("query", "")
+            max_results = params.get("max_results", 5)
+
+            # TODO: 集成Brave Search API
+            return {
+                'query': query,
+                'results': [
+                    {
+                        "title": f"健康搜索结果 {i+1}",
+                        "url": f"https://example.com/health-article-{i+1}",
+                        "snippet": f"关于 '{query}' 的健康信息摘要 {i+1}"
+                    }
+                    for i in range(min(max_results, 3))
+                ],
+                'total_results': min(max_results, 3)
+            }
+
+        return await self._execute_tool_with_error_handling(
+            'brave-search', action, parameters, _search_executor
+        )
+
     async def _call_fetch(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用fetch工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用fetch: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'fetch'}
-    
+        async def _fetch_executor(action: str, params: Dict[str, Any]):
+            url = params.get("url", "")
+            # TODO: 实现HTTP内容抓取
+            return {
+                "url": url,
+                "title": "健康资讯标题",
+                "content": "这是从网页抓取的健康相关内容摘要...",
+                "status_code": 200
+            }
+
+        return await self._execute_tool_with_error_handling(
+            'fetch', action, parameters, _fetch_executor
+        )
+
     async def _call_sequential_thinking(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用sequential-thinking工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用sequential-thinking: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'sequential-thinking'}
-    
+        async def _thinking_executor(action: str, params: Dict[str, Any]):
+            problem = params.get("problem", "")
+            steps = params.get("steps", 3)
+            # TODO: 实现多步骤推理逻辑
+            return {
+                'problem': problem,
+                'thinking_steps': [f"步骤 {i+1}: 分析 '{problem}' 的第 {i+1} 个方面" for i in range(steps)],
+                'conclusion': f"基于 {steps} 步分析的结论"
+            }
+
+        return await self._execute_tool_with_error_handling(
+            'sequential-thinking', action, parameters, _thinking_executor
+        )
+
     async def _call_memory(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用memory工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用memory: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'memory'}
-    
+        async def _memory_executor(action: str, params: Dict[str, Any]):
+            if action == "store":
+                key = params.get("key", "")
+                # TODO: 实现内存存储逻辑
+                return {'stored': True, 'key': key}
+            elif action == "retrieve":
+                key = params.get("key", "")
+                # TODO: 实现内存检索逻辑
+                return {'key': key, 'value': f"模拟存储的值: {key}"}
+            else:
+                raise ValueError(f"Unsupported memory action: {action}")
+
+        return await self._execute_tool_with_error_handling(
+            'memory', action, parameters, _memory_executor
+        )
+
     async def _call_weather(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用weather工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用weather: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'weather'}
-    
+        async def _weather_executor(action: str, params: Dict[str, Any]):
+            location = params.get("location", "北京")
+            # TODO: 集成天气API
+            return {
+                "location": location,
+                "temperature": 22,
+                "humidity": 65,
+                "condition": "晴朗",
+                "air_quality": "良好",
+                "exercise_recommendation": "适合户外运动"
+            }
+
+        return await self._execute_tool_with_error_handling(
+            'weather', action, parameters, _weather_executor
+        )
+
     async def _call_time(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用time工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用time: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'time'}
-    
+        async def _time_executor(action: str, params: Dict[str, Any]):
+            import datetime
+
+            if action == "current_time":
+                now = datetime.datetime.now()
+                return {
+                    'current_time': now.isoformat(),
+                    'timestamp': now.timestamp(),
+                    'timezone': str(now.astimezone().tzinfo)
+                }
+            elif action == "schedule_reminder":
+                # TODO: 实现提醒调度逻辑
+                return {'reminder_set': True, 'message': params.get("message", "")}
+            else:
+                raise ValueError(f"Unsupported time action: {action}")
+
+        return await self._execute_tool_with_error_handling(
+            'time', action, parameters, _time_executor
+        )
+
+    # ============================================================================
+    # 批量简化的占位符工具（使用工厂模式）
+    # ============================================================================
+
+    def _create_simple_tool_executor(self, tool_name: str, mock_data_generator: callable):
+        """创建简单工具执行器的工厂方法"""
+        async def _simple_executor(action: str, params: Dict[str, Any]):
+            return mock_data_generator(action, params)
+        return _simple_executor
+
     async def _call_run_python(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用run-python工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用run-python: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'run-python'}
-    
+        def _python_mock_data(action: str, params: Dict[str, Any]):
+            code = params.get("code", "")
+            return {
+                'code': code,
+                'output': f"模拟执行结果: {code[:50]}...",
+                'execution_time': 0.1
+            }
+
+        executor = self._create_simple_tool_executor('run-python', _python_mock_data)
+        return await self._execute_tool_with_error_handling(
+            'run-python', action, parameters, executor
+        )
+
     async def _call_github(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用github工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用github: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'github'}
-    
+        def _github_mock_data(action: str, params: Dict[str, Any]):
+            repo = params.get("repo", "")
+            return {
+                'repo': repo,
+                'info': f"模拟GitHub仓库信息: {repo}",
+                'latest_commit': "abc123"
+            }
+
+        executor = self._create_simple_tool_executor('github', _github_mock_data)
+        return await self._execute_tool_with_error_handling(
+            'github', action, parameters, executor
+        )
+
     async def _call_filesystem(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用filesystem工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用filesystem: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'filesystem'}
-    
+        def _filesystem_mock_data(action: str, params: Dict[str, Any]):
+            path = params.get("path", "")
+            return {
+                'path': path,
+                'operation': action,
+                'result': f"模拟文件系统操作: {action} on {path}"
+            }
+
+        executor = self._create_simple_tool_executor('filesystem', _filesystem_mock_data)
+        return await self._execute_tool_with_error_handling(
+            'filesystem', action, parameters, executor
+        )
+
     async def _call_figma(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用figma工具"""
-        # TODO: 实现实际的MCP工具调用
-        logger.info(f"调用figma: {action} with {parameters}")
-        return {'status': 'placeholder', 'action': action, 'tool': 'figma'} 
+        def _figma_mock_data(action: str, params: Dict[str, Any]):
+            design_id = params.get("design_id", "")
+            return {
+                'design_id': design_id,
+                'design_info': f"模拟Figma设计信息: {design_id}",
+                'components': ["按钮", "卡片", "图标"]
+            }
+
+        executor = self._create_simple_tool_executor('figma', _figma_mock_data)
+        return await self._execute_tool_with_error_handling(
+            'figma', action, parameters, executor
+        )
