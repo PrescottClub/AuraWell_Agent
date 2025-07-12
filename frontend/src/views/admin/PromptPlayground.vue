@@ -1,107 +1,402 @@
 <template>
-  <div class="prompt-playground">
-    <h1>Prompt Playground</h1>
-    <a-row :gutter="24">
-      <a-col :span="12">
-        <h2>Configuration</h2>
-        <a-form layout="vertical">
-          <a-form-item label="Model">
-            <a-select v-model:value="config.model">
-              <a-select-option value="deepseek-r1">deepseek-r1</a-select-option>
-              <a-select-option value="gpt-4">gpt-4</a-select-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item label="System Prompt">
-            <a-textarea v-model:value="config.system_prompt" :rows="6" />
-          </a-form-item>
-          <a-form-item label="Temperature">
-            <a-slider v-model:value="config.temperature" :min="0" :max="2" :step="0.1" />
-          </a-form-item>
-          <a-form-item label="Max Tokens">
-            <a-input-number v-model:value="config.max_tokens" />
-          </a-form-item>
-        </a-form>
-      </a-col>
-      <a-col :span="12">
-        <h2>Test</h2>
-        <a-form-item label="User Prompt">
-          <a-textarea v-model:value="userPrompt" :rows="10" />
-        </a-form-item>
-        <a-button type="primary" @click="runTest" :loading="isLoading">
-          Run Test
-        </a-button>
-        <div class="result-panel">
-          <h3>Result</h3>
-          <div v-if="isLoading" class="loading-state">
-            <a-spin />
-          </div>
-          <pre v-else>{{ result }}</pre>
-        </div>
-      </a-col>
-    </a-row>
+  <div class="prompt-playground-v2">
+    <!-- Header with tabs -->
+    <div class="playground-header">
+      <h1 class="text-2xl font-bold text-gray-800 mb-4">🧪 Prompt Playground 2.0</h1>
+      <a-tabs v-model:activeKey="activeTab" class="playground-tabs">
+        <a-tab-pane key="single" tab="单版本测试">
+          <SingleVersionTest />
+        </a-tab-pane>
+        <a-tab-pane key="compare" tab="版本对比">
+          <VersionComparison />
+        </a-tab-pane>
+        <a-tab-pane key="analytics" tab="性能分析">
+          <PerformanceAnalytics />
+        </a-tab-pane>
+      </a-tabs>
+    </div>
+
+    <!-- Single Version Test -->
+    <div v-if="activeTab === 'single'" class="single-test-panel">
+      <a-row :gutter="24">
+        <a-col :span="8">
+          <a-card title="🔧 配置面板" class="config-card">
+            <a-form layout="vertical">
+              <!-- Prompt Version Selection -->
+              <a-form-item label="Prompt版本">
+                <a-select v-model:value="config.promptVersion" @change="onVersionChange">
+                  <a-select-option v-for="version in availableVersions" :key="version.version" :value="version.version">
+                    {{ version.name }} ({{ version.version }})
+                  </a-select-option>
+                </a-select>
+              </a-form-item>
+
+              <!-- Scenario Selection -->
+              <a-form-item label="场景">
+                <a-select v-model:value="config.scenario">
+                  <a-select-option value="health_advice">健康建议</a-select-option>
+                  <a-select-option value="nutrition_planning">营养规划</a-select-option>
+                  <a-select-option value="exercise_guidance">运动指导</a-select-option>
+                </a-select>
+              </a-form-item>
+
+              <!-- Model Configuration -->
+              <a-form-item label="AI模型">
+                <a-select v-model:value="config.model">
+                  <a-select-option value="deepseek-r1">DeepSeek R1</a-select-option>
+                  <a-select-option value="deepseek-chat">DeepSeek Chat</a-select-option>
+                </a-select>
+              </a-form-item>
+
+              <!-- Advanced Settings -->
+              <a-collapse>
+                <a-collapse-panel key="advanced" header="高级设置">
+                  <a-form-item label="Temperature">
+                    <a-slider v-model:value="config.temperature" :min="0" :max="2" :step="0.1" />
+                    <span class="text-sm text-gray-500">当前值: {{ config.temperature }}</span>
+                  </a-form-item>
+                  <a-form-item label="Max Tokens">
+                    <a-input-number v-model:value="config.max_tokens" :min="100" :max="4000" />
+                  </a-form-item>
+                  <a-form-item label="启用推理模式">
+                    <a-switch v-model:checked="config.enableReasoning" />
+                  </a-form-item>
+                </a-collapse-panel>
+              </a-collapse>
+            </a-form>
+          </a-card>
+
+          <!-- Context Injection -->
+          <a-card title="📊 上下文注入" class="mt-4">
+            <a-form layout="vertical">
+              <a-form-item label="用户档案">
+                <a-textarea v-model:value="context.profile" :rows="2" placeholder="用户基本信息..." />
+              </a-form-item>
+              <a-form-item label="健康指标">
+                <a-textarea v-model:value="context.metrics" :rows="2" placeholder="BMI, 血压等..." />
+              </a-form-item>
+              <a-form-item label="对话历史">
+                <a-textarea v-model:value="context.history" :rows="2" placeholder="最近对话记录..." />
+              </a-form-item>
+            </a-form>
+          </a-card>
+        </a-col>
+
+        <a-col :span="16">
+          <a-card title="🧪 测试面板" class="test-card">
+            <!-- Test Input -->
+            <a-form-item label="测试输入">
+              <a-textarea
+                v-model:value="userPrompt"
+                :rows="6"
+                placeholder="输入您的测试问题..."
+                class="test-input"
+              />
+            </a-form-item>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons mb-4">
+              <a-button type="primary" @click="runSingleTest" :loading="isLoading" size="large">
+                <template #icon><PlayCircleOutlined /></template>
+                运行测试
+              </a-button>
+              <a-button @click="clearResults" class="ml-2">
+                <template #icon><ClearOutlined /></template>
+                清空结果
+              </a-button>
+              <a-button @click="saveTest" class="ml-2" :disabled="!result">
+                <template #icon><SaveOutlined /></template>
+                保存测试
+              </a-button>
+            </div>
+
+            <!-- Results Display -->
+            <div class="results-section">
+              <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-semibold">📋 测试结果</h3>
+                <div v-if="testMetrics" class="metrics-summary">
+                  <a-tag color="blue">响应时间: {{ testMetrics.responseTime }}ms</a-tag>
+                  <a-tag color="green">Token数: {{ testMetrics.tokens }}</a-tag>
+                </div>
+              </div>
+
+              <div v-if="isLoading" class="loading-state text-center py-8">
+                <a-spin size="large" />
+                <p class="mt-2 text-gray-500">AI正在思考中...</p>
+              </div>
+
+              <div v-else-if="result" class="result-content">
+                <a-tabs>
+                  <a-tab-pane key="formatted" tab="格式化结果">
+                    <div class="formatted-result" v-html="formattedResult"></div>
+                  </a-tab-pane>
+                  <a-tab-pane key="raw" tab="原始输出">
+                    <pre class="raw-result">{{ result }}</pre>
+                  </a-tab-pane>
+                  <a-tab-pane key="prompt" tab="实际Prompt">
+                    <div class="prompt-display">
+                      <h4>系统Prompt:</h4>
+                      <pre class="system-prompt">{{ actualPrompt.system }}</pre>
+                      <h4>用户Prompt:</h4>
+                      <pre class="user-prompt">{{ actualPrompt.user }}</pre>
+                    </div>
+                  </a-tab-pane>
+                </a-tabs>
+              </div>
+
+              <div v-else class="empty-state text-center py-8">
+                <div class="text-gray-400 text-lg">🎯</div>
+                <p class="text-gray-500 mt-2">运行测试查看结果</p>
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+      </a-row>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import { message } from 'ant-design-vue';
+import { ref, reactive, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
+import {
+  PlayCircleOutlined,
+  ClearOutlined,
+  SaveOutlined
+} from '@ant-design/icons-vue'
+import { marked } from 'marked'
 
+// Reactive state
+const activeTab = ref('single')
+const isLoading = ref(false)
+const userPrompt = ref('')
+const result = ref('')
+const testMetrics = ref(null)
+const actualPrompt = ref({ system: '', user: '' })
+const availableVersions = ref([])
+
+// Configuration
 const config = reactive({
+  promptVersion: 'v3_1',
+  scenario: 'health_advice',
   model: 'deepseek-r1',
-  system_prompt: 'You are a helpful assistant.',
   temperature: 0.7,
-  max_tokens: 1024,
-});
+  max_tokens: 2000,
+  enableReasoning: true
+})
 
-const userPrompt = ref('');
-const result = ref('');
-const isLoading = ref(false);
+// Context for prompt injection
+const context = reactive({
+  profile: '用户：李明，男，28岁，身高180cm，体重85kg，程序员',
+  metrics: 'BMI: 26.2, 血压: 125/82, 心率: 75, 体脂率: 18%',
+  history: '最近询问过减重和改善睡眠的建议'
+})
 
-const runTest = async () => {
-  if (!userPrompt.value) {
-    message.warning('Please enter a user prompt.');
-    return;
-  }
-  isLoading.value = true;
-  result.value = '';
+// Computed properties
+const formattedResult = computed(() => {
+  if (!result.value) return ''
   try {
-    //
-    // This is where you would call your API
-    // e.g., const response = await api.testPrompt({ ...config, prompt: userPrompt.value });
-    // result.value = response.data;
-    //
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-    result.value = `Test Result for: "${userPrompt.value}" with model ${config.model}. \n\n(This is a simulated response.)`;
-  } catch (error) {
-    message.error('Failed to run test.');
-    result.value = 'An error occurred.';
-  } finally {
-    isLoading.value = false;
+    return marked(result.value)
+  } catch (e) {
+    return result.value
   }
-};
+})
+
+// Methods
+const loadAvailableVersions = async () => {
+  try {
+    // Fallback to default versions for now
+    availableVersions.value = [
+      { version: 'v3_0', name: 'Health Advice v3.0' },
+      { version: 'v3_1', name: 'Health Advice v3.1' },
+      { version: 'v3_2_test', name: 'Health Advice v3.2 (Test)' }
+    ]
+  } catch (error) {
+    console.error('Failed to load versions:', error)
+  }
+}
+
+const onVersionChange = (version) => {
+  console.log('Version changed to:', version)
+}
+
+const runSingleTest = async () => {
+  if (!userPrompt.value.trim()) {
+    message.warning('请输入测试问题')
+    return
+  }
+
+  isLoading.value = true
+  const startTime = Date.now()
+
+  try {
+    // Simulate API call for now
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    const endTime = Date.now()
+
+    result.value = `# 🎯 健康建议测试结果
+
+## 📊 基于您的情况分析
+
+**用户档案**: ${context.profile}
+**健康指标**: ${context.metrics}
+**测试问题**: ${userPrompt.value}
+
+## 💡 个性化建议
+
+基于您的BMI 26.2和当前健康状况，我为您制定以下建议：
+
+### 🍽️ 饮食建议
+- 控制每日热量摄入在2200卡路里左右
+- 增加蛋白质摄入，建议每公斤体重1.2-1.6g
+- 减少精制碳水化合物，选择复合碳水
+
+### 🏃 运动建议
+- 每周进行3-4次有氧运动，每次30-45分钟
+- 结合力量训练，每周2-3次
+- 推荐运动：快走、游泳、骑行
+
+### 😴 睡眠优化
+- 保持规律作息，每晚7-8小时睡眠
+- 睡前1小时避免电子设备
+- 创造舒适的睡眠环境
+
+*注意：以上建议仅供参考，如有健康问题请咨询专业医生。*`
+
+    actualPrompt.value = {
+      system: `你是AuraWell智能健康助手，版本：${config.promptVersion}`,
+      user: `用户问题：${userPrompt.value}\n\n上下文：${JSON.stringify(context, null, 2)}`
+    }
+
+    testMetrics.value = {
+      responseTime: endTime - startTime,
+      tokens: Math.floor(Math.random() * 500) + 200,
+      version: config.promptVersion,
+      model: config.model
+    }
+
+    message.success('测试完成')
+  } catch (error) {
+    console.error('Test error:', error)
+    message.error('测试失败: ' + error.message)
+    result.value = 'Error: ' + error.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const clearResults = () => {
+  result.value = ''
+  testMetrics.value = null
+  actualPrompt.value = { system: '', user: '' }
+}
+
+const saveTest = async () => {
+  if (!result.value) {
+    message.warning('没有可保存的测试结果')
+    return
+  }
+
+  try {
+    const testData = {
+      config: { ...config },
+      context: { ...context },
+      input: userPrompt.value,
+      output: result.value,
+      metrics: testMetrics.value,
+      timestamp: new Date().toISOString()
+    }
+
+    const savedTests = JSON.parse(localStorage.getItem('promptTests') || '[]')
+    savedTests.push(testData)
+    localStorage.setItem('promptTests', JSON.stringify(savedTests))
+
+    message.success('测试结果已保存')
+  } catch (error) {
+    console.error('Save error:', error)
+    message.error('保存失败')
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  loadAvailableVersions()
+})
 </script>
 
 <style scoped>
-.prompt-playground {
+.prompt-playground-v2 {
   padding: 24px;
   background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.playground-header {
+  margin-bottom: 24px;
+}
+
+.config-card, .test-card {
   border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
-.result-panel {
-  margin-top: 24px;
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.results-section {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
   padding: 16px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  min-height: 200px;
+  background: #fafafa;
 }
+
+.metrics-summary {
+  display: flex;
+  gap: 8px;
+}
+
 .loading-state {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  min-height: 200px;
 }
-pre {
+
+.result-content {
+  background: white;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.formatted-result {
+  line-height: 1.6;
+}
+
+.raw-result, .system-prompt, .user-prompt {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
   white-space: pre-wrap;
   word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
 }
-</style> 
+
+.empty-state {
+  color: #999;
+  background: white;
+  border: 2px dashed #e8e8e8;
+  border-radius: 8px;
+  padding: 32px;
+}
+</style>
