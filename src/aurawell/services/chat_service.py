@@ -43,8 +43,8 @@ class ChatService:
 
         # 初始化多模型梯度服务
         try:
-            from ..core.deepseek_client import DeepSeekClient
-            deepseek_client = DeepSeekClient()
+            from ..core.service_factory import ServiceClientFactory
+            deepseek_client = ServiceClientFactory.get_deepseek_client()
             self.model_fallback_service = get_model_fallback_service(deepseek_client)
             logger.info("多模型梯度服务初始化成功")
         except Exception as e:

@@ -63,8 +63,9 @@ class HealthAdviceAgent(BaseAgent):
     def _initialize_components(self):
         """初始化所有组件"""
         try:
-            # 初始化DeepSeek客户端
-            self.deepseek_client = DeepSeekClient()
+            # 初始化DeepSeek客户端通过ServiceClientFactory
+            from ..core.service_factory import ServiceClientFactory
+            self.deepseek_client = ServiceClientFactory.get_deepseek_client()
 
             # 尝试创建LangChain LLM包装器
             try:

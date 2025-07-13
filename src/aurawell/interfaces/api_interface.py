@@ -1803,7 +1803,7 @@ async def login(login_request: LoginRequest):
         AuthenticationException: If authentication fails
     """
     try:
-        user_id = authenticate_user(login_request.username, login_request.password)
+        user_id = await authenticate_user(login_request.username, login_request.password)
 
         if not user_id:
             raise AuthenticationException(
@@ -1873,8 +1873,9 @@ async def register(
         import hashlib
         import uuid
 
-        # Hash password
-        password_hash = hashlib.sha256(register_request.password.encode()).hexdigest()
+        # Hash password using bcrypt for security
+        from ..auth.jwt_auth import authenticator
+        password_hash = authenticator.get_password_hash(register_request.password)
 
         # Process health data
         health_data = register_request.health_data or {}
@@ -4265,15 +4266,57 @@ async def get_health_plan(
                 module_type="diet",
                 title="营养饮食计划",
                 description="个性化的营养饮食建议",
-                content={"daily_calories": 2000, "meal_plan": "详细的每日餐食安排"},
+                content={
+                    "daily_calories": 2000,
+                    "meal_plan": "详细的每日餐食安排",
+                    "recommendations": [
+                        {
+                            "category": "nutrition",
+                            "title": "蛋白质摄入",
+                            "content": "每餐包含优质蛋白质，如鸡胸肉、鱼类、豆类等",
+                            "priority": "high"
+                        },
+                        {
+                            "category": "nutrition",
+                            "title": "蔬菜搭配",
+                            "content": "每餐至少包含2种不同颜色的蔬菜，确保营养均衡",
+                            "priority": "medium"
+                        }
+                    ]
+                },
+                duration_days=30,
+            ),
+            HealthPlanModule(
+                module_type="exercise",
+                title="运动健身计划",
+                description="科学的运动训练方案",
+                content={
+                    "weekly_frequency": 4,
+                    "session_duration": 45,
+                    "intensity": "moderate",
+                    "recommendations": [
+                        {
+                            "category": "cardio",
+                            "title": "有氧运动",
+                            "content": "每周3次有氧运动，如快走、慢跑或游泳",
+                            "priority": "high"
+                        },
+                        {
+                            "category": "strength",
+                            "title": "力量训练",
+                            "content": "每周2次力量训练，重点锻炼核心肌群",
+                            "priority": "medium"
+                        }
+                    ]
+                },
                 duration_days=30,
             )
         ]
 
         plan = HealthPlan(
             plan_id=plan_id,
-            title="个性化健康计划",
-            description="根据您的需求定制的健康管理方案",
+            title="个性化减重计划",
+            description="基于您的身体状况和目标，为您制定的专属减重方案",
             modules=sample_modules,
             duration_days=30,
             status="active",
@@ -4282,8 +4325,35 @@ async def get_health_plan(
             updated_at=datetime.now(),
         )
 
+        # 添加专家建议
+        recommendations = [
+            {
+                "category": "diet",
+                "title": "饮食建议",
+                "content": "每日控制热量摄入在1500-1800卡路里，增加蛋白质摄入，减少精制碳水化合物。",
+                "priority": "high"
+            },
+            {
+                "category": "exercise",
+                "title": "运动计划",
+                "content": "每周进行3-4次有氧运动，每次30-45分钟，结合力量训练。",
+                "priority": "high"
+            },
+            {
+                "category": "lifestyle",
+                "title": "生活方式",
+                "content": "保证每晚7-8小时睡眠，减少压力，定期监测体重变化。",
+                "priority": "medium"
+            }
+        ]
+
+        # 将recommendations添加到plan对象中
+        plan_dict = plan.model_dump()
+        plan_dict['recommendations'] = recommendations
+
         return HealthPlanResponse(
-            message="Health plan retrieved successfully", plan=plan
+            message="Health plan retrieved successfully",
+            plan=HealthPlan(**plan_dict)
         )
 
     except Exception as e:

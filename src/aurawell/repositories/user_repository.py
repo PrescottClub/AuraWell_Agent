@@ -36,6 +36,7 @@ class UserRepository(BaseRepository[UserProfileDB]):
             "user_id": user_profile.user_id,
             "display_name": user_profile.display_name,
             "email": user_profile.email,
+            "password_hash": getattr(user_profile, 'password_hash', None),  # Add password hash if available
             "age": user_profile.age,
             "gender": user_profile.gender.value if user_profile.gender else None,
             "height_cm": user_profile.height_cm,

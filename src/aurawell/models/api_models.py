@@ -944,6 +944,9 @@ class HealthPlan(BaseModel):
     )
     created_at: datetime
     updated_at: datetime
+    recommendations: Optional[List[Dict[str, Any]]] = Field(
+        default=None, description="Expert recommendations"
+    )
 
     # 添加兼容性字段
     @property

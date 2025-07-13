@@ -64,8 +64,15 @@ class DeepSeekClient:
                 "DeepSeek API key not provided. Set QWEN_API, DASHSCOPE_API_KEY, DEEP_SEEK_API, or DEEPSEEK_API_KEY environment variable."
             )
 
-        # 使用阿里云DashScope的兼容模式访问DeepSeek模型
-        self.base_url = base_url or os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        # 支持多种API端点：直接DeepSeek API或阿里云DashScope
+        self.base_url = (
+            base_url or
+            os.getenv("DEEPSEEK_BASE_URL") or
+            os.getenv("DASHSCOPE_BASE_URL") or
+            # 如果API Key以sk-开头且长度较短，可能是直接DeepSeek API
+            ("https://api.deepseek.com/v1" if self.api_key.startswith("sk-") and len(self.api_key) < 50
+             else "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        )
 
         self.client = OpenAI(
             api_key=self.api_key,

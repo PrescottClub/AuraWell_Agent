@@ -20,6 +20,7 @@ class UserProfile(BaseModel):
     user_id: str = Field(..., description="Unique user identifier")
     email: Optional[str] = Field(None, description="User email address")
     display_name: Optional[str] = Field(None, description="User display name")
+    password_hash: Optional[str] = Field(None, description="Hashed password for authentication")
 
     # Demographics
     age: Optional[int] = Field(None, ge=13, le=120, description="User age")

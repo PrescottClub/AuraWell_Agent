@@ -18,7 +18,7 @@ from typing import Dict, List, Optional, Any, AsyncGenerator
 from ...database import get_database_manager
 from ...repositories.user_repository import UserRepository
 from ...repositories.health_data_repository import HealthDataRepository
-from ...core.deepseek_client import DeepSeekClient
+from ...core.service_factory import ServiceClientFactory
 from ...utils.health_calculations import (
     calculate_bmi,
     calculate_bmr,
@@ -68,10 +68,10 @@ class HealthAdviceService:
         self.deepseek_client = None
         self.logger = logger
 
-        # Initialize DeepSeek client
+        # Initialize DeepSeek client through ServiceClientFactory
         try:
-            self.deepseek_client = DeepSeekClient()
-            self.logger.info("HealthAdviceService initialized with DeepSeek client")
+            self.deepseek_client = ServiceClientFactory.get_deepseek_client()
+            self.logger.info("HealthAdviceService initialized with DeepSeek client via ServiceClientFactory")
         except Exception as e:
             self.logger.warning(
                 f"DeepSeek client not available: {e}. Using fallback mode."

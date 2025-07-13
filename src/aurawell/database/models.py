@@ -36,6 +36,7 @@ class UserProfileDB(Base):
     # Basic info
     display_name: Mapped[Optional[str]] = mapped_column(String(255))
     email: Mapped[Optional[str]] = mapped_column(String(255), unique=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255))  # Store hashed password
     age: Mapped[Optional[int]] = mapped_column(Integer)
     gender: Mapped[Optional[str]] = mapped_column(String(20))
     height_cm: Mapped[Optional[float]] = mapped_column(Float)

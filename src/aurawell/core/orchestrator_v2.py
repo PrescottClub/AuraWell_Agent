@@ -74,9 +74,9 @@ class AuraWellOrchestrator:
         # Lazy import to avoid circular dependencies
         if deepseek_client is None:
             try:
-                from .deepseek_client import DeepSeekClient
+                from .service_factory import ServiceClientFactory
 
-                self.deepseek_client = DeepSeekClient()
+                self.deepseek_client = ServiceClientFactory.get_deepseek_client()
             except Exception as e:
                 logger.warning(f"Failed to initialize DeepSeek client: {e}")
                 self.deepseek_client = None
