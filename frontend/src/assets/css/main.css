@@ -6,6 +6,9 @@
 /* 导入微交互动效系统 */
 @import './micro-interactions.css';
 
+/* 导入桌面端优化系统 */
+@import './desktop-optimizations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

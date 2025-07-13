@@ -1,0 +1,472 @@
+/**
+ * AuraWell 桌面端体验优化
+ * 专门针对桌面设备的视觉和交互优化
+ * 
+ * 设计原则：
+ * 1. 充分利用大屏幕空间
+ * 2. 优化鼠标交互体验
+ * 3. 提升信息密度和可读性
+ * 4. 保持设计系统一致性
+ */
+
+/* ========================================
+ * 桌面端布局优化
+ * ======================================== */
+
+/* 桌面端容器最大宽度 */
+@media (min-width: 1024px) {
+  .desktop-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  
+  .desktop-wide-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+}
+
+/* 桌面端网格系统优化 */
+@media (min-width: 1024px) {
+  .desktop-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .desktop-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .desktop-grid-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  
+  .desktop-grid-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* 桌面端侧边栏布局 */
+@media (min-width: 1024px) {
+  .desktop-sidebar-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    min-height: 100vh;
+  }
+  
+  .desktop-sidebar-wide {
+    grid-template-columns: 320px 1fr;
+  }
+  
+  .desktop-sidebar-narrow {
+    grid-template-columns: 240px 1fr;
+  }
+}
+
+/* ========================================
+ * 桌面端卡片优化
+ * ======================================== */
+
+/* 桌面端卡片悬浮效果增强 */
+@media (min-width: 1024px) {
+  .aura-card {
+    transition: all var(--duration-base) var(--ease-out);
+  }
+  
+  .aura-card:hover {
+    transform: translateY(-4px) translateZ(0);
+    box-shadow: 
+      0 12px 32px rgba(26, 54, 93, 0.12),
+      0 4px 16px rgba(26, 54, 93, 0.08);
+  }
+  
+  .aura-card--interactive {
+    cursor: pointer;
+  }
+  
+  .aura-card--interactive:hover {
+    transform: translateY(-6px) translateZ(0);
+    box-shadow: 
+      0 16px 40px rgba(26, 54, 93, 0.15),
+      0 6px 20px rgba(26, 54, 93, 0.1);
+  }
+}
+
+/* 桌面端健康指标卡片 */
+@media (min-width: 1024px) {
+  .health-metric-card {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .health-metric-card:hover {
+    transform: translateY(-4px) scale(1.02) translateZ(0);
+  }
+}
+
+/* ========================================
+ * 桌面端按钮优化
+ * ======================================== */
+
+/* 桌面端按钮悬浮效果 */
+@media (min-width: 1024px) {
+  .aura-btn {
+    transition: all var(--duration-base) var(--ease-out);
+  }
+  
+  .aura-btn:hover {
+    transform: translateY(-2px) translateZ(0);
+  }
+  
+  .aura-btn--primary:hover {
+    box-shadow: 0 8px 20px rgba(26, 54, 93, 0.3);
+  }
+  
+  .aura-btn--secondary:hover {
+    box-shadow: 0 4px 12px rgba(26, 54, 93, 0.15);
+  }
+  
+  /* 桌面端按钮组 */
+  .desktop-btn-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .desktop-btn-group .aura-btn {
+    min-width: 120px;
+  }
+}
+
+/* ========================================
+ * 桌面端导航优化
+ * ======================================== */
+
+/* 桌面端顶部导航 */
+@media (min-width: 1024px) {
+  .desktop-navbar {
+    height: 80px;
+    padding: 0 2rem;
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  
+  .desktop-navbar-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .desktop-nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+  
+  .desktop-nav-link {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all var(--duration-base) var(--ease-out);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .desktop-nav-link:hover {
+    background: var(--color-background-surface);
+    color: var(--color-text-primary);
+    transform: translateY(-1px);
+  }
+  
+  .desktop-nav-link--active {
+    background: var(--color-primary);
+    color: white;
+  }
+}
+
+/* 桌面端侧边导航 */
+@media (min-width: 1024px) {
+  .desktop-sidebar {
+    width: 280px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    background: var(--color-background);
+    border-right: 1px solid var(--color-border-light);
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+  }
+  
+  .desktop-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .desktop-sidebar-item {
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    transition: all var(--duration-base) var(--ease-out);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .desktop-sidebar-item:hover {
+    background: var(--color-background-surface);
+    color: var(--color-text-primary);
+    transform: translateX(4px);
+  }
+  
+  .desktop-sidebar-item--active {
+    background: var(--color-primary);
+    color: white;
+  }
+  
+  .desktop-sidebar-item--active:hover {
+    transform: translateX(0);
+  }
+}
+
+/* ========================================
+ * 桌面端表格优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-table {
+    background: var(--color-background);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  .desktop-table-header {
+    background: var(--color-background-surface);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  
+  .desktop-table-row {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--color-border-light);
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  
+  .desktop-table-row:hover {
+    background: var(--color-background-surface);
+  }
+  
+  .desktop-table-row:last-child {
+    border-bottom: none;
+  }
+}
+
+/* ========================================
+ * 桌面端模态框优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-modal {
+    max-width: 800px;
+    margin: 5vh auto;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.15),
+      0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .desktop-modal-large {
+    max-width: 1200px;
+  }
+  
+  .desktop-modal-header {
+    padding: 2rem 2.5rem 1rem;
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  
+  .desktop-modal-content {
+    padding: 2rem 2.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .desktop-modal-footer {
+    padding: 1rem 2.5rem 2rem;
+    background: var(--color-background-surface);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+}
+
+/* ========================================
+ * 桌面端图表优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-chart-container {
+    min-height: 400px;
+    padding: 2rem;
+    background: var(--color-background);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  .desktop-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .desktop-chart-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .desktop-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+  }
+}
+
+/* ========================================
+ * 桌面端工具提示优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-tooltip {
+    position: relative;
+  }
+  
+  .desktop-tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-text-primary);
+    color: var(--color-background);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all var(--duration-base) var(--ease-out);
+    z-index: var(--z-index-tooltip);
+    margin-bottom: 0.5rem;
+  }
+  
+  .desktop-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--color-text-primary);
+    opacity: 0;
+    pointer-events: none;
+    transition: all var(--duration-base) var(--ease-out);
+    z-index: var(--z-index-tooltip);
+  }
+  
+  .desktop-tooltip:hover::before,
+  .desktop-tooltip:hover::after {
+    opacity: 1;
+  }
+}
+
+/* ========================================
+ * 桌面端滚动条优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .desktop-scrollbar::-webkit-scrollbar-track {
+    background: var(--color-background-surface);
+    border-radius: 4px;
+  }
+  
+  .desktop-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+    transition: background var(--duration-base) var(--ease-out);
+  }
+  
+  .desktop-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+  }
+}
+
+/* ========================================
+ * 桌面端键盘导航优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-focus-visible:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
+  .desktop-skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--color-primary);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: var(--z-index-modal);
+    transition: top var(--duration-base) var(--ease-out);
+  }
+  
+  .desktop-skip-link:focus {
+    top: 6px;
+  }
+}
+
+/* ========================================
+ * 桌面端性能优化
+ * ======================================== */
+
+@media (min-width: 1024px) {
+  .desktop-gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  .desktop-smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  .desktop-contain-layout {
+    contain: layout;
+  }
+  
+  .desktop-contain-paint {
+    contain: paint;
+  }
+}
