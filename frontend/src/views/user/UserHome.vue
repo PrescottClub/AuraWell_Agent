@@ -76,28 +76,28 @@
       />
 
       <!-- AI聊天快速入口 (大卡片) -->
-      <div class="lg:col-span-2 group p-6 rounded-2xl bg-background-alt border border-border transition-colors duration-200 cursor-pointer hover:bg-secondary/40"
+      <div class="lg:col-span-2 aura-card group cursor-pointer"
            @click="router.push('/health-chat')">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-4">
-            <div class="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+            <div class="w-12 h-12 rounded-xl bg-background-surface border border-border flex items-center justify-center">
               <MessageOutlined class="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-text-primary">AI健康助手</h3>
-              <p class="text-sm text-text-secondary">随时为您提供健康咨询</p>
+              <h3 class="text-heading-4">AI健康助手</h3>
+              <p class="text-body-small">随时为您提供健康咨询</p>
             </div>
           </div>
-          <div class="w-8 h-8 flex items-center justify-center rounded-full text-text-disabled/0 group-hover:text-text-disabled transition-colors duration-300">
+          <div class="w-8 h-8 flex items-center justify-center rounded-full text-text-muted/0 group-hover:text-text-muted transition-colors duration-200">
             <RightOutlined class="w-5 h-5" />
           </div>
         </div>
 
-        <div class="bg-white p-4 rounded-xl border border-border">
-          <p class="text-sm text-text-primary mb-2">
+        <div class="bg-background-elevated p-4 rounded-xl border border-border-light">
+          <p class="text-body-small text-text-primary mb-2">
             💡 <strong>今日建议</strong>
           </p>
-          <p class="text-sm text-text-secondary">
+          <p class="text-body-small">
             根据您的健康数据，建议增加15分钟的中等强度运动，并保持充足的水分摄入。
           </p>
         </div>
@@ -126,67 +126,67 @@
       />
 
       <!-- 健康计划进度 (大卡片) -->
-      <div class="md:col-span-2 lg:col-span-4 lg:row-span-2 p-6 rounded-2xl bg-background-alt border border-border transition-colors duration-200">
+      <div class="md:col-span-2 lg:col-span-4 lg:row-span-2 aura-card">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h3 class="text-lg font-semibold text-text-primary mb-2">本周健康计划进度</h3>
-            <p class="text-sm text-text-secondary">距离完成目标还有 {{ remainingDays }} 天</p>
+            <h3 class="text-heading-4 mb-2">本周健康计划进度</h3>
+            <p class="text-body-small">距离完成目标还有 {{ remainingDays }} 天</p>
           </div>
-          <button class="text-sm font-semibold text-primary hover:text-primary-hover" @click="router.push('/health-plan')">
+          <button class="aura-btn aura-btn--secondary text-sm" @click="router.push('/health-plan')">
             查看全部
           </button>
         </div>
 
         <!-- 进度条网格 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div v-for="goal in healthGoals" :key="goal.id" class="bg-white p-4 rounded-xl border border-border/80">
+          <div v-for="goal in healthGoals" :key="goal.id" class="bg-background-elevated p-4 rounded-xl border border-border-light hover:border-border transition-colors duration-200">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium text-text-primary">{{ goal.name }}</span>
-              <span class="text-xs text-text-secondary">{{ goal.progress }}%</span>
+              <span class="text-body-small font-medium text-text-primary">{{ goal.name }}</span>
+              <span class="text-caption">{{ goal.progress }}%</span>
             </div>
-            <div class="w-full bg-secondary rounded-full h-2">
+            <div class="w-full bg-background-surface rounded-full h-2">
               <div
-                class="bg-primary h-2 rounded-full transition-all duration-500"
+                class="bg-primary h-2 rounded-full transition-all duration-300"
                 :style="{ width: goal.progress + '%' }"
               ></div>
             </div>
-            <p class="text-xs text-text-secondary mt-1">{{ goal.current }}/{{ goal.target }} {{ goal.unit }}</p>
+            <p class="text-caption mt-1">{{ goal.current }}/{{ goal.target }} {{ goal.unit }}</p>
           </div>
         </div>
       </div>
 
       <!-- 快速操作区域 -->
-      <div class="lg:col-span-2 p-6 rounded-2xl bg-background-alt border border-border">
-        <h3 class="text-lg font-semibold text-text-primary mb-4">快速操作</h3>
+      <div class="lg:col-span-2 aura-card">
+        <h3 class="text-heading-4 mb-4">快速操作</h3>
         <div class="grid grid-cols-2 gap-4">
           <button
             v-for="action in quickActions"
             :key="action.name"
-            class="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-border hover:bg-secondary/60 transition-colors duration-200 group"
+            class="flex flex-col items-center justify-center p-4 bg-background-elevated rounded-xl border border-border-light hover:border-border transition-all duration-200 group focus-ring"
             @click="handleQuickAction(action)"
           >
             <component :is="action.icon" class="w-6 h-6 text-primary mb-2 transition-transform duration-200 group-hover:scale-105" />
-            <span class="text-sm font-medium text-text-primary text-center">{{ action.name }}</span>
+            <span class="text-body-small font-medium text-center">{{ action.name }}</span>
           </button>
         </div>
       </div>
 
       <!-- 最近健康咨询 -->
-      <div class="lg:col-span-2 p-6 rounded-2xl bg-background-alt border border-border">
+      <div class="lg:col-span-2 aura-card">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-text-primary">最近咨询</h3>
-          <button class="text-sm font-semibold text-primary hover:text-primary-hover" @click="router.push('/health-chat')">
+          <h3 class="text-heading-4">最近咨询</h3>
+          <button class="aura-btn aura-btn--secondary text-sm" @click="router.push('/health-chat')">
             查看全部
           </button>
         </div>
         <div class="space-y-3">
-          <div v-for="chat in recentChats" :key="chat.id" class="flex items-start space-x-3 p-3 bg-white rounded-lg border border-border hover:bg-secondary/60 cursor-pointer">
-            <div class="w-8 h-8 bg-background-alt rounded-full flex items-center justify-center flex-shrink-0 border border-border">
+          <div v-for="chat in recentChats" :key="chat.id" class="flex items-start space-x-3 p-3 bg-background-elevated rounded-lg border border-border-light hover:border-border cursor-pointer transition-colors duration-200">
+            <div class="w-8 h-8 bg-background-surface rounded-full flex items-center justify-center flex-shrink-0 border border-border-light">
               <MessageOutlined class="w-4 h-4 text-primary" />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm text-text-primary font-medium truncate">{{ chat.title }}</p>
-              <p class="text-xs text-text-secondary">{{ chat.time }}</p>
+              <p class="text-body-small font-medium text-truncate">{{ chat.title }}</p>
+              <p class="text-caption">{{ chat.time }}</p>
             </div>
           </div>
         </div>
