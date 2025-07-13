@@ -1,53 +1,14 @@
 /* src/assets/css/main.css */
+
+/* 导入设计令牌系统 - 必须在其他导入之前 */
+@import './design-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* 专业健康科技设计令牌系统 */
-    --color-primary: theme('colors.primary.500');
-    --color-primary-hover: theme('colors.primary.600');
-    --color-health: theme('colors.health.500');
-    --color-accent: theme('colors.accent.500');
-
-    /* 文字颜色 - 确保对比度 */
-    --color-text-primary: theme('colors.text.primary');
-    --color-text-secondary: theme('colors.text.secondary');
-    --color-text-muted: theme('colors.text.muted');
-    --color-text-disabled: theme('colors.text.disabled');
-
-    /* 背景颜色 - 浅色主题 */
-    --color-bg-base: theme('colors.background.DEFAULT');
-    --color-bg-alt: theme('colors.background.alt');
-    --color-bg-surface: theme('colors.background.surface');
-    --color-bg-elevated: theme('colors.background.elevated');
-
-    /* 边框颜色 */
-    --color-border-light: theme('colors.border.light');
-    --color-border: theme('colors.border.DEFAULT');
-    --color-border-strong: theme('colors.border.strong');
-
-    /* 功能颜色 */
-    --color-success: theme('colors.success');
-    --color-warning: theme('colors.warning');
-    --color-error: theme('colors.error');
-    --color-info: theme('colors.info');
-
-    /* 统一的设计规范 */
-    --border-radius-sm: theme('borderRadius.sm');
-    --border-radius-md: theme('borderRadius.md');
-    --border-radius-lg: theme('borderRadius.lg');
-    --border-radius-xl: theme('borderRadius.xl');
-
-    /* 间距系统 */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 0.75rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-    --spacing-2xl: 3rem;
-  }
+  /* 设计令牌已在 design-tokens.css 中定义 */
 
   /* 全局基础样式 - 浅色主题优先 */
   html, body {
