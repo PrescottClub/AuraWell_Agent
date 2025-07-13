@@ -9,6 +9,9 @@
 /* 导入桌面端优化系统 */
 @import './desktop-optimizations.css';
 
+/* 导入可访问性增强系统 */
+@import './accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
