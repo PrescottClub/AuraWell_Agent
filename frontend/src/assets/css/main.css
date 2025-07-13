@@ -3,6 +3,9 @@
 /* 导入设计令牌系统 - 必须在其他导入之前 */
 @import './design-tokens.css';
 
+/* 导入微交互动效系统 */
+@import './micro-interactions.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

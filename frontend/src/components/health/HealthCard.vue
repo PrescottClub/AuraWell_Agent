@@ -1,16 +1,22 @@
 <template>
-  <div v-motion-pop class="aura-card group flex flex-col h-full">
+  <div
+    ref="cardRef"
+    class="aura-card group flex flex-col h-full cursor-pointer"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+    @click="handleClick"
+  >
     <div class="flex items-start justify-between mb-4">
       <div class="flex items-center space-x-4">
-        <div class="w-12 h-12 rounded-xl bg-background-surface border border-border flex items-center justify-center">
-          <component :is="icon" class="w-6 h-6 text-primary" />
+        <div class="w-12 h-12 rounded-xl bg-background-surface border border-border flex items-center justify-center transition-all duration-200 group-hover:scale-105">
+          <component :is="icon" class="w-6 h-6 text-primary transition-colors duration-200" />
         </div>
         <div>
           <p class="text-caption">{{ category }}</p>
           <h3 class="text-heading-4">{{ title }}</h3>
         </div>
       </div>
-      <div class="w-8 h-8 flex items-center justify-center rounded-full text-text-muted/0 group-hover:text-text-muted transition-colors duration-300">
+      <div class="w-8 h-8 flex items-center justify-center rounded-full text-text-muted/0 group-hover:text-text-muted transition-all duration-200 group-hover:rotate-12">
         <RightOutlined class="w-5 h-5" />
       </div>
     </div>
@@ -18,7 +24,7 @@
     <!-- 主数据显示 -->
     <div class="flex-1 flex flex-col justify-center my-4">
       <div class="mb-2">
-        <span class="text-metric-large">{{ value }}</span>
+        <span class="text-metric-large metric-value">{{ value }}</span>
         <span class="text-body-large text-text-secondary ml-1.5">{{ unit }}</span>
       </div>
 
@@ -62,12 +68,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { 
+import { computed, ref, onMounted } from 'vue'
+import {
   ArrowUpOutlined,
   ArrowDownOutlined,
   RightOutlined
 } from '@ant-design/icons-vue'
+import { useMicroInteractions } from '@/composables/useMicroInteractions'
 
 const props = defineProps({
   title: {
@@ -140,6 +147,41 @@ const statusColorClass = computed(() => {
     return 'bg-error'
   }
   return 'bg-primary'
+})
+
+// 微交互
+const cardRef = ref()
+const { cardHover, cardLeave, rippleEffect, animateNumber } = useMicroInteractions()
+
+const handleMouseEnter = () => {
+  if (cardRef.value) {
+    cardHover(cardRef.value)
+  }
+}
+
+const handleMouseLeave = () => {
+  if (cardRef.value) {
+    cardLeave(cardRef.value)
+  }
+}
+
+const handleClick = (event) => {
+  if (cardRef.value) {
+    rippleEffect(cardRef.value, event)
+  }
+}
+
+// 数值动画
+onMounted(() => {
+  if (cardRef.value && typeof props.value === 'number') {
+    const valueElement = cardRef.value.querySelector('.metric-value')
+    if (valueElement) {
+      animateNumber(valueElement, 0, props.value, {
+        duration: 800,
+        delay: 200
+      })
+    }
+  }
 })
 </script>
 
