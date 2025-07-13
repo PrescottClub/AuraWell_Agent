@@ -161,8 +161,8 @@ onUnmounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: linear-gradient(135deg, theme('colors.gemini.blue') 0%, theme('colors.gemini.purple') 100%);
-  box-shadow: 0 2px 4px rgba(0, 148, 255, 0.2);
+  background: theme('colors.primary.500');
+  box-shadow: 0 2px 4px rgba(26, 54, 93, 0.2);
   animation: typing 1.6s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
