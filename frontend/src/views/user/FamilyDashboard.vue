@@ -1,102 +1,86 @@
 <template>
-  <div class="family-dashboard">
+  <div class="min-h-screen bg-background p-8">
     <!-- 没有家庭的状态 -->
-    <div v-if="!familyStore.currentFamily" class="no-family-state">
-      <a-empty
-        description="您还没有加入任何家庭"
-        image="simple"
-      >
-        <a-button type="primary" @click="showCreateFamilyModal = true">
+    <div v-if="!familyStore.currentFamily" class="flex items-center justify-center min-h-[60vh]">
+      <div class="aura-card text-center max-w-md">
+        <div class="w-20 h-20 bg-background-surface rounded-full flex items-center justify-center mx-auto mb-6">
+          <TeamOutlined class="w-10 h-10 text-primary" />
+        </div>
+        <h2 class="text-heading-3 mb-3">开始您的家庭健康之旅</h2>
+        <p class="text-body mb-6">创建家庭，与家人一起追踪健康数据，共同实现健康目标</p>
+        <button class="aura-btn aura-btn--primary" @click="showCreateFamilyModal = true">
+          <PlusOutlined />
           创建家庭
-        </a-button>
-      </a-empty>
+        </button>
+      </div>
     </div>
 
     <!-- 有家庭的正常状态 -->
     <div v-else>
       <!-- 页面头部 -->
-      <div class="dashboard-header mb-6">
-        <div class="flex justify-between items-center">
+      <div class="aura-card mb-8">
+        <div class="flex justify-between items-start">
           <div>
-            <h1 class="text-2xl font-bold text-gray-800">
-              {{ familyStore.currentFamily?.family_name }} 家庭仪表盘
+            <h1 class="text-display mb-2">
+              {{ familyStore.currentFamily?.family_name }}
+              <span class="text-primary">家庭仪表盘</span>
             </h1>
-            <p class="text-gray-600 mt-1">
+            <p class="text-body-large flex items-center gap-2">
+              <TeamOutlined class="text-primary" />
               共 {{ familyStore.familyMembers.length }} 名成员
             </p>
           </div>
           <div class="flex gap-3">
-            <a-button type="primary" @click="showCreateChallenge = true">
+            <button class="aura-btn aura-btn--primary" @click="showCreateChallenge = true">
               <PlusOutlined />
               创建挑战
-            </a-button>
-            <a-button @click="refreshDashboard">
+            </button>
+            <button class="aura-btn aura-btn--secondary" @click="refreshDashboard">
               <ReloadOutlined />
               刷新
-            </a-button>
+            </button>
           </div>
         </div>
       </div>
 
     <!-- 成员切换器 -->
-    <div class="mb-6">
+    <div class="aura-card mb-8">
       <MemberSwitcher />
     </div>
 
     <!-- 统计卡片 -->
-    <div class="stats-cards grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <a-card class="stat-card">
-        <a-statistic
-          title="今日总步数"
-          :value="dashboardStats.totalSteps"
-          :value-style="{ color: '#3f8600' }"
-          suffix="步"
-        >
-          <template #prefix>
-            <StepForwardOutlined />
-          </template>
-        </a-statistic>
-      </a-card>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="aura-card text-center">
+        <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <StepForwardOutlined class="w-6 h-6 text-primary" />
+        </div>
+        <div class="text-metric-large text-text-primary">{{ formatNumber(dashboardStats.totalSteps) }}</div>
+        <div class="text-body-small text-text-secondary mt-1">今日总步数</div>
+      </div>
 
-      <a-card class="stat-card">
-        <a-statistic
-          title="平均睡眠时长"
-          :value="dashboardStats.avgSleep"
-          :value-style="{ color: '#1890ff' }"
-          suffix="小时"
-          :precision="1"
-        >
-          <template #prefix>
-            <ClockCircleOutlined />
-          </template>
-        </a-statistic>
-      </a-card>
+      <div class="aura-card text-center">
+        <div class="w-12 h-12 bg-health/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <ClockCircleOutlined class="w-6 h-6 text-health" />
+        </div>
+        <div class="text-metric-large text-text-primary">{{ dashboardStats.avgSleep.toFixed(1) }}h</div>
+        <div class="text-body-small text-text-secondary mt-1">平均睡眠</div>
+      </div>
 
-      <a-card class="stat-card">
-        <a-statistic
-          title="活跃成员"
-          :value="dashboardStats.activeMembers"
-          :value-style="{ color: '#cf1322' }"
-          suffix="人"
-        >
-          <template #prefix>
-            <UserOutlined />
-          </template>
-        </a-statistic>
-      </a-card>
+      <div class="aura-card text-center">
+        <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <UserOutlined class="w-6 h-6 text-accent" />
+        </div>
+        <div class="text-metric-large text-text-primary">{{ dashboardStats.activeMembers }}</div>
+        <div class="text-body-small text-text-secondary mt-1">活跃成员</div>
+      </div>
 
-      <a-card class="stat-card">
-        <a-statistic
-          title="本周挑战"
-          :value="dashboardStats.weeklyGoals"
-          :value-style="{ color: '#722ed1' }"
-          suffix="个"
-        >
-          <template #prefix>
-            <TrophyOutlined />
-          </template>
-        </a-statistic>
-      </a-card>
+      <div class="aura-card text-center">
+        <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <TrophyOutlined class="w-6 h-6 text-primary" />
+        </div>
+        <div class="text-metric-large text-text-primary">{{ dashboardStats.weeklyGoals }}</div>
+        <div class="text-body-small text-text-secondary mt-1">本周挑战</div>
+      </div>
     </div>
 
     <!-- 主要内容区域 -->
@@ -104,61 +88,58 @@
       <!-- 左侧：排行榜和挑战 -->
       <div class="lg:col-span-2 space-y-6">
         <!-- 家庭排行榜 -->
-        <a-card title="本周排行榜" class="leaderboard-card">
-          <template #extra>
+        <div class="aura-card">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-heading-3">本周排行榜</h2>
             <a-select
-              v-model:value="leaderboardMetric"
-              style="width: 120px"
+              v-model="leaderboardMetric"
+              class="w-32"
               @change="fetchLeaderboard"
             >
               <a-select-option value="steps">步数</a-select-option>
               <a-select-option value="calories">卡路里</a-select-option>
               <a-select-option value="sleep_hours">睡眠</a-select-option>
             </a-select>
-          </template>
+          </div>
 
-          <div class="leaderboard-list">
+          <div class="space-y-3">
             <div
               v-for="(member, index) in leaderboardData"
               :key="member.user_id"
-              class="leaderboard-item flex items-center justify-between p-3 rounded-lg mb-2"
-              :class="getRankClass(index)"
+              class="flex items-center justify-between p-4 bg-background-elevated rounded-xl border border-border-light hover:border-border transition-colors duration-200"
             >
-              <div class="flex items-center">
-                <div class="rank-badge">
-                  <span v-if="index < 3" class="rank-icon">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 flex items-center justify-center rounded-full" :class="getRankBadgeClass(index)">
+                  <span v-if="index < 3" class="text-lg">
                     {{ ['🥇', '🥈', '🥉'][index] }}
                   </span>
-                  <span v-else class="rank-number">{{ index + 1 }}</span>
+                  <span v-else class="text-body-small font-semibold text-text-primary">{{ index + 1 }}</span>
                 </div>
                 <a-avatar
                   :size="40"
                   :src="member.avatar"
-                  class="mx-3"
+                  class="border-2 border-border-light"
                 >
                   {{ member.display_name?.charAt(0) }}
                 </a-avatar>
                 <div>
-                  <div class="font-medium">{{ member.display_name }}</div>
-                  <div class="text-sm text-gray-500">
+                  <div class="text-body font-medium text-text-primary">{{ member.display_name }}</div>
+                  <div class="text-body-small text-text-secondary">
                     {{ formatMetricValue(member.value, leaderboardMetric) }}
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <a-button
-                  type="text"
-                  size="small"
-                  @click="likeMember(member)"
-                  :disabled="member.liked_by_current_user"
-                >
-                  <HeartOutlined :class="{ 'text-red-500': member.liked_by_current_user }" />
-                  {{ member.likes_count || 0 }}
-                </a-button>
-              </div>
+              <button
+                class="flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-background-surface transition-colors duration-200"
+                @click="likeMember(member)"
+                :disabled="member.liked_by_current_user"
+              >
+                <HeartOutlined :class="member.liked_by_current_user ? 'text-accent' : 'text-text-muted'" />
+                <span class="text-body-small">{{ member.likes_count || 0 }}</span>
+              </button>
             </div>
           </div>
-        </a-card>
+        </div>
 
         <!-- 家庭挑战 -->
         <a-card title="进行中的挑战" class="challenges-card">
@@ -633,6 +614,18 @@ const handleCreateChallenge = async () => {
   }
 }
 
+// 工具函数
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('zh-CN').format(num)
+}
+
+const getRankBadgeClass = (index) => {
+  if (index === 0) return 'bg-yellow-100 text-yellow-800'
+  if (index === 1) return 'bg-gray-100 text-gray-800'
+  if (index === 2) return 'bg-orange-100 text-orange-800'
+  return 'bg-background-surface text-text-secondary'
+}
+
 // 生命周期
 onMounted(async () => {
   try {
@@ -656,57 +649,5 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.family-dashboard {
-  @apply p-6 min-h-screen bg-gray-50;
-}
-
-.stat-card {
-  @apply transition-all duration-300 hover:shadow-md;
-}
-
-.leaderboard-item {
-  @apply transition-all duration-300 hover:shadow-sm;
-}
-
-.rank-badge {
-  @apply w-8 h-8 flex items-center justify-center;
-}
-
-.rank-icon {
-  @apply text-lg;
-}
-
-.rank-number {
-  @apply text-sm font-bold text-gray-600;
-}
-
-.challenge-item {
-  @apply transition-all duration-300 hover:shadow-sm;
-}
-
-.metric-item {
-  @apply border-b border-gray-100 pb-3 last:border-b-0;
-}
-
-.member-metric {
-  @apply transition-all duration-300;
-}
-
-.alert-item {
-  @apply transition-all duration-300 hover:shadow-sm;
-}
-
-@media (max-width: 768px) {
-  .family-dashboard {
-    @apply p-4;
-  }
-  
-  .grid {
-    @apply grid-cols-1;
-  }
-  
-  .stats-cards {
-    @apply grid-cols-2;
-  }
-}
+/* 使用新的aura设计系统，移除旧的自定义样式 */
 </style>
