@@ -1,31 +1,36 @@
 <template>
-  <div class="health-report-page">
+  <div class="min-h-screen bg-background p-8">
     <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1>智能健康报告</h1>
-        <p>AI驱动的个性化健康分析与建议</p>
-      </div>
-      
-      <div class="header-actions">
-        <a-select
-          v-model:value="selectedReportType"
-          @change="handleReportTypeChange"
-          style="width: 120px; margin-right: 12px;"
-        >
-          <a-select-option value="weekly">周报</a-select-option>
-          <a-select-option value="monthly">月报</a-select-option>
-          <a-select-option value="quarterly">季报</a-select-option>
-        </a-select>
-        
-        <a-button 
-          type="primary" 
-          @click="handleGenerateReport"
-          :loading="generating"
-        >
-          <ThunderboltOutlined />
-          生成新报告
-        </a-button>
+    <div class="aura-card mb-8">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-display mb-2">智能健康报告</h1>
+          <p class="text-body-large">AI驱动的个性化健康分析与建议</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a-select
+            v-model="selectedReportType"
+            @change="handleReportTypeChange"
+            class="w-32"
+          >
+            <a-select-option value="weekly">周报</a-select-option>
+            <a-select-option value="monthly">月报</a-select-option>
+            <a-select-option value="quarterly">季报</a-select-option>
+          </a-select>
+
+          <button
+            class="aura-btn aura-btn--primary"
+            @click="handleGenerateReport"
+            :disabled="generating"
+          >
+            <ThunderboltOutlined v-if="!generating" />
+            <span v-if="generating" class="loading-dots">
+              <div></div><div></div><div></div>
+            </span>
+            {{ generating ? '生成中...' : '生成新报告' }}
+          </button>
+        </div>
       </div>
     </div>
     
@@ -43,22 +48,24 @@
     </div>
     
     <!-- 报告详情 -->
-    <div v-else class="report-detail">
-      <div class="detail-header">
-        <a-button @click="handleBackToList" type="text">
-          <ArrowLeftOutlined />
-          返回列表
-        </a-button>
-        
-        <div class="detail-actions">
-          <a-button @click="handleShareReport">
-            <ShareAltOutlined />
-            分享
-          </a-button>
-          <a-button @click="handleExportReport">
-            <DownloadOutlined />
-            导出
-          </a-button>
+    <div v-else class="space-y-8">
+      <div class="aura-card">
+        <div class="flex justify-between items-center">
+          <button @click="handleBackToList" class="aura-btn aura-btn--secondary">
+            <ArrowLeftOutlined />
+            返回列表
+          </button>
+
+          <div class="flex gap-3">
+            <button @click="handleShareReport" class="aura-btn aura-btn--secondary">
+              <ShareAltOutlined />
+              分享
+            </button>
+            <button @click="handleExportReport" class="aura-btn aura-btn--secondary">
+              <DownloadOutlined />
+              导出
+            </button>
+          </div>
         </div>
       </div>
       
@@ -72,12 +79,12 @@
       />
       
       <!-- 数据可视化 -->
-      <div class="charts-section">
-        <h2>数据可视化分析</h2>
-        
-        <div class="charts-grid">
+      <div class="aura-card">
+        <h2 class="text-heading-2 mb-6">数据可视化分析</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- 体重趋势 - 优化版本 -->
-          <div class="chart-item">
+          <div class="aura-card aura-card--elevated">
             <OptimizedChart
               title="体重变化趋势"
               chart-type="line"
@@ -91,7 +98,7 @@
           </div>
 
           <!-- 运动数据 - 优化版本 -->
-          <div class="chart-item">
+          <div class="aura-card aura-card--elevated">
             <OptimizedChart
               title="运动表现分析"
               chart-type="bar"
@@ -104,7 +111,7 @@
           </div>
 
           <!-- 睡眠热力图 -->
-          <div class="chart-item full-width">
+          <div class="lg:col-span-2 aura-card aura-card--elevated">
             <HealthHeatmap
               title="睡眠模式热力图"
               metric-type="sleep_duration"
@@ -114,7 +121,7 @@
           </div>
 
           <!-- 健康雷达图 -->
-          <div class="chart-item">
+          <div class="lg:col-span-2 aura-card aura-card--elevated">
             <HealthRadarChart
               title="综合健康评估"
               @chart-click="handleChartInteraction"
@@ -125,9 +132,9 @@
       </div>
       
       <!-- AI洞察 -->
-      <div class="insights-section">
-        <h2>AI智能洞察</h2>
-        <div class="insights-list">
+      <div class="aura-card">
+        <h2 class="text-heading-2 mb-6">AI智能洞察</h2>
+        <div class="space-y-4">
           <InsightCard
             v-for="insight in currentReport.insights"
             :key="insight.insight_id"
@@ -153,7 +160,7 @@
 
     <!-- 对话弹窗 - Refactored -->
     <ReportChatModal
-      v-model:visible="showChatModal"
+      v-model="showChatModal"
       :context="chatContext"
       :session-id="currentSessionId"
       @close="handleCloseChatModal"
@@ -473,105 +480,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.health-report-page {
-  padding: 32px;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  min-height: 100vh;
-}
+/* 使用新的aura设计系统，移除自定义页面样式 */
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-  background: white;
-  padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-}
-
-.header-content h1 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #262626;
-}
-
-.header-content p {
-  margin: 0;
-  font-size: 16px;
-  color: #8c8c8c;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-}
-
-.reports-list {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.list-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #262626;
-}
-
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.report-card {
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
-}
-
-.report-card:hover {
-  background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.report-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.report-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #262626;
-  line-height: 1.4;
-}
-
-.report-type {
-  font-size: 12px;
-  color: #1890ff;
-  background: #e6f7ff;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
+/* 报告列表样式已移至VirtualReportList组件 */
 
 .report-score {
   text-align: center;
