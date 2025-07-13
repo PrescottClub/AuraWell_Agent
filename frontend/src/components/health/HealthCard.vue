@@ -1,16 +1,16 @@
 <template>
-  <div v-motion-pop class="group bg-background-alt p-6 rounded-2xl border border-border transition-colors duration-200 flex flex-col h-full hover:bg-secondary/40">
+  <div v-motion-pop class="aura-card group flex flex-col h-full">
     <div class="flex items-start justify-between mb-4">
       <div class="flex items-center space-x-4">
-        <div class="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+        <div class="w-12 h-12 rounded-xl bg-background-surface border border-border flex items-center justify-center">
           <component :is="icon" class="w-6 h-6 text-primary" />
         </div>
         <div>
-          <p class="text-sm font-medium text-text-disabled">{{ category }}</p>
-          <h3 class="text-lg font-semibold text-text-primary">{{ title }}</h3>
+          <p class="text-caption">{{ category }}</p>
+          <h3 class="text-heading-4">{{ title }}</h3>
         </div>
       </div>
-      <div class="w-8 h-8 flex items-center justify-center rounded-full text-text-disabled/0 group-hover:text-text-disabled transition-colors duration-300">
+      <div class="w-8 h-8 flex items-center justify-center rounded-full text-text-muted/0 group-hover:text-text-muted transition-colors duration-300">
         <RightOutlined class="w-5 h-5" />
       </div>
     </div>
@@ -18,8 +18,8 @@
     <!-- 主数据显示 -->
     <div class="flex-1 flex flex-col justify-center my-4">
       <div class="mb-2">
-        <span class="text-4xl lg:text-5xl font-bold text-text-primary tracking-tight">{{ value }}</span>
-        <span class="text-lg text-text-secondary ml-1.5">{{ unit }}</span>
+        <span class="text-metric-large">{{ value }}</span>
+        <span class="text-body-large text-text-secondary ml-1.5">{{ unit }}</span>
       </div>
 
       <!-- 趋势指示器 -->
@@ -37,17 +37,17 @@
     </div>
 
     <!-- 迷你图表区域（可选） -->
-    <div v-if="showChart" class="mt-auto h-16 bg-white rounded-lg p-2 border border-border">
+    <div v-if="showChart" class="mt-auto h-16 bg-background-elevated rounded-lg p-2 border border-border-light">
        <div class="w-full h-full rounded flex items-end">
         <div v-for="(bar, index) in chartData" :key="index"
-             class="flex-1 bg-primary/20 rounded-t-sm mx-px transition-colors duration-300 ease-out group-hover:bg-primary/40"
+             class="flex-1 bg-primary/20 rounded-t-sm mx-px transition-colors duration-200 ease-out group-hover:bg-primary/30"
              :style="{ height: bar + '%' }">
         </div>
       </div>
     </div>
 
     <!-- 底部状态 -->
-    <div v-if="status" class="mt-4 pt-4 border-t border-border">
+    <div v-if="status" class="mt-4 pt-4 border-t border-border-light">
       <div class="flex items-center space-x-2.5">
         <div
           :class="[
@@ -55,7 +55,7 @@
             statusColorClass
           ]"
         ></div>
-        <span class="text-sm font-medium text-text-secondary">{{ status }}</span>
+        <span class="text-body-small">{{ status }}</span>
       </div>
     </div>
   </div>

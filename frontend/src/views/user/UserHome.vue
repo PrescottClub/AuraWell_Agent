@@ -19,18 +19,18 @@
     <div class="dashboard-header mb-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-4xl lg:text-5xl font-extrabold text-text-primary tracking-tight mb-2">
+          <h1 class="text-display mb-2">
             你好, {{ userStore.username || '朋友' }}
           </h1>
-          <p class="text-text-secondary">
+          <p class="text-body-large">
             今天感觉怎么样？让我们开始健康的一天吧！
           </p>
         </div>
         <div class="flex items-center space-x-4">
-          <button class="glow-btn">
+          <button class="aura-btn aura-btn--primary">
             <span class="text-sm font-medium">同步数据</span>
           </button>
-          <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+          <div class="w-12 h-12 bg-background-surface rounded-full flex items-center justify-center border border-border">
             <UserOutlined class="w-6 h-6 text-text-primary" />
           </div>
         </div>
