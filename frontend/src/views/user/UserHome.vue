@@ -344,9 +344,7 @@ onMounted(() => {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-.glass-card:hover {
-  transform: translateY(-2px);
-}
+/* 使用新的aura-card设计系统，无需自定义样式 */
 
 @keyframes fadeIn {
   from {

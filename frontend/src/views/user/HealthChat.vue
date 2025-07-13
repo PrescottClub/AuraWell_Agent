@@ -519,7 +519,7 @@ const deleteConversation = async (conversationId) => {
 </script>
 
 <style scoped>
-/* 聊天页面样式已移至全局glass-card和glow-btn类 */
+/* 聊天页面样式使用新的aura设计系统 */
 
 /* 聊天输入区域的阴影，使其悬浮 */
 .chat-input-area {

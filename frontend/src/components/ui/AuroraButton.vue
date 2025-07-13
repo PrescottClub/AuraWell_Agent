@@ -2,12 +2,10 @@
   <button
     v-motion
     :initial="{ scale: 1 }"
-    :hovered="{ scale: 1.05 }"
-    :tapped="{ scale: 0.95 }"
+    :hovered="{ scale: 1.02 }"
+    :tapped="{ scale: 0.98 }"
     :class="[
-      'px-6 py-3 font-semibold rounded-lg shadow-soft-lg transition-all duration-300 ease-in-out',
-      'focus:outline-none focus:ring-4 focus:ring-primary/30',
-      'disabled:opacity-50 disabled:cursor-not-allowed',
+      'aura-btn',
       variantClasses
     ]"
     :disabled="disabled"
@@ -36,13 +34,16 @@ defineEmits(['click']);
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'secondary':
-      return 'bg-secondary text-text-primary hover:bg-secondary-hover';
+      return 'aura-btn--secondary';
     case 'danger':
-      return 'bg-error text-white hover:bg-opacity-90';
+      return 'aura-btn--error';
+    case 'success':
+      return 'aura-btn--success';
+    case 'warning':
+      return 'aura-btn--warning';
     case 'primary':
     default:
-      // Apply gradient background using the new theme colors
-      return 'text-white bg-gradient-to-r from-gemini-blue to-gemini-purple hover:opacity-90';
+      return 'aura-btn--primary';
   }
 });
 </script> 
