@@ -1856,7 +1856,8 @@ async def register(
         if existing_user:
             raise ValidationException(
                 message="Username already exists",
-                error_code=ErrorCode.DUPLICATE_RESOURCE,
+                field="username",
+                value=register_request.username
             )
 
         # Check if email already exists
@@ -1864,7 +1865,8 @@ async def register(
         if existing_email:
             raise ValidationException(
                 message="Email already registered",
-                error_code=ErrorCode.DUPLICATE_RESOURCE,
+                field="email",
+                value=register_request.email
             )
 
         # Create user profile
@@ -4975,7 +4977,12 @@ async def get_activity_data(
 
         # Get activity data using tools
         activity_tool = tools_registry.get_tool("get_user_activity_summary")
-        activity_data = await activity_tool(current_user_id, days=days)
+        if activity_tool:
+            activity_data = await activity_tool(current_user_id, days=days)
+        else:
+            # Fallback to direct function call if tool not registered
+            from ..core.health_tools import get_user_activity_summary
+            activity_data = await get_user_activity_summary(current_user_id, days=days)
 
         # Convert to API format
         activity_summaries = []

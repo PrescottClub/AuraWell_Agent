@@ -76,11 +76,11 @@ class FiveSectionParser:
     REQUIRED_SECTIONS = ["### 饮食", "### 运动", "### 体重", "### 睡眠", "### 心理"]
 
     SECTION_PATTERNS = {
-        "diet": r"### 饮食\n(.*?)(?=### |$)",
-        "exercise": r"### 运动\n(.*?)(?=### |$)",
-        "weight": r"### 体重\n(.*?)(?=### |$)",
-        "sleep": r"### 睡眠\n(.*?)(?=### |$)",
-        "mental_health": r"### 心理\n(.*?)(?=### |$)",
+        "diet": r"###\s*饮食\s*\n(.*?)(?=###|\Z)",
+        "exercise": r"###\s*运动\s*\n(.*?)(?=###|\Z)",
+        "weight": r"###\s*体重\s*\n(.*?)(?=###|\Z)",
+        "sleep": r"###\s*睡眠\s*\n(.*?)(?=###|\Z)",
+        "mental_health": r"###\s*心理\s*\n(.*?)(?=###|\Z)",
     }
 
     def __init__(self):
@@ -122,15 +122,42 @@ class FiveSectionParser:
         sections = {}
 
         for section_key, pattern in self.SECTION_PATTERNS.items():
-            match = re.search(pattern, response, re.DOTALL | re.MULTILINE)
-            if match:
-                content = match.group(1).strip()
+            # Try multiple pattern variations
+            patterns_to_try = [
+                pattern,  # Original pattern
+                pattern.replace(r"\n", r"\s*\n\s*"),  # Allow whitespace around newlines
+                pattern.replace(r"###\s*", r"#{1,4}\s*"),  # Allow 1-4 # symbols
+            ]
 
-                # Extract recommendations (lines starting with -)
+            content = None
+            for try_pattern in patterns_to_try:
+                match = re.search(try_pattern, response, re.DOTALL | re.MULTILINE | re.IGNORECASE)
+                if match:
+                    content = match.group(1).strip()
+                    break
+
+            if content:
+                # Extract recommendations from DeepSeek's numbered list format
                 recommendations = []
                 for line in content.split("\n"):
-                    if line.strip().startswith("-") or line.strip().startswith("•"):
-                        recommendations.append(line.strip()[1:].strip())
+                    line = line.strip()
+                    # Handle DeepSeek's format: "1. **标题**：内容"
+                    if re.match(r'^\d+\.\s*\*\*.*?\*\*：', line):
+                        # Extract the content after the colon
+                        match = re.search(r'^\d+\.\s*\*\*(.*?)\*\*：(.*)$', line)
+                        if match:
+                            title = match.group(1).strip()
+                            content_part = match.group(2).strip()
+                            # Combine title and content for recommendation
+                            recommendation = f"{title}：{content_part}"
+                            recommendations.append(recommendation)
+                    # Also handle traditional formats for backward compatibility
+                    elif (line.startswith("-") or line.startswith("•") or
+                          line.startswith("*") or re.match(r'^\d+\.', line)):
+                        # Remove the prefix and add to recommendations
+                        clean_rec = re.sub(r'^[-•*\d\.]\s*', '', line).strip()
+                        if clean_rec:
+                            recommendations.append(clean_rec)
 
                 sections[section_key] = HealthAdviceSection(
                     title=self._get_section_title(section_key),
@@ -139,9 +166,11 @@ class FiveSectionParser:
                 )
             else:
                 self.logger.warning(f"Section {section_key} not found in response")
+                # Instead of placeholder, try to extract any content related to this section
+                fallback_content = self._extract_fallback_content(response, section_key)
                 sections[section_key] = HealthAdviceSection(
                     title=self._get_section_title(section_key),
-                    content="内容生成中，请稍后重试...",
+                    content=fallback_content or "内容生成中，请稍后重试...",
                     recommendations=[],
                 )
 
@@ -315,6 +344,31 @@ class FiveSectionParser:
                 prompt += f"\n{section}\n{section_templates[section]}\n"
 
         return prompt
+
+    def _extract_fallback_content(self, response: str, section_key: str) -> Optional[str]:
+        """Extract fallback content when section headers are not found"""
+        keywords = {
+            "diet": ["饮食", "营养", "食物", "热量", "蛋白质", "碳水", "脂肪"],
+            "exercise": ["运动", "锻炼", "训练", "有氧", "力量", "健身"],
+            "weight": ["体重", "BMI", "减重", "增重", "目标"],
+            "sleep": ["睡眠", "作息", "休息", "小时"],
+            "mental_health": ["心理", "情绪", "压力", "心态", "激励"]
+        }
+
+        section_keywords = keywords.get(section_key, [])
+        if not section_keywords:
+            return None
+
+        # Look for sentences containing these keywords
+        sentences = re.split(r'[。！？\n]', response)
+        relevant_sentences = []
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if any(keyword in sentence for keyword in section_keywords) and len(sentence) > 10:
+                relevant_sentences.append(sentence)
+
+        return '\n'.join(relevant_sentences[:3]) if relevant_sentences else None
 
     def _get_section_title(self, section_key: str) -> str:
         """Get Chinese title for section key"""
