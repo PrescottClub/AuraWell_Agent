@@ -1,51 +1,104 @@
+# ===========================================
+# AuraWell Project - Cursor IDE Ignore
+# ===========================================
+
 # Environment and secrets
 .env
-.env.local
-.env.production
-.env.staging
+.env.*
 secrets/
 *.key
 *.pem
+credentials/
 
 # API keys and credentials
-config/credentials.json
-config/api_keys.json
+config/credentials.*
+config/api_keys.*
+config/secrets.*
+config/deepseek_api.*
 
 # Logs and temporary files
 logs/
 *.log
 temp/
 tmp/
+cache/
+audit/
 
 # Health data and personal information
 health_data/
 user_data/
 personal_info/
+user_profiles/
+biometric_data/
+health_analytics/
+nutrition_analysis/
+fitness_tracking/
 
-# Database files
+# Database files and backups
 *.db
 *.sqlite
 *.sqlite3
+*.db-*
+data/
+database_backups/
 
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
+# MCP Tools and AI Cache
+.mcp/
+mcp_cache/
+ai_cache/
+deepseek_cache/
+llm_cache/
+vector_store/
+embeddings_cache/
+rag_index/
 
-# Python cache and build
+# Large dependency directories
+node_modules/
 __pycache__/
-*.pyc
-*.pyo
 .pytest_cache/
 dist/
 build/
 *.egg-info/
+storybook-static/
+
+# Test and coverage files
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+htmlcov/
+
+# IDE and editor files
+.vscode/
+.idea/
+.cursor/settings/
+.cursor/logs/
+*.swp
+*.swo
+
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
 
 # OS generated files
 .DS_Store
 Thumbs.db
+*.tmp
 
-# Backup files
+# Backup and archive files
 *.bak
-*.backup 
+*.backup
+*.zip
+*.tar.gz
+*.7z
+
+# Performance and monitoring data
+performance_logs/
+monitoring_data/
+
+# Migration and deployment
+migrations/data_backup/
+nginx/ssl/
+nginx/certs/ 
