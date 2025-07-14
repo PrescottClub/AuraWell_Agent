@@ -388,12 +388,12 @@ import {
 } from '@ant-design/icons-vue'
 import { useHealthPlanStore } from '../../stores/healthPlan.js'
 import { useUserStore } from '../../stores/user.js'
-import { useFamilyStore } from '../../stores/family.js'
+// import { useFamilyStore } from '../../stores/family.js' // 暂时未使用
 import MemberSwitcher from '../../components/family/MemberSwitcher.vue'
 
 const healthPlanStore = useHealthPlanStore()
 const userStore = useUserStore()
-const familyStore = useFamilyStore()
+// const familyStore = useFamilyStore() // 暂时未使用
 
 // 响应式数据
 const showGenerateModal = ref(false)
@@ -627,7 +627,7 @@ const formatModuleContent = (content) => {
 
   // 格式化对象内容为可读的文本
   const formatted = Object.entries(content)
-    .filter(([key, value]) => value !== null && value !== undefined)
+    .filter(([, value]) => value !== null && value !== undefined)
     .map(([key, value]) => {
       const keyLabel = getContentKeyLabel(key)
       if (Array.isArray(value)) {

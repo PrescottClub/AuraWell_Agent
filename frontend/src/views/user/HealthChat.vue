@@ -134,23 +134,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { message as antMessage } from 'ant-design-vue'
 // 移除未使用的图标导入
 import { PaperAirplaneIcon } from '@heroicons/vue/24/solid'
+import { useRouter } from 'vue-router'
 
 import ChatMessage from '../../components/chat/ChatMessage.vue'
 import TypingIndicator from '../../components/chat/TypingIndicator.vue'
 import CommandPalette from '../../components/chat/CommandPalette.vue'
 import HealthChatAPI from '../../api/chat.js'
-import { UserAPI } from '../../api/user.js'
 import { useAuthStore } from '../../stores/auth.js'
-import { useChatStore } from '../../stores/chat.js'
-import request from '../../utils/request.js'
 
-// 使用stores
-const { user } = useAuthStore()
-const { performRAGSearch, isRAGLoading, ragError, ragStatus } = useChatStore()
+const router = useRouter()
+const authStore = useAuthStore()
 
 // 响应式数据
 const inputMessage = ref('')
@@ -186,12 +183,29 @@ onMounted(async () => {
   console.log('🎯 HealthChat 组件开始初始化...')
   
   try {
-    // 🔑 第一步：严格的认证检查（必须成功后才能继续）
-    console.log('🔍 第一步：执行认证检查...')
-    await ensureAuthenticated()
-    console.log('✅ 认证检查完成')
+    // 🔧 优化：延迟认证检查，避免与其他组件认证逻辑冲突
+    await new Promise(resolve => setTimeout(resolve, 300))
     
-    // 🚀 第二步：初始化聊天功能（仅在认证成功后执行）
+    // 🔑 第一步：轻量级认证检查（不触发自动登录）
+    console.log('🔍 第一步：执行轻量级认证检查...')
+    
+    // 检查现有Token状态，不触发验证
+    if (!authStore.token || authStore.isTokenExpired) {
+      console.log('⚠️ 无有效Token，提示用户登录')
+      antMessage.warning('请先登录以使用健康咨询功能')
+      
+      // 🔧 优化：显示登录提示而不是强制重定向
+      setTimeout(() => {
+        if (!authStore.isAuthenticated) {
+          router.push('/login')
+        }
+      }, 2000)
+      return
+    }
+    
+    console.log('✅ Token状态检查通过')
+    
+    // 🚀 第二步：初始化聊天功能（仅在Token存在时执行）
     console.log('🔍 第二步：初始化聊天功能...')
     await initializeChat()
     console.log('✅ 聊天功能初始化完成')
@@ -209,12 +223,9 @@ onMounted(async () => {
     // 初始化失败时的容错处理
     antMessage.error('页面初始化失败，请稍后重试')
     
-    // 如果是认证相关错误，不再重复处理（ensureAuthenticated已处理）
-    // 如果是其他错误，显示友好提示
+    // 🔧 优化：不再自动刷新页面，让用户选择
     if (!error.message?.includes('认证') && !error.message?.includes('Token')) {
-      setTimeout(() => {
-        window.location.reload()
-      }, 3000)
+      console.log('💡 建议：请尝试刷新页面或重新登录')
     }
   }
 })
@@ -236,28 +247,7 @@ watch(inputMessage, () => {
     });
 });
 
-// 🔧 简化认证逻辑 - 使用统一的认证状态管理
-const ensureAuthenticated = async () => {
-  try {
-    const authStore = useAuthStore()
-
-    // 使用统一的认证检查方法
-    const isAuthenticated = await authStore.ensureAuthenticated()
-
-    if (isAuthenticated) {
-      console.log('✅ 用户认证成功')
-      return true
-    } else {
-      console.warn('⚠️ 用户认证失败')
-      antMessage.error('认证失败，请刷新页面重试')
-      return false
-    }
-  } catch (error) {
-    console.error('❌ 认证检查异常:', error)
-    antMessage.error('认证异常，请刷新页面重试')
-    return false
-  }
-}
+// 移除未使用的ensureAuthenticated函数
 
 // 🔧 自动登录逻辑已移至统一认证状态管理中
 
@@ -316,15 +306,15 @@ const sendMessage = async () => {
     return
   }
 
-  // 🔐 发送消息前确保认证状态
+  // 🔐 发送消息前轻量级认证检查
   const authStore = useAuthStore()
-  if (!authStore.isAuthenticated) {
-    console.warn('⚠️ 用户未认证，尝试重新认证...')
-    const isAuthenticated = await authStore.ensureAuthenticated()
-    if (!isAuthenticated) {
-      antMessage.error('认证失败，请刷新页面重试')
-      return
-    }
+  if (!authStore.isAuthenticated || authStore.isTokenExpired) {
+    console.warn('⚠️ 发送消息时检测到认证失效')
+    antMessage.error('认证已失效，请重新登录')
+    setTimeout(() => {
+      router.push('/login')
+    }, 1000)
+    return
   }
 
   const userMessage = {
@@ -367,11 +357,14 @@ const sendMessage = async () => {
   } catch (error) {
     console.error('发送消息失败:', error)
 
-    // 检查是否是认证错误
+    // 🔧 优化：检查错误类型，避免认证循环
     if (error.response?.status === 401) {
-      console.warn('🔐 认证失败，清除token并提示重新登录')
+      console.warn('🔐 API返回401，认证失效')
       authStore.clearToken()
-      antMessage.error('认证已过期，请刷新页面重新登录')
+      antMessage.error('认证已过期，请重新登录')
+      setTimeout(() => {
+        router.push('/login')
+      }, 1000)
     } else {
       // 添加错误消息
       const errorMessage = {
@@ -530,10 +523,7 @@ const scrollToBottom = () => {
   }
 }
 
-const clearCurrentChat = () => {
-  messages.value = []
-  antMessage.success('对话已清空')
-}
+
 
 const loadConversationHistory = async () => {
   loadingHistory.value = true
@@ -560,16 +550,7 @@ const loadConversation = async (conversationId) => {
   }
 }
 
-const deleteConversation = async (conversationId) => {
-  try {
-    await HealthChatAPI.deleteConversation(conversationId)
-    await loadConversationHistory()
-    antMessage.success('对话已删除')
-  } catch (error) {
-    console.error('删除对话失败:', error)
-    antMessage.error('删除对话失败')
-  }
-}
+
 </script>
 
 <style scoped>

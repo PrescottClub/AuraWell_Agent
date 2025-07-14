@@ -10,11 +10,7 @@
 
       <!-- Message Bubble -->
       <div 
-        class="p-4 rounded-xl"
-        :class="{
-          'bg-primary text-white': message.sender === 'user',
-          'bg-background-alt border border-border text-text-primary': message.sender === 'agent'
-        }"
+        class="p-4 rounded-xl bg-background-alt border border-border text-text-primary"
       >
         <!-- Message Text -->
         <div class="prose prose-sm max-w-none prose-p:my-2 first:prose-p:mt-0 last:prose-p:mb-0" v-html="formattedMessage"></div>
@@ -69,8 +65,8 @@
       </div>
 
       <!-- Avatar for User -->
-       <div v-if="message.sender === 'user'" class="w-8 h-8 rounded-full bg-blue-200 flex-shrink-0 flex items-center justify-center mt-1">
-         <UserOutlined class="w-5 h-5 text-blue-600" />
+       <div v-if="message.sender === 'user'" class="w-8 h-8 rounded-full bg-secondary flex-shrink-0 flex items-center justify-center mt-1">
+         <UserOutlined class="w-5 h-5 text-primary" />
        </div>
     </div>
   </div>

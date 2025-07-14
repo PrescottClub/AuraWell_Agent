@@ -280,12 +280,12 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { MoreOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '../../stores/user.js'
-import { useFamilyStore } from '../../stores/family.js'
+// import { useFamilyStore } from '../../stores/family.js' // 暂时未使用
 import MemberSwitcher from '../../components/family/MemberSwitcher.vue'
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()
-const familyStore = useFamilyStore()
+// const familyStore = useFamilyStore() // 暂时未使用
 
 // 响应式数据
 const showGoalModal = ref(false)

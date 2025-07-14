@@ -45,6 +45,14 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
+    // 启用更好的Tree Shaking
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
         chunkFileNames: 'js/[name]-[hash].js',
@@ -52,13 +60,39 @@ export default defineConfig({
         assetFileNames: '[ext]/[name]-[hash].[ext]',
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            // Vue核心库
+            if (id.includes('vue') && !id.includes('ant-design-vue')) {
+              return 'vendor_vue';
+            }
+            // 图表库
             if (id.includes('echarts') || id.includes('zrender')) {
               return 'vendor_charts';
             }
-            if (id.includes('ant-design-vue')) {
+            // UI组件库
+            if (id.includes('ant-design-vue') || id.includes('@ant-design')) {
               return 'vendor_ui';
             }
-            return 'vendor'; // all other vendors
+            // 工具库
+            if (id.includes('lodash') || id.includes('dayjs') || id.includes('axios')) {
+              return 'vendor_utils';
+            }
+            // 图标库
+            if (id.includes('@heroicons') || id.includes('icons')) {
+              return 'vendor_icons';
+            }
+            // 其他第三方库
+            return 'vendor';
+          }
+
+          // 应用代码分割
+          if (id.includes('/src/views/')) {
+            return 'pages';
+          }
+          if (id.includes('/src/components/')) {
+            return 'components';
+          }
+          if (id.includes('/src/stores/')) {
+            return 'stores';
           }
         },
       }

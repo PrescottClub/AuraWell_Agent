@@ -197,7 +197,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import HealthCard from '@/components/health/HealthCard.vue'
@@ -206,7 +206,6 @@ import SkeletonLoader from '@/components/common/SkeletonLoader.vue'
 import {
   UserOutlined,
   TrophyOutlined,
-  WalletOutlined,
   FireOutlined,
   MessageOutlined,
   BulbOutlined,
@@ -253,16 +252,6 @@ const recentChats = ref([
 ])
 
 // 工具函数
-const getCurrentDate = () => {
-  const now = new Date()
-  const options = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    weekday: 'long'
-  }
-  return now.toLocaleDateString('zh-CN', options)
-}
 
 const formatNumber = (num) => {
   return num.toLocaleString()

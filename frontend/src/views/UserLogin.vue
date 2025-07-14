@@ -152,10 +152,7 @@ const onFinish = async (values) => {
     }
 };
 
-const onFinishFailed = (errorInfo) => {
-    console.log('Failed:', errorInfo);
-    message.error('请检查输入信息！');
-};
+
 </script>
 
 <style>

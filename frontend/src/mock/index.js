@@ -3,7 +3,7 @@
  * 提供统一的Mock数据存储、管理和API模拟功能
  */
 
-import { ref, reactive } from 'vue'
+import { reactive } from 'vue'
 
 // Mock数据存储
 export const mockData = reactive({

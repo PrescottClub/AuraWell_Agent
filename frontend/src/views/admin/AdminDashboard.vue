@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart, BarChart, PieChart } from 'echarts/charts';

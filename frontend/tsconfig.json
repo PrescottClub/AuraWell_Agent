@@ -1,0 +1,65 @@
+{
+  "compilerOptions": {
+    // 基础配置
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    // 模块解析
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+
+    // 严格类型检查
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+
+    // 路径别名
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/views/*": ["./src/views/*"],
+      "@/stores/*": ["./src/stores/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/api/*": ["./src/api/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/assets/*": ["./src/assets/*"],
+      "@/composables/*": ["./src/composables/*"]
+    },
+
+    // Vue相关
+    "types": [
+      "vite/client",
+      "@types/node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "components.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.js"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

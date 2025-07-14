@@ -170,17 +170,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { 
+import { ref, onMounted } from 'vue'
+import {
   ThunderboltOutlined,
-  CalendarOutlined,
-  EyeOutlined,
   ArrowLeftOutlined,
   ShareAltOutlined,
   DownloadOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import { healthReportAPI, chatAPI } from '../../mock/api.js'
+import { healthReportAPI } from '../../mock/api.js'
 import ReportSummary from '../../components/report/ReportSummary.vue'
 import InsightCard from '../../components/report/InsightCard.vue'
 import VirtualReportList from '../../components/report/VirtualReportList.vue'
@@ -205,7 +203,7 @@ const showChatModal = ref(false)
 const chatContext = ref(null)
 const chatMessages = ref([])
 const chatInput = ref('')
-const chatLoading = ref(false)
+// const chatLoading = ref(false) // 暂时未使用
 const currentSessionId = ref(null)
 
 // 数据源方法
@@ -298,42 +296,7 @@ const handleReportTypeChange = (type) => {
   selectedReportType.value = type
 }
 
-const handleSearch = (value) => {
-  searchKeyword.value = value
-}
-
-const getReportTypeLabel = (type) => {
-  const labels = {
-    weekly: '周报',
-    monthly: '月报',
-    quarterly: '季报'
-  }
-  return labels[type] || type
-}
-
-const getStatusLabel = (status) => {
-  const labels = {
-    completed: '已完成',
-    generating: '生成中',
-    failed: '生成失败'
-  }
-  return labels[status] || status
-}
-
-const getScoreClass = (score) => {
-  if (score >= 85) return 'score-excellent'
-  if (score >= 75) return 'score-good'
-  if (score >= 65) return 'score-fair'
-  return 'score-poor'
-}
-
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toLocaleDateString()
-}
-
-const formatTime = (dateStr) => {
-  return new Date(dateStr).toLocaleTimeString()
-}
+// 移除未使用的函数
 
 // 图表交互处理
 const handleChartInteraction = (data) => {
@@ -351,17 +314,17 @@ const handleChartInteraction = (data) => {
   }
 }
 
-const handleChartAnalyze = (data) => {
-  message.info('正在为您生成深度分析...')
-  // 这里可以触发更详细的分析
-}
+// const handleChartAnalyze = (data) => {
+//   message.info('正在为您生成深度分析...')
+//   // 这里可以触发更详细的分析
+// }
 
-const handlePatternAnalysis = (data) => {
+const handlePatternAnalysis = () => {
   message.info('正在分析您的睡眠模式...')
   // 这里可以触发模式分析
 }
 
-const handleBalanceAnalysis = (data) => {
+const handleBalanceAnalysis = () => {
   message.info('正在生成健康平衡分析...')
   // 这里可以触发平衡分析
 }
@@ -384,7 +347,7 @@ const handleInsightDiscuss = (data) => {
   })
 }
 
-const handleInsightAdjustPlan = (data) => {
+const handleInsightAdjustPlan = () => {
   message.info('正在为您调整健康计划...')
   // 这里可以触发计划调整
 }
@@ -395,11 +358,11 @@ const handleInsightShare = (data) => {
   message.success('洞察内容已复制到剪贴板')
 }
 
-const handleInsightSave = (insight) => {
+const handleInsightSave = () => {
   message.success('洞察已收藏')
 }
 
-const handleInsightFeedback = (data) => {
+const handleInsightFeedback = () => {
   message.success('感谢您的反馈')
 }
 

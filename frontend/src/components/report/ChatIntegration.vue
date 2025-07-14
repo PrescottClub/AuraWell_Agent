@@ -236,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { 
   MessageOutlined,
   CloseOutlined,

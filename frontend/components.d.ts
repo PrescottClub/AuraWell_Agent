@@ -74,6 +74,7 @@ declare module 'vue' {
     MemberManagement: typeof import('./src/components/family/MemberManagement.vue')['default']
     MemberSwitcher: typeof import('./src/components/family/MemberSwitcher.vue')['default']
     OptimizedChart: typeof import('./src/components/charts/OptimizedChart.vue')['default']
+    OptimizedImage: typeof import('./src/components/common/OptimizedImage.vue')['default']
     PlanCard: typeof import('./src/components/health/PlanCard.vue')['default']
     PulsingDot: typeof import('./src/components/ui/PulsingDot.vue')['default']
     ReportChatModal: typeof import('./src/components/report/ReportChatModal.vue')['default']

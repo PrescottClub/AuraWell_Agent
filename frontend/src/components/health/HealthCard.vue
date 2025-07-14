@@ -83,7 +83,7 @@ const props = defineProps({
   },
   category: {
     type: String,
-    default: ''
+    required: true
   },
   value: {
     type: [String, Number],
@@ -94,8 +94,14 @@ const props = defineProps({
     default: ''
   },
   icon: {
-    type: [String, Object],
-    required: true
+    type: [String, Object, Function],
+    required: true,
+    validator: (value) => {
+      // 允许字符串、Vue组件对象或Vue组件函数
+      return typeof value === 'string' ||
+             typeof value === 'function' ||
+             (typeof value === 'object' && value !== null)
+    }
   },
   trend: {
     type: Number,

@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "lint": "eslint src --ext .js,.vue"
+    "lint": "eslint src --ext .js,.vue,.ts",
+    "type-check": "vue-tsc --noEmit",
+    "type-check:watch": "vue-tsc --noEmit --watch",
+    "build:type-check": "vue-tsc --noEmit && vite build"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
@@ -42,6 +45,7 @@
     "vite": "^6.3.5",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pwa": "^1.0.1",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.0.1"
   }
 }

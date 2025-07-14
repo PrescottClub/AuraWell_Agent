@@ -514,10 +514,7 @@ const fetchAlerts = async () => {
   ]
 }
 
-const getRankClass = (index) => {
-  const classes = ['bg-yellow-50', 'bg-gray-50', 'bg-orange-50']
-  return index < 3 ? classes[index] : 'bg-gray-50'
-}
+
 
 const formatMetricValue = (value, metric) => {
   const units = {
