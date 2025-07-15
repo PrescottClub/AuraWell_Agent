@@ -197,13 +197,24 @@ export const createApiResponse = <T>(
   data?: T,
   message?: string,
   error?: string
-): ApiResponse<T> => ({
-  success,
-  data,
-  message,
-  error,
-  timestamp: new Date().toISOString()
-})
+): ApiResponse<T> => {
+  const response: ApiResponse<T> = {
+    success,
+    timestamp: new Date().toISOString()
+  }
+
+  if (data !== undefined) {
+    response.data = data
+  }
+  if (message !== undefined) {
+    response.message = message
+  }
+  if (error !== undefined) {
+    response.error = error
+  }
+
+  return response
+}
 
 export const createPaginatedResponse = <T>(
   data: T[],

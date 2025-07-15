@@ -171,12 +171,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+/* eslint-disable no-unused-vars */
 import {
   ThunderboltOutlined,
   ArrowLeftOutlined,
   ShareAltOutlined,
   DownloadOutlined
 } from '@ant-design/icons-vue'
+/* eslint-enable no-unused-vars */
 import { message } from 'ant-design-vue'
 import { healthReportAPI } from '../../mock/api.js'
 import ReportSummary from '../../components/report/ReportSummary.vue'

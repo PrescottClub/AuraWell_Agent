@@ -92,7 +92,9 @@ export function usePerformanceMonitor() {
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries()
         const lastEntry = entries[entries.length - 1]
-        metrics.value.largestContentfulPaint = lastEntry.startTime
+        if (lastEntry) {
+          metrics.value.largestContentfulPaint = lastEntry.startTime
+        }
       })
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
 
@@ -185,16 +187,16 @@ export function usePerformanceMonitor() {
     Object.entries(weights).forEach(([metric, weight]) => {
       const value = metrics.value[metric as keyof PerformanceMetrics]
       const threshold = thresholds[metric as keyof PerformanceThresholds]
-      
-      if (value !== undefined && threshold) {
+
+      if (value !== undefined && threshold && typeof value === 'number') {
         let metricScore = 100
-        
+
         if (value > threshold.poor) {
           metricScore = 0
         } else if (value > threshold.good) {
           metricScore = 50 * (1 - (value - threshold.good) / (threshold.poor - threshold.good))
         }
-        
+
         score -= (100 - metricScore) * weight
       }
     })

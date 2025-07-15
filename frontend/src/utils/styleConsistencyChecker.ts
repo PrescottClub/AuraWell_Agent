@@ -195,8 +195,6 @@ export class StyleConsistencyChecker {
     elements.forEach((element, index) => {
       const computedStyle = window.getComputedStyle(element)
       const fontFamily = computedStyle.fontFamily
-      const fontSize = computedStyle.fontSize
-      const fontWeight = computedStyle.fontWeight
 
       // 检查字体族
       if (!this.isDesignTokenFont(fontFamily)) {
@@ -433,7 +431,10 @@ export class StyleConsistencyChecker {
 
   private isStandardShadow(boxShadow: string): boolean {
     const standardValues = Object.values(this.designTokens.shadows)
-    return standardValues.some(value => boxShadow.includes(value.split(' ')[1]))
+    return standardValues.some(value => {
+      const parts = value.split(' ')
+      return parts.length > 1 && parts[1] && boxShadow.includes(parts[1])
+    })
   }
 
   /**
@@ -480,7 +481,6 @@ export class StyleConsistencyChecker {
    */
   generateReport(): string {
     const report = this.checkConsistency()
-    const usage = this.getDesignTokenUsage()
 
     let reportText = `# AuraWell 样式一致性报告\n\n`
     reportText += `## 总体评分: ${report.score}/100\n\n`
@@ -494,8 +494,10 @@ export class StyleConsistencyChecker {
       reportText += `## 发现的问题 (${report.issues.length})\n\n`
       
       const groupedIssues = report.issues.reduce((groups, issue) => {
-        if (!groups[issue.type]) groups[issue.type] = []
-        groups[issue.type].push(issue)
+        if (!groups[issue.type]) {
+          groups[issue.type] = []
+        }
+        groups[issue.type]?.push(issue)
         return groups
       }, {} as Record<string, StyleIssue[]>)
 

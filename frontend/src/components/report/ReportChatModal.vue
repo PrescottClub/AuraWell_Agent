@@ -26,7 +26,7 @@
       
       <div class="chat-input">
         <a-input
-          v-model:value="chatInput"
+          v-model="chatInput"
           placeholder="输入您的问题或想法..."
           @press-enter="sendMessage"
           :disabled="loading"
@@ -45,7 +45,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import { message as antdMessage } from 'ant-design-vue';
+import { message } from 'ant-design-vue';
 import { chatAPI } from '../../mock/api';
 
 const props = defineProps({
@@ -90,7 +90,7 @@ const handleClose = () => {
 const sendMessage = async () => {
   if (!chatInput.value.trim()) return;
   if (!internalSessionId.value) {
-    antdMessage.error('无法确定对话会话，请重试。');
+    message.error('无法确定对话会话，请重试。');
     return;
   }
 
@@ -125,9 +125,9 @@ const sendMessage = async () => {
       throw new Error(response.message || 'AI响应失败');
     }
   } catch (error) {
-    antdMessage.error(error.message || '发送消息失败');
+    message.error(error.message || '发送消息失败');
     // Restore input on failure
-    chatInput.value = currentInput; 
+    chatInput.value = currentInput;
     // remove the user message that failed
     messages.value.pop();
   } finally {

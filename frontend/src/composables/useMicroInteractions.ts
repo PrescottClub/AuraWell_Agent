@@ -4,7 +4,7 @@
  * 提供统一的微交互管理和动效控制
  */
 
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 export interface MicroInteractionOptions {
   duration?: number

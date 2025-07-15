@@ -21,32 +21,32 @@
           <h3>基本信息</h3>
           
           <a-form-item label="用户名" name="username">
-            <a-input 
-              v-model:value="formData.username" 
+            <a-input
+              v-model="formData.username"
               placeholder="请输入用户名"
               size="large"
             />
           </a-form-item>
 
           <a-form-item label="邮箱" name="email">
-            <a-input 
-              v-model:value="formData.email" 
+            <a-input
+              v-model="formData.email"
               placeholder="请输入邮箱地址"
               size="large"
             />
           </a-form-item>
 
           <a-form-item label="密码" name="password">
-            <a-input-password 
-              v-model:value="formData.password" 
+            <a-input-password
+              v-model="formData.password"
               placeholder="请输入密码"
               size="large"
             />
           </a-form-item>
 
           <a-form-item label="确认密码" name="confirmPassword">
-            <a-input-password 
-              v-model:value="formData.confirmPassword" 
+            <a-input-password
+              v-model="formData.confirmPassword"
               placeholder="请再次输入密码"
               size="large"
             />
@@ -60,8 +60,8 @@
           <a-row :gutter="16">
             <a-col :span="12">
               <a-form-item label="年龄" name="age">
-                <a-input-number 
-                  v-model:value="formData.age" 
+                <a-input-number
+                  v-model="formData.age"
                   placeholder="请输入年龄"
                   :min="1"
                   :max="120"
@@ -72,8 +72,8 @@
             </a-col>
             <a-col :span="12">
               <a-form-item label="性别" name="gender">
-                <a-select 
-                  v-model:value="formData.gender" 
+                <a-select
+                  v-model="formData.gender"
                   placeholder="请选择性别"
                   size="large"
                 >
@@ -87,8 +87,8 @@
           <a-row :gutter="16">
             <a-col :span="12">
               <a-form-item label="身高 (cm)" name="height">
-                <a-input-number 
-                  v-model:value="formData.height" 
+                <a-input-number
+                  v-model="formData.height"
                   placeholder="请输入身高"
                   :min="100"
                   :max="250"
@@ -99,8 +99,8 @@
             </a-col>
             <a-col :span="12">
               <a-form-item label="体重 (kg)" name="weight">
-                <a-input-number 
-                  v-model:value="formData.weight" 
+                <a-input-number
+                  v-model="formData.weight"
                   placeholder="请输入体重"
                   :min="30"
                   :max="300"
@@ -113,8 +113,8 @@
           </a-row>
 
           <a-form-item label="活动水平" name="activity_level">
-            <a-select 
-              v-model:value="formData.activity_level" 
+            <a-select
+              v-model="formData.activity_level"
               placeholder="请选择您的日常活动水平"
               size="large"
             >
