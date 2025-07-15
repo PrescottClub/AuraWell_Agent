@@ -14,7 +14,7 @@
     </div>
 
     <!-- 正常内容 -->
-    <div v-else v-motion-fade-visible>
+    <div v-else v-motion-fade-visible ref="mainContentRef" class="animate-child">
     <!-- 仪表盘顶部 -->
     <div class="dashboard-header mb-8">
       <div class="flex items-center justify-between">
@@ -41,7 +41,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-6">
       <!-- 健康评分卡片 (大卡片) -->
       <HealthCard 
-        class="lg:col-span-2"
+        class="lg:col-span-2 animate-child"
         title="健康评分"
         category="今日健康"
         :value="healthScore"
@@ -51,10 +51,12 @@
         :status="getHealthStatus(healthScore)"
         :show-chart="true"
         :chart-data="[65, 72, 68, 75, 80, 85, 88]"
+        ref="healthScoreCardRef"
       />
 
       <!-- 步数统计 -->
       <HealthCard 
+        class="animate-child"
         title="今日步数"
         category="运动数据"
         :value="formatNumber(dailySteps)"
@@ -62,10 +64,12 @@
         :icon="UserOutlined"
         :trend="12.5"
         :status="getStepsStatus(dailySteps)"
+        ref="stepsCardRef"
       />
 
       <!-- 卡路里消耗 -->
       <HealthCard 
+        class="animate-child"
         title="卡路里消耗"
         category="运动数据"
         :value="caloriesBurned"
@@ -73,11 +77,15 @@
         :icon="FireOutlined"
         :trend="-3.1"
         :status="getCaloriesStatus(caloriesBurned)"
+        ref="caloriesCardRef"
       />
 
       <!-- AI聊天快速入口 (大卡片) -->
-      <div class="lg:col-span-2 aura-card group cursor-pointer"
-           @click="router.push('/health-chat')">
+      <div class="lg:col-span-2 aura-card group cursor-pointer animate-child"
+           ref="aiChatCardRef"
+           @click="router.push('/health-chat')"
+           @mouseenter="handleCardHover"
+           @mouseleave="handleCardLeave">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-4">
             <div class="w-12 h-12 rounded-xl bg-background-surface border border-border flex items-center justify-center">
@@ -126,7 +134,7 @@
       />
 
       <!-- 健康计划进度 (大卡片) -->
-      <div class="md:col-span-2 lg:col-span-4 lg:row-span-2 aura-card">
+      <div class="md:col-span-2 lg:col-span-4 aura-card">
         <div class="flex items-center justify-between mb-6">
           <div>
             <h3 class="text-heading-4 mb-2">本周健康计划进度</h3>
@@ -151,6 +159,24 @@
               ></div>
             </div>
             <p class="text-caption mt-1">{{ goal.current }}/{{ goal.target }} {{ goal.unit }}</p>
+          </div>
+        </div>
+
+        <!-- 添加周总结信息 -->
+        <div class="mt-6 pt-6 border-t border-border-light">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center">
+              <div class="text-heading-5 text-primary mb-1">{{ Math.round(healthGoals.reduce((acc, goal) => acc + goal.progress, 0) / healthGoals.length) }}%</div>
+              <div class="text-caption">整体完成度</div>
+            </div>
+            <div class="text-center">
+              <div class="text-heading-5 text-success mb-1">{{ healthGoals.filter(goal => goal.progress >= 80).length }}</div>
+              <div class="text-caption">优秀目标</div>
+            </div>
+            <div class="text-center">
+              <div class="text-heading-5 text-warning mb-1">{{ healthGoals.filter(goal => goal.progress < 60).length }}</div>
+              <div class="text-caption">需关注</div>
+            </div>
           </div>
         </div>
       </div>
@@ -197,11 +223,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import HealthCard from '@/components/health/HealthCard.vue'
 import SkeletonLoader from '@/components/common/SkeletonLoader.vue'
+
+import { useSmartAnimations } from '@/composables/useSmartAnimations'
+import { useDataTransition } from '@/composables/useDataTransition'
 
 import {
   UserOutlined,
@@ -219,6 +248,23 @@ import {
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 智能动效系统
+const { 
+  bindSmartInteractions, 
+  animateHealthDataUpdate, 
+  celebrateAchievement,
+  userBehavior 
+} = useSmartAnimations()
+const { transitionFromSkeleton } = useDataTransition()
+
+// 组件引用
+const mainContentRef = ref()
+const healthScoreCardRef = ref()
+const stepsCardRef = ref()
+const caloriesCardRef = ref()
+const aiChatCardRef = ref()
+
 
 // 健康数据
 const healthScore = ref(88)
@@ -290,22 +336,91 @@ const getHeartRateStatus = (hr) => {
 }
 
 const handleQuickAction = (action) => {
+  // 触发用户行为分析
+  userBehavior.clickCount++
+  
   switch (action.action) {
     case 'record-weight':
-      // 弹出体重记录对话框
       console.log('记录体重')
       break
     case 'view-reports':
       router.push('/health-report')
       break
     case 'set-reminder':
-      // 打开提醒设置
       console.log('设置提醒')
       break
     case 'preferences':
       router.push('/profile')
       break
   }
+}
+
+// 卡片交互处理
+const handleCardHover = (event) => {
+  const element = event.currentTarget
+  if (element) {
+    // 应用智能交互
+    bindSmartInteractions(element, {
+      enableHover: true,
+      enableClick: true,
+      enableGestures: true
+    })
+  }
+}
+
+const handleCardLeave = () => {
+  // 可以添加离开时的处理逻辑
+}
+
+// 模拟健康数据更新
+const simulateDataUpdate = () => {
+  const oldScore = healthScore.value
+  const oldSteps = dailySteps.value
+  const oldCalories = caloriesBurned.value
+  
+  // 模拟数据变化
+  healthScore.value = Math.min(100, healthScore.value + Math.floor(Math.random() * 5 - 2))
+  dailySteps.value = Math.max(0, dailySteps.value + Math.floor(Math.random() * 1000 - 500))
+  caloriesBurned.value = Math.max(0, caloriesBurned.value + Math.floor(Math.random() * 50 - 25))
+  
+  // 触发智能动画
+  nextTick(() => {
+    if (healthScoreCardRef.value) {
+      animateHealthDataUpdate(
+        healthScoreCardRef.value.$el || healthScoreCardRef.value,
+        healthScore.value,
+        oldScore,
+        'healthScore'
+      )
+    }
+    
+    if (stepsCardRef.value) {
+      animateHealthDataUpdate(
+        stepsCardRef.value.$el || stepsCardRef.value,
+        dailySteps.value,
+        oldSteps,
+        'steps'
+      )
+    }
+    
+    if (caloriesCardRef.value) {
+      animateHealthDataUpdate(
+        caloriesCardRef.value.$el || caloriesCardRef.value,
+        caloriesBurned.value,
+        oldCalories,
+        'calories'
+      )
+    }
+    
+    // 检查是否达成成就
+    if (dailySteps.value >= 10000 && oldSteps < 10000) {
+      celebrateAchievement('steps_goal', 'high')
+    }
+    
+    if (healthScore.value >= 90 && oldScore < 90) {
+      celebrateAchievement('health_excellence', 'high')
+    }
+  })
 }
 
 // 加载状态
@@ -320,10 +435,38 @@ const loadDashboardData = async () => {
   
   // 加载完成
   isLoading.value = false
+  
+  // 应用骨架屏过渡动画
+  await nextTick()
+  if (mainContentRef.value) {
+    const skeletonElements = document.querySelectorAll('.loading-state')
+    if (skeletonElements.length > 0) {
+      transitionFromSkeleton(skeletonElements[0], mainContentRef.value)
+    }
+  }
 }
 
-onMounted(() => {
-  loadDashboardData()
+onMounted(async () => {
+  await loadDashboardData()
+  
+  // 初始化智能交互
+  await nextTick()
+  
+  // 为主要卡片绑定智能交互
+  const cards = [healthScoreCardRef, stepsCardRef, caloriesCardRef, aiChatCardRef]
+  cards.forEach(cardRef => {
+    if (cardRef.value) {
+      const element = cardRef.value.$el || cardRef.value
+      bindSmartInteractions(element, {
+        enableHover: true,
+        enableClick: true,
+        enableGestures: true
+      })
+    }
+  })
+  
+  // 定期模拟数据更新 (演示用)
+  setInterval(simulateDataUpdate, 10000) // 每10秒更新一次数据
 })
 </script>
 

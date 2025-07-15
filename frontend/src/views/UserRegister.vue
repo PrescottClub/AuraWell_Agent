@@ -243,14 +243,15 @@ const handleRegister = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--color-background);
   padding: 20px;
 }
 
 .register-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  background: var(--color-background-elevated);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border-light);
   padding: 40px;
   width: 100%;
   max-width: 600px;
@@ -270,6 +271,15 @@ const handleRegister = async () => {
 .logo-icon {
   font-size: 3rem;
   margin-bottom: 16px;
+  background: var(--color-health);
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
   animation: pulse 2s infinite;
 }
 
@@ -278,23 +288,23 @@ const handleRegister = async () => {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
 }
 
 .register-header h1 {
   font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .register-header p {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
@@ -305,25 +315,89 @@ const handleRegister = async () => {
 .form-section h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-primary);
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid var(--color-border-light);
+  position: relative;
+}
+
+.form-section h3::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
 }
 
 .login-link {
   text-align: center;
   margin-top: 16px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .login-link a {
-  color: #667eea;
+  color: var(--color-health);
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .login-link a:hover {
-  color: #5a67d8;
+  color: var(--color-primary);
+}
+
+/* Ant Design 组件主题覆盖 */
+:deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  height: 40px;
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-health) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 125, 50, 0.2);
+}
+
+:deep(.ant-input) {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-background);
+  transition: all 0.2s ease;
+}
+
+:deep(.ant-input:hover) {
+  border-color: var(--color-health);
+}
+
+:deep(.ant-input:focus) {
+  border-color: var(--color-health);
+  box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.1);
+}
+
+:deep(.ant-select) {
+  border-radius: 8px;
+}
+
+:deep(.ant-select .ant-select-selector) {
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  background: var(--color-background);
+  transition: all 0.2s ease;
+}
+
+:deep(.ant-select:hover .ant-select-selector) {
+  border-color: var(--color-health);
+}
+
+:deep(.ant-select.ant-select-focused .ant-select-selector) {
+  border-color: var(--color-health);
+  box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.1);
 }
 </style>

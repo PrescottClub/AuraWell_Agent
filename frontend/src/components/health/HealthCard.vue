@@ -23,8 +23,14 @@
 
     <!-- 主数据显示 -->
     <div class="flex-1 flex flex-col justify-center my-4">
-      <div class="mb-2">
-        <span class="text-metric-large metric-value">{{ value }}</span>
+      <div class="mb-2" data-animate="value">
+        <AnimatedNumber 
+          :value="typeof value === 'number' ? value : parseInt(value.toString().replace(/,/g, '')) || 0"
+          :precision="getPrecision(value)"
+          class-name="text-metric-large"
+          :duration="1.2"
+          :delay="0.2"
+        />
         <span class="text-body-large text-text-secondary ml-1.5">{{ unit }}</span>
       </div>
 
@@ -32,7 +38,7 @@
       <div v-if="trend" class="flex items-center">
         <div
           :class="[
-            'flex items-center space-x-1.5 text-sm font-medium',
+            'flex items-center space-x-1.5 text-sm font-medium trend-indicator',
             trendColorClass
           ]"
         >
@@ -75,6 +81,9 @@ import {
   RightOutlined
 } from '@ant-design/icons-vue'
 import { useMicroInteractions } from '@/composables/useMicroInteractions'
+import { useDataTransition } from '@/composables/useDataTransition'
+import { useGestures } from '@/composables/useGestures'
+import AnimatedNumber from '@/components/ui/AnimatedNumber.vue'
 
 const props = defineProps({
   title: {
@@ -155,13 +164,28 @@ const statusColorClass = computed(() => {
   return 'bg-primary'
 })
 
-// 微交互
+// 微交互和手势
 const cardRef = ref()
-const { cardHover, cardLeave, rippleEffect, animateNumber } = useMicroInteractions()
+const { cardHover, cardLeave, rippleEffect } = useMicroInteractions()
+const { pulseOnUpdate, animateTrend, refreshCardData } = useDataTransition()
+const { bindGestures } = useGestures()
+
+// 数值精度计算
+const getPrecision = (val) => {
+  if (typeof val === 'number') {
+    return val % 1 === 0 ? 0 : 1
+  }
+  return 0
+}
 
 const handleMouseEnter = () => {
   if (cardRef.value) {
     cardHover(cardRef.value)
+    // 数据脉冲效果
+    const valueElement = cardRef.value.querySelector('[data-animate="value"]')
+    if (valueElement) {
+      pulseOnUpdate(valueElement, { scale: 1.02, duration: 0.2 })
+    }
   }
 }
 
@@ -174,19 +198,42 @@ const handleMouseLeave = () => {
 const handleClick = (event) => {
   if (cardRef.value) {
     rippleEffect(cardRef.value, event)
+    // 数据刷新动画
+    refreshCardData(cardRef.value)
   }
 }
 
-// 数值动画
+// 组件挂载和手势绑定
 onMounted(() => {
-  if (cardRef.value && typeof props.value === 'number') {
-    const valueElement = cardRef.value.querySelector('.metric-value')
-    if (valueElement) {
-      animateNumber(valueElement, 0, props.value, {
-        duration: 800,
-        delay: 200
-      })
+  if (cardRef.value) {
+    // 绑定手势交互
+    const cleanup = bindGestures(cardRef.value, {
+      onLongPress: (element) => {
+        // 长按显示详细数据
+        refreshCardData(element, { duration: 0.6 })
+      },
+      onSwipe: (element, gesture) => {
+        // 滑动切换数据视图
+        console.log('Card swiped:', gesture.direction)
+      },
+      onDoubleTap: (element) => {
+        // 双击刷新数据
+        refreshCardData(element)
+      }
+    })
+
+    // 趋势动画
+    if (props.trend && props.trend !== 0) {
+      const trendElement = cardRef.value.querySelector('.trend-indicator')
+      if (trendElement) {
+        setTimeout(() => {
+          animateTrend(trendElement, props.trend)
+        }, 600)
+      }
     }
+
+    // 清理函数
+    return cleanup
   }
 })
 </script>
