@@ -4,6 +4,7 @@ JWT Authentication System
 Provides JWT token generation, validation, and user authentication for the FastAPI application.
 """
 
+import asyncio
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any

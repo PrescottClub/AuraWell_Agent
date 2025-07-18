@@ -3,6 +3,7 @@ LangChain Agent 实现
 基于LangChain框架的AI Agent，整合健康工具 + MCP智能工具系统
 """
 
+import asyncio
 import logging
 from typing import Dict, Any, Optional, List
 
@@ -116,7 +117,7 @@ class HealthAdviceAgent(BaseAgent):
             # - api_key: 阿里云DashScope API密钥
             # - api_base: 阿里云DashScope兼容模式URL
             import os
-            model_name = os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3")
+            model_name = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
             llm = ChatOpenAI(
                 model=model_name,
                 openai_api_key=self.deepseek_client.api_key,  # DashScope API Key
