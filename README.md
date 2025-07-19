@@ -198,8 +198,19 @@ cd AuraWell_Agent
 
 # 2. 后端启动
 pip install -r requirements.txt
+
+# 安装MCP工具依赖（可选，用于真实MCP工具）
+pip install mcp
+npm install -g @modelcontextprotocol/server-math
+npm install -g @modelcontextprotocol/server-sqlite
+npm install -g @modelcontextprotocol/server-time
+
 cp env.example .env
 # 配置您的API密钥到 .env 文件
+
+# 测试MCP工具系统
+python scripts/test_mcp_tools.py
+
 python src/aurawell/main.py
 
 # 3. 前端启动（新终端）
@@ -244,6 +255,21 @@ DATABASE_URL=sqlite:///./aurawell.db
 JWT_SECRET_KEY=your_super_secret_jwt_key_here
 JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# MCP工具配置
+MCP_ENABLE_REAL_TOOLS=true
+MCP_TOOL_MODE=hybrid  # 可选值: real_mcp, placeholder, hybrid
+MCP_SERVER_TIMEOUT=30.0
+
+# MCP工具API密钥（可选，用于启用对应的真实工具）
+BRAVE_API_KEY=your_brave_api_key_here
+GITHUB_TOKEN=your_github_token_here
+WEATHER_API_KEY=your_weather_api_key_here
+FIGMA_TOKEN=your_figma_token_here
+
+# MCP服务器路径配置
+MCP_SQLITE_DB_PATH=./aurawell.db
+MCP_FILESYSTEM_ROOT=/tmp/aurawell
 
 # 应用配置
 DEBUG=false
@@ -328,6 +354,65 @@ AI助手：根据您的描述，疲劳可能由多种因素引起。让我为您
 - **健康提醒**：重要健康指标异常时及时通知
 - **报告分享**：生成家庭健康报告
 </details>
+
+---
+
+## 🛠️ MCP工具系统
+
+### 工具概览
+
+AuraWell集成了13个专业MCP工具，支持智能健康管理：
+
+| 工具名称 | 功能描述 | 使用场景 |
+|---------|----------|----------|
+| 🧮 calculator | 健康指标计算 | BMI、BMR、TDEE计算 |
+| 🗄️ database-sqlite | 健康数据查询 | 历史数据分析、趋势统计 |
+| ⏰ time | 时间服务 | 提醒设置、时间记录 |
+| 📁 filesystem | 文件操作 | 报告生成、数据导出 |
+| 🔍 brave-search | 智能搜索 | 健康资讯、医学知识 |
+| 📊 quickchart | 图表生成 | 数据可视化、报告图表 |
+| 🌐 fetch | 网页抓取 | 健康资讯获取 |
+| 🧠 sequential-thinking | 思维链分析 | 复杂健康问题分析 |
+| 💭 memory | 记忆存储 | 用户偏好、历史记录 |
+| 🌤️ weather | 天气服务 | 运动建议、健康提醒 |
+| 🐍 run-python | 代码执行 | 数据分析、算法计算 |
+| 🐙 github | 代码管理 | 健康数据版本控制 |
+| 🎨 figma | 设计工具 | UI设计、原型制作 |
+
+### 工具模式
+
+系统支持三种工具运行模式：
+
+- **🔴 real_mcp**: 使用真实MCP服务器（需要Node.js环境）
+- **🟡 placeholder**: 使用占位符工具（无需额外依赖）
+- **🟢 hybrid**: 混合模式（推荐，自动降级）
+
+### 健康检查
+
+访问以下端点检查MCP工具状态：
+
+```bash
+# 基本健康检查
+curl http://localhost:8001/api/v1/mcp/health
+
+# 工具列表
+curl http://localhost:8001/api/v1/mcp/tools
+
+# 性能报告
+curl http://localhost:8001/api/v1/mcp/performance
+```
+
+### 测试验证
+
+运行测试脚本验证MCP工具功能：
+
+```bash
+# 快速测试
+python scripts/test_mcp_tools.py
+
+# 完整测试套件
+python -m pytest tests/test_mcp_tools.py -v
+```
 
 ---
 

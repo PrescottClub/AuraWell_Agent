@@ -54,3 +54,7 @@ torch>=2.0.0  # PyTorch for translation models
 transformers>=4.30.0  # Hugging Face transformers for MarianMT
 langdetect>=1.0.9  # Language detection
 sentencepiece>=0.1.99  # Tokenization for translation models
+
+# MCP (Model Context Protocol) dependencies
+mcp>=1.0.0  # MCP Python SDK
+# Note: MCP CLI tools will be installed via npm in deployment

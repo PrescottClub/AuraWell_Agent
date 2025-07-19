@@ -1,0 +1,74 @@
+{
+  "quick_test": {
+    "success": true,
+    "total_tests": 5,
+    "successful_tests": 5,
+    "success_rate": 100.0,
+    "results": [
+      {
+        "tool": "calculator",
+        "action": "calculate",
+        "success": true,
+        "execution_time": 0.0,
+        "mode": "placeholder"
+      },
+      {
+        "tool": "time",
+        "action": "get_time",
+        "success": true,
+        "execution_time": 0.0,
+        "mode": "placeholder"
+      },
+      {
+        "tool": "database-sqlite",
+        "action": "query",
+        "success": true,
+        "execution_time": 0.0,
+        "mode": "placeholder"
+      },
+      {
+        "tool": "weather",
+        "action": "get_weather",
+        "success": true,
+        "execution_time": 0.0,
+        "mode": "placeholder"
+      },
+      {
+        "tool": "memory",
+        "action": "store",
+        "success": true,
+        "execution_time": 0.0,
+        "mode": "placeholder"
+      }
+    ]
+  },
+  "performance_monitor": {
+    "success": true,
+    "summary": {
+      "time_range_hours": 1,
+      "overall": {
+        "total_calls": 3,
+        "successful_calls": 2,
+        "success_rate": 66.66666666666666,
+        "avg_execution_time": 0.15,
+        "max_execution_time": 0.2,
+        "min_execution_time": 0.1
+      },
+      "by_tool": [
+        {
+          "tool_name": "test_tool",
+          "calls": 3,
+          "successes": 2,
+          "success_rate": 66.67,
+          "avg_execution_time": 0.15,
+          "failures": 1
+        }
+      ]
+    }
+  },
+  "api_endpoints": {
+    "success": true,
+    "manager_mode": "placeholder",
+    "has_report": true
+  }
+}

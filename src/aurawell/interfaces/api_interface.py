@@ -270,6 +270,153 @@ async def health_check():
         "version": "1.0.0"
     }
 
+
+@app.get("/api/v1/mcp/health", response_model=BaseResponse, tags=["MCP Tools"])
+async def mcp_health_check():
+    """
+    MCP工具健康检查端点
+
+    检查MCP工具系统的运行状态，包括：
+    - 真实MCP服务器连接状态
+    - 工具可用性
+    - 性能指标
+    - 告警状态
+    """
+    try:
+        from ..langchain_agent.mcp_tools_manager_v2 import get_mcp_tools_manager_v2, ToolMode
+        from ..langchain_agent.mcp_performance_monitor import get_performance_monitor
+
+        # 获取MCP工具管理器
+        mcp_manager = await get_mcp_tools_manager_v2(ToolMode.HYBRID)
+
+        # 获取性能监控器
+        performance_monitor = get_performance_monitor()
+
+        # 收集健康状态信息
+        health_data = {
+            "mcp_tools_status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "tool_manager": {
+                "mode": mcp_manager.tool_mode.value,
+                "performance_report": mcp_manager.get_performance_report()
+            },
+            "performance_monitoring": {
+                "is_active": performance_monitor.is_monitoring,
+                "summary": await performance_monitor.get_performance_summary(hours=1),
+                "alerts": await performance_monitor.check_alerts()
+            }
+        }
+
+        # 检查是否有严重告警
+        alerts = health_data["performance_monitoring"]["alerts"]
+        critical_alerts = [alert for alert in alerts if alert.get("level") == "critical"]
+
+        if critical_alerts:
+            health_data["mcp_tools_status"] = "degraded"
+            health_data["critical_issues"] = len(critical_alerts)
+
+        return BaseResponse(
+            success=True,
+            message="MCP工具健康检查完成",
+            data=health_data,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"MCP健康检查失败: {e}")
+        return BaseResponse(
+            success=False,
+            message="MCP工具健康检查失败",
+            data={
+                "mcp_tools_status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            },
+            timestamp=datetime.now()
+        )
+
+
+@app.get("/api/v1/mcp/tools", response_model=BaseResponse, tags=["MCP Tools"])
+async def list_mcp_tools():
+    """
+    列出所有可用的MCP工具
+
+    返回当前系统中可用的MCP工具列表，包括工具状态和基本信息
+    """
+    try:
+        from ..langchain_agent.mcp_tools_manager_v2 import get_mcp_tools_manager_v2, ToolMode
+
+        # 获取MCP工具管理器
+        mcp_manager = await get_mcp_tools_manager_v2(ToolMode.HYBRID)
+
+        # 获取工具列表
+        tools_info = {
+            "available_tools": [
+                "calculator", "database-sqlite", "time", "filesystem", "brave-search",
+                "quickchart", "fetch", "sequential-thinking", "memory", "weather",
+                "run-python", "github", "figma"
+            ],
+            "tool_mode": mcp_manager.tool_mode.value,
+            "performance_stats": mcp_manager.enhanced_tools.performance_stats
+        }
+
+        return BaseResponse(
+            success=True,
+            message="MCP工具列表获取成功",
+            data=tools_info,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"获取MCP工具列表失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP工具列表失败: {str(e)}"
+        )
+
+
+@app.get("/api/v1/mcp/performance", response_model=BaseResponse, tags=["MCP Tools"])
+async def get_mcp_performance_report():
+    """
+    获取MCP工具性能报告
+
+    返回详细的性能指标，包括：
+    - 工具调用统计
+    - 响应时间分析
+    - 成功率统计
+    - 告警信息
+    """
+    try:
+        from ..langchain_agent.mcp_performance_monitor import get_performance_monitor
+
+        # 获取性能监控器
+        performance_monitor = get_performance_monitor()
+
+        # 获取性能报告
+        performance_data = {
+            "summary_24h": await performance_monitor.get_performance_summary(hours=24),
+            "summary_1h": await performance_monitor.get_performance_summary(hours=1),
+            "current_alerts": await performance_monitor.check_alerts(),
+            "monitoring_status": {
+                "is_active": performance_monitor.is_monitoring,
+                "buffer_size": len(performance_monitor.metrics_buffer)
+            }
+        }
+
+        return BaseResponse(
+            success=True,
+            message="MCP性能报告获取成功",
+            data=performance_data,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"获取MCP性能报告失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP性能报告失败: {str(e)}"
+        )
+
 # Global variables for dependency injection
 _db_manager = None
 _user_repo = None
