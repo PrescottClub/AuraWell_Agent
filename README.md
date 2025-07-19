@@ -87,22 +87,95 @@ Python 3.11 + FastAPI
 
 ```mermaid
 graph TB
-    A[用户界面 Vue 3] --> B[API网关 FastAPI]
-    B --> C[AI引擎 DeepSeek]
-    B --> D[MCP工具链]
-    B --> E[数据层 SQLAlchemy]
+    subgraph "前端层"
+        A["🌐 用户界面<br/>Vue 3 + TypeScript"]
+    end
 
-    C --> F[健康咨询]
-    C --> G[智能分析]
+    subgraph "API层"
+        B["🚀 API网关<br/>FastAPI"]
+    end
 
-    D --> H[健康监测工具]
-    D --> I[数据分析工具]
-    D --> J[生活建议工具]
+    subgraph "服务层"
+        C["🤖 AI引擎<br/>DeepSeek + LangChain"]
+        D["🛠️ MCP工具链<br/>智能工具管理器"]
+    end
 
-    E --> K[用户档案]
-    E --> L[健康数据]
-    E --> M[对话历史]
+    subgraph "数据层"
+        E["🗄️ 数据库<br/>SQLAlchemy + SQLite"]
+    end
+
+    subgraph "AI服务"
+        F["💬 健康咨询"]
+        G["📊 智能分析"]
+    end
+
+    subgraph "MCP工具"
+        H["📈 健康监测工具"]
+        I["🔍 数据分析工具"]
+        J["💡 生活建议工具"]
+    end
+
+    subgraph "数据存储"
+        K["👤 用户档案"]
+        L["🏥 健康数据"]
+        M["💭 对话历史"]
+    end
+
+    A --> B
+    B --> C
+    B --> D
+    B --> E
+
+    C --> F
+    C --> G
+
+    D --> H
+    D --> I
+    D --> J
+
+    E --> K
+    E --> L
+    E --> M
+
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef api fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef service fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef data fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    class A frontend
+    class B api
+    class C,D service
+    class E data
 ```
+
+<details>
+<summary>📋 文本版架构图（点击展开）</summary>
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    🌐 前端层 (Vue 3)                        │
+│                     用户界面 + TypeScript                    │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│                   🚀 API层 (FastAPI)                        │
+│                      API网关 + 路由                         │
+└─────┬───────────────┬───────────────┬─────────────────────────┘
+      │               │               │
+┌─────▼─────┐  ┌─────▼─────┐  ┌─────▼─────────────────────────┐
+│🤖 AI引擎  │  │🛠️ MCP工具链│  │🗄️ 数据层 (SQLAlchemy)        │
+│DeepSeek   │  │智能工具    │  │数据库 + ORM                  │
+│LangChain  │  │管理器      │  │                              │
+└─────┬─────┘  └─────┬─────┘  └─────┬─────────────────────────┘
+      │               │               │
+┌─────▼─────┐  ┌─────▼─────┐  ┌─────▼─────────────────────────┐
+│💬 健康咨询 │  │📈 健康监测 │  │👤 用户档案                    │
+│📊 智能分析 │  │🔍 数据分析 │  │🏥 健康数据                    │
+│           │  │💡 生活建议 │  │💭 对话历史                    │
+└───────────┘  └───────────┘  └───────────────────────────────┘
+```
+
+</details>
 
 ---
 
