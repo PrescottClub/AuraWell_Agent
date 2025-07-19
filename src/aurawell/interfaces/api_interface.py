@@ -5487,6 +5487,8 @@ async def chat_message_frontend_compatible(
     这是前端期望的主要聊天API端点，映射到健康咨询功能
     """
     try:
+        logger.info(f"收到聊天消息请求: user_id={current_user_id}, message={request.message[:50]}...")
+
         # 使用agent_router处理消息，保持API兼容性
         response = await agent_router.process_message(
             user_id=current_user_id,
@@ -5501,20 +5503,41 @@ async def chat_message_frontend_compatible(
         # 生成对话ID（如果没有提供）
         conversation_id = request.conversation_id or f"conv_{current_user_id}_{int(datetime.now().timestamp())}"
 
+        # 提取回复内容，处理不同的响应格式
+        reply_content = ""
+        if response.get("success", True):
+            reply_content = response.get("message", "")
+            # 如果是错误响应但有消息内容，也使用该内容
+            if not reply_content and response.get("data", {}).get("error"):
+                reply_content = "抱歉，我现在遇到了一些技术问题。请稍后再试。"
+        else:
+            reply_content = response.get("message", "抱歉，我现在遇到了一些技术问题。请稍后再试。")
+
+        # 确保回复内容不为空
+        if not reply_content:
+            reply_content = "抱歉，我现在无法处理您的请求。请稍后再试。"
+
         # 适配为前端期望格式
-        return {
-            "reply": response.get("message", ""),
+        result = {
+            "reply": reply_content,
             "conversation_id": conversation_id,
             "timestamp": datetime.now().isoformat(),
-            "suggestions": [],
-            "quick_replies": [],
-            "status": "success"
+            "suggestions": response.get("suggestions", []),
+            "quick_replies": response.get("quick_replies", []),
+            "status": "success" if response.get("success", True) else "error"
         }
+
+        logger.info(f"聊天消息处理完成: status={result['status']}, reply_length={len(reply_content)}")
+        return result
+
     except Exception as e:
         logger.error(f"Chat message failed: {e}")
+        import traceback
+        logger.error(f"Chat message error traceback: {traceback.format_exc()}")
+
         return {
             "reply": "抱歉，我现在遇到了一些技术问题。请稍后再试。",
-            "conversation_id": request.conversation_id,
+            "conversation_id": request.conversation_id or f"conv_{current_user_id}_{int(datetime.now().timestamp())}",
             "timestamp": datetime.now().isoformat(),
             "suggestions": [],
             "quick_replies": [],

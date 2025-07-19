@@ -5,13 +5,20 @@ LangChain Agent 实现
 
 import asyncio
 import logging
+import concurrent.futures
 from typing import Dict, Any, Optional, List
 
 from ..core.agent_router import BaseAgent
 from ..conversation.memory_manager import MemoryManager
 from ..core.deepseek_client import DeepSeekClient
+
 # 新增：导入MCP工具管理器
-from .mcp_tools_manager import MCPToolsManager, WorkflowResult
+try:
+    from .mcp_tools_manager import MCPToolsManager, WorkflowResult
+except ImportError as e:
+    logger.warning(f"MCP工具管理器导入失败: {e}")
+    MCPToolsManager = None
+    WorkflowResult = None
 
 # DeepSeek LLM integration - using direct client instead of LangChain wrapper
 from .services.health_advice_service import HealthAdviceService
@@ -48,8 +55,16 @@ class HealthAdviceAgent(BaseAgent):
         self.llm = None
 
         # 新增：MCP工具智能管理器
-        self.mcp_manager = MCPToolsManager()
-        logger.info(f"MCP工具管理器已初始化，用户: {user_id}")
+        if MCPToolsManager:
+            try:
+                self.mcp_manager = MCPToolsManager()
+                logger.info(f"MCP工具管理器已初始化，用户: {user_id}")
+            except Exception as e:
+                logger.warning(f"MCP工具管理器初始化失败: {e}")
+                self.mcp_manager = None
+        else:
+            logger.warning("MCPToolsManager不可用，跳过初始化")
+            self.mcp_manager = None
 
         # LangChain组件（保持向后兼容）
         self.tools = []
@@ -104,7 +119,16 @@ class HealthAdviceAgent(BaseAgent):
     def _create_langchain_llm(self):
         """创建LangChain LLM包装器"""
         try:
-            from langchain_openai import ChatOpenAI
+            # 尝试导入LangChain OpenAI包装器
+            try:
+                from langchain_openai import ChatOpenAI
+            except ImportError:
+                # 如果langchain_openai不可用，尝试旧版本的导入
+                try:
+                    from langchain.llms import OpenAI as ChatOpenAI
+                except ImportError:
+                    logger.warning("LangChain OpenAI包装器不可用，跳过LLM包装器创建")
+                    return None
 
             if not self.deepseek_client:
                 return None
@@ -112,27 +136,24 @@ class HealthAdviceAgent(BaseAgent):
             # 创建LangChain兼容的LLM
             # 注意：使用ChatOpenAI类是因为阿里云DashScope提供OpenAI兼容的API接口
             # 实际调用的是阿里云DashScope的DeepSeek服务，而非OpenAI的服务
-            # 参数说明：
-            # - model: DeepSeek模型名称 (从环境变量读取)
-            # - api_key: 阿里云DashScope API密钥
-            # - api_base: 阿里云DashScope兼容模式URL
             import os
-            model_name = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
-            llm = ChatOpenAI(
-                model=model_name,
-                openai_api_key=self.deepseek_client.api_key,  # DashScope API Key
-                openai_api_base=self.deepseek_client.base_url,  # DashScope Compatible URL
-                temperature=0.7,
-                max_tokens=1024
-            )
+            model_name = os.getenv("DEEPSEEK_MODEL", os.getenv("DASHSCOPE_DEFAULT_MODEL", "deepseek-v3"))
 
-            return llm
+            try:
+                llm = ChatOpenAI(
+                    model=model_name,
+                    openai_api_key=self.deepseek_client.api_key,  # DashScope API Key
+                    openai_api_base=self.deepseek_client.base_url,  # DashScope Compatible URL
+                    temperature=0.7,
+                    max_tokens=1024
+                )
+                return llm
+            except Exception as create_error:
+                logger.warning(f"创建LangChain LLM包装器失败: {create_error}")
+                return None
 
-        except ImportError as e:
-            logger.warning(f"LangChain OpenAI包装器不可用: {e}")
-            return None
         except Exception as e:
-            logger.error(f"创建LangChain LLM失败: {e}")
+            logger.warning(f"LangChain LLM包装器初始化失败: {e}")
             return None
 
     def _create_llm(self):
@@ -142,61 +163,97 @@ class HealthAdviceAgent(BaseAgent):
     def _create_tools(self):
         """创建LangChain工具列表"""
         try:
-            from langchain.tools import Tool
+            # 尝试导入LangChain工具
+            try:
+                from langchain.tools import Tool
+            except ImportError:
+                try:
+                    from langchain_core.tools import Tool
+                except ImportError:
+                    logger.warning("LangChain工具模块不可用，使用简化工具列表")
+                    return self._create_simple_tools()
 
             tools = []
 
             # 用户档案查询工具
-            user_profile_tool = Tool(
-                name="UserProfileLookup",
-                description="查询用户的基本信息和健康档案，包括年龄、性别、身高体重、活动水平等",
-                func=self._user_profile_lookup_sync,
-                coroutine=self._user_profile_lookup
-            )
-            tools.append(user_profile_tool)
+            try:
+                user_profile_tool = Tool(
+                    name="UserProfileLookup",
+                    description="查询用户的基本信息和健康档案，包括年龄、性别、身高体重、活动水平等",
+                    func=self._user_profile_lookup_sync,
+                    coroutine=self._user_profile_lookup
+                )
+                tools.append(user_profile_tool)
+            except Exception as e:
+                logger.warning(f"创建用户档案工具失败: {e}")
 
             # 健康指标计算工具
-            calc_metrics_tool = Tool(
-                name="CalcMetrics",
-                description="计算健康指标，如BMI、BMR、TDEE、理想体重范围等",
-                func=self._calc_metrics_sync,
-                coroutine=self._calc_metrics
-            )
-            tools.append(calc_metrics_tool)
+            try:
+                calc_metrics_tool = Tool(
+                    name="CalcMetrics",
+                    description="计算健康指标，如BMI、BMR、TDEE、理想体重范围等",
+                    func=self._calc_metrics_sync,
+                    coroutine=self._calc_metrics
+                )
+                tools.append(calc_metrics_tool)
+            except Exception as e:
+                logger.warning(f"创建健康指标工具失败: {e}")
 
             # 健康建议生成工具
-            health_advice_tool = Tool(
-                name="SearchKnowledge",
-                description="基于用户数据和健康指标，生成个性化的五模块健康建议（饮食、运动、体重、睡眠、心理）",
-                func=self._search_knowledge_sync,
-                coroutine=self._search_knowledge
-            )
-            tools.append(health_advice_tool)
+            try:
+                health_advice_tool = Tool(
+                    name="SearchKnowledge",
+                    description="基于用户数据和健康指标，生成个性化的五模块健康建议（饮食、运动、体重、睡眠、心理）",
+                    func=self._search_knowledge_sync,
+                    coroutine=self._search_knowledge
+                )
+                tools.append(health_advice_tool)
+            except Exception as e:
+                logger.warning(f"创建健康建议工具失败: {e}")
 
-            return tools
+            return tools if tools else self._create_simple_tools()
 
-        except ImportError as e:
-            logger.warning(f"LangChain工具不可用: {e}，使用简化工具列表")
-            # 返回简化的工具描述列表
-            return [
-                {"name": "UserProfileLookup", "description": "查询用户档案"},
-                {"name": "CalcMetrics", "description": "计算健康指标"},
-                {"name": "SearchKnowledge", "description": "生成健康建议"}
-            ]
+        except Exception as e:
+            logger.warning(f"LangChain工具创建失败: {e}，使用简化工具列表")
+            return self._create_simple_tools()
+
+    def _create_simple_tools(self):
+        """创建简化的工具描述列表"""
+        return [
+            {"name": "UserProfileLookup", "description": "查询用户档案"},
+            {"name": "CalcMetrics", "description": "计算健康指标"},
+            {"name": "SearchKnowledge", "description": "生成健康建议"}
+        ]
 
     def _create_agent_executor(self):
         """创建LangChain Agent执行器"""
         try:
-            from langchain.agents import create_openai_tools_agent, AgentExecutor
-            from langchain.prompts import ChatPromptTemplate
+            # 尝试导入LangChain Agent组件
+            try:
+                from langchain.agents import create_openai_tools_agent, AgentExecutor
+                from langchain.prompts import ChatPromptTemplate
+            except ImportError:
+                try:
+                    from langchain_core.prompts import ChatPromptTemplate
+                    from langchain.agents import AgentExecutor
+                    create_openai_tools_agent = None
+                except ImportError:
+                    logger.warning("LangChain Agent组件不可用，跳过Agent执行器创建")
+                    return None
 
             if not self.llm or not self.tools:
                 logger.warning("LLM或工具未初始化，无法创建Agent执行器")
                 return None
 
+            # 检查工具是否为简化格式
+            if isinstance(self.tools, list) and len(self.tools) > 0 and isinstance(self.tools[0], dict):
+                logger.info("使用简化工具格式，跳过Agent执行器创建")
+                return None
+
             # 创建提示模板
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", """你是AuraWell健康助手，一个专业的健康管理AI助手。
+            try:
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", """你是AuraWell健康助手，一个专业的健康管理AI助手。
 
 你有以下工具可以使用：
 - UserProfileLookup: 查询用户基本信息和健康档案
@@ -209,17 +266,24 @@ class HealthAdviceAgent(BaseAgent):
                 ("assistant", "{agent_scratchpad}")
             ])
 
-            # 创建agent和executor
-            agent = create_openai_tools_agent(self.llm, self.tools, prompt)
-            agent_executor = AgentExecutor(agent=agent, tools=self.tools, verbose=True)
+                # 创建agent和executor
+                if create_openai_tools_agent:
+                    agent = create_openai_tools_agent(self.llm, self.tools, prompt)
+                    agent_executor = AgentExecutor(agent=agent, tools=self.tools, verbose=True)
+                    return agent_executor
+                else:
+                    logger.warning("create_openai_tools_agent不可用，跳过Agent执行器创建")
+                    return None
 
-            return agent_executor
+            except Exception as prompt_error:
+                logger.warning(f"创建提示模板失败: {prompt_error}")
+                return None
 
         except ImportError as e:
             logger.warning(f"LangChain Agent执行器不可用: {e}")
             return None
         except Exception as e:
-            logger.error(f"创建Agent执行器失败: {e}")
+            logger.warning(f"创建Agent执行器失败: {e}")
             return None
 
     async def process_message(
@@ -904,8 +968,17 @@ class HealthAdviceAgent(BaseAgent):
         """用户档案查询工具（同步版本）"""
         import asyncio
         try:
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(self._user_profile_lookup(query))
+            # 尝试获取当前事件循环
+            try:
+                loop = asyncio.get_running_loop()
+                # 如果已经在事件循环中，使用线程池执行
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, self._user_profile_lookup(query))
+                    return future.result()
+            except RuntimeError:
+                # 如果没有运行的事件循环，创建一个新的
+                return asyncio.run(self._user_profile_lookup(query))
         except Exception as e:
             logger.error(f"用户档案查询失败: {e}")
             return f"用户档案查询失败: {str(e)}"
@@ -933,8 +1006,17 @@ class HealthAdviceAgent(BaseAgent):
         """健康指标计算工具（同步版本）"""
         import asyncio
         try:
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(self._calc_metrics(user_data))
+            # 尝试获取当前事件循环
+            try:
+                loop = asyncio.get_running_loop()
+                # 如果已经在事件循环中，使用线程池执行
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, self._calc_metrics(user_data))
+                    return future.result()
+            except RuntimeError:
+                # 如果没有运行的事件循环，创建一个新的
+                return asyncio.run(self._calc_metrics(user_data))
         except Exception as e:
             logger.error(f"健康指标计算失败: {e}")
             return f"健康指标计算失败: {str(e)}"
@@ -970,8 +1052,17 @@ class HealthAdviceAgent(BaseAgent):
         """知识检索和健康建议生成工具（同步版本）"""
         import asyncio
         try:
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(self._search_knowledge(query))
+            # 尝试获取当前事件循环
+            try:
+                loop = asyncio.get_running_loop()
+                # 如果已经在事件循环中，使用线程池执行
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, self._search_knowledge(query))
+                    return future.result()
+            except RuntimeError:
+                # 如果没有运行的事件循环，创建一个新的
+                return asyncio.run(self._search_knowledge(query))
         except Exception as e:
             logger.error(f"健康建议生成失败: {e}")
             return f"健康建议生成失败: {str(e)}"

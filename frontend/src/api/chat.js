@@ -13,6 +13,8 @@ export class HealthChatAPI {
    */
   static async sendMessage(message, conversationId = null) {
     try {
+      console.log('📤 发送聊天消息:', { message: message.substring(0, 50), conversationId })
+
       // 🚀 真实API调用：连接后端AI引擎
       // 为聊天请求设置更长的超时时间（60秒）
       const response = await request.post('/chat/message', {
@@ -23,11 +25,16 @@ export class HealthChatAPI {
         timeout: 60000  // 60秒超时，给LLM足够的响应时间
       })
 
+      console.log('📥 收到后端响应:', response)
+
+      // 处理响应数据，兼容不同的响应格式
+      const replyContent = response.reply || response.data?.reply || '抱歉，我现在无法处理您的请求。'
+
       return {
         data: {
-          reply: response.reply,
-          content: response.reply,
-          conversation_id: response.conversation_id,
+          reply: replyContent,
+          content: replyContent,
+          conversation_id: response.conversation_id || conversationId,
           timestamp: response.timestamp || new Date().toISOString(),
           suggestions: response.suggestions || [],
           quickReplies: response.quick_replies || []
@@ -43,6 +50,22 @@ export class HealthChatAPI {
         url: error.config?.url,
         method: error.config?.method
       })
+
+      // 检查是否是后端返回的错误响应（包含回复内容）
+      if (error.response?.data?.reply) {
+        console.log('后端返回错误响应但包含回复内容，使用该内容')
+        return {
+          data: {
+            reply: error.response.data.reply,
+            content: error.response.data.reply,
+            conversation_id: error.response.data.conversation_id || conversationId,
+            timestamp: error.response.data.timestamp || new Date().toISOString(),
+            suggestions: error.response.data.suggestions || [],
+            quickReplies: error.response.data.quick_replies || []
+          }
+        }
+      }
+
       throw error
     }
   }
