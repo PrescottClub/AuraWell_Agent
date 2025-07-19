@@ -230,11 +230,20 @@
               v-for="(recommendation, index) in currentPlanDetail.recommendations"
               :key="index"
               class="recommendation-item"
+              :class="`priority-${recommendation.priority || 'medium'}`"
             >
               <div class="recommendation-icon">
                 <span>💡</span>
               </div>
-              <div class="recommendation-text">{{ recommendation }}</div>
+              <div class="recommendation-content">
+                <div class="recommendation-title">{{ recommendation.title }}</div>
+                <div class="recommendation-text">{{ recommendation.content }}</div>
+                <div v-if="recommendation.category" class="recommendation-category">
+                  <a-tag :color="getCategoryColor(recommendation.category)">
+                    {{ getCategoryLabel(recommendation.category) }}
+                  </a-tag>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -379,12 +388,12 @@ import {
 } from '@ant-design/icons-vue'
 import { useHealthPlanStore } from '../../stores/healthPlan.js'
 import { useUserStore } from '../../stores/user.js'
-import { useFamilyStore } from '../../stores/family.js'
+// import { useFamilyStore } from '../../stores/family.js' // 暂时未使用
 import MemberSwitcher from '../../components/family/MemberSwitcher.vue'
 
 const healthPlanStore = useHealthPlanStore()
 const userStore = useUserStore()
-const familyStore = useFamilyStore()
+// const familyStore = useFamilyStore() // 暂时未使用
 
 // 响应式数据
 const showGenerateModal = ref(false)
@@ -540,6 +549,28 @@ const getModuleKey = (module) => {
   return String(module)
 }
 
+const getCategoryColor = (category) => {
+  const colors = {
+    'diet': 'green',
+    'exercise': 'orange',
+    'lifestyle': 'blue',
+    'mental': 'purple',
+    'sleep': 'cyan'
+  }
+  return colors[category] || 'default'
+}
+
+const getCategoryLabel = (category) => {
+  const labels = {
+    'diet': '饮食',
+    'exercise': '运动',
+    'lifestyle': '生活方式',
+    'mental': '心理健康',
+    'sleep': '睡眠'
+  }
+  return labels[category] || category
+}
+
 const getDetailModules = (planDetail) => {
   if (!planDetail) return []
 
@@ -596,14 +627,30 @@ const formatModuleContent = (content) => {
 
   // 格式化对象内容为可读的文本
   const formatted = Object.entries(content)
-    .filter(([key, value]) => value !== null && value !== undefined)
+    .filter(([, value]) => value !== null && value !== undefined)
     .map(([key, value]) => {
       const keyLabel = getContentKeyLabel(key)
       if (Array.isArray(value)) {
+        // 如果是对象数组，特殊处理
+        if (value.length > 0 && typeof value[0] === 'object') {
+          return `${keyLabel}: ${value.map(item =>
+            typeof item === 'object' && item.title && item.content
+              ? `${item.title}: ${item.content}`
+              : JSON.stringify(item)
+          ).join('; ')}`
+        }
         return `${keyLabel}: ${value.join(', ')}`
       }
       if (typeof value === 'object') {
-        return `${keyLabel}: ${JSON.stringify(value, null, 2)}`
+        // 如果是建议对象，格式化显示
+        if (value.title && value.content) {
+          return `${keyLabel}: ${value.title} - ${value.content}`
+        }
+        // 其他对象类型，尝试提取有用信息
+        const objStr = Object.entries(value)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ')
+        return `${keyLabel}: ${objStr}`
       }
       return `${keyLabel}: ${value}`
     })
@@ -919,11 +966,41 @@ const formatDate = (date) => {
   margin-top: 2px;
 }
 
-.recommendation-text {
+.recommendation-content {
   flex: 1;
+}
+
+.recommendation-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.recommendation-text {
   color: #92400e;
   font-size: 14px;
   line-height: 1.5;
   font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.recommendation-category {
+  margin-top: 8px;
+}
+
+.recommendation-item.priority-high {
+  border-left-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+.recommendation-item.priority-medium {
+  border-left-color: #f59e0b;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.recommendation-item.priority-low {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
 }
 </style>

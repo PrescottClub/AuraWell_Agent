@@ -264,20 +264,20 @@ start_backend() {
 # 启动前端服务
 start_frontend() {
     log_step "启动前端服务..."
-    
+
     cd frontend
-    
+
     # 在后台启动前端
     nohup npm run dev -- --host 0.0.0.0 --port 5173 > ../frontend.log 2>&1 &
     FRONTEND_PID=$!
-    
+
     cd ..
     echo $FRONTEND_PID > frontend.pid
     log_info "前端服务已启动 (PID: $FRONTEND_PID)"
-    
+
     # 等待前端启动
     sleep 10
-    
+
     # 检查前端是否正常启动
     if kill -0 $FRONTEND_PID 2>/dev/null; then
         log_info "前端服务运行正常"
@@ -354,7 +354,7 @@ main() {
     echo "🌟 AuraWell 云服务器启动脚本"
     echo "=================================="
     echo
-    
+
     check_user
     check_system
     check_python

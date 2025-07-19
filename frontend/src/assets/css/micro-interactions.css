@@ -1,0 +1,415 @@
+/**
+ * AuraWell 微交互动效系统
+ * 专业健康科技风格的微交互设计
+ * 
+ * 设计原则：
+ * 1. 微妙而有意义 - 不干扰用户，但提供清晰反馈
+ * 2. 性能优先 - 使用transform和opacity，避免重排重绘
+ * 3. 一致性 - 统一的动效时长和缓动函数
+ * 4. 可访问性 - 尊重用户的动效偏好设置
+ */
+
+/* ========================================
+ * 基础动效配置
+ * ======================================== */
+
+/* 尊重用户的动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+ * 卡片微交互
+ * ======================================== */
+
+.aura-card {
+  transition: all var(--duration-base) var(--ease-out);
+  transform: translateZ(0); /* 启用硬件加速 */
+}
+
+.aura-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 8px 25px rgba(26, 54, 93, 0.12);
+}
+
+.aura-card:active {
+  transform: translateY(0) translateZ(0);
+  transition-duration: var(--duration-fast);
+}
+
+/* 健康指标卡片特殊效果 */
+.health-metric-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.health-metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.health-metric-card:hover::before {
+  left: 100%;
+}
+
+/* ========================================
+ * 按钮微交互
+ * ======================================== */
+
+.aura-btn {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition: all var(--duration-base) var(--ease-out);
+}
+
+.aura-btn:hover {
+  transform: translateY(-1px) translateZ(0);
+}
+
+.aura-btn:active {
+  transform: translateY(0) translateZ(0);
+  transition-duration: var(--duration-fast);
+}
+
+/* 按钮点击波纹效果 */
+.aura-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.aura-btn:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* 主要按钮特殊效果 */
+.aura-btn--primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  transition: all var(--duration-base) var(--ease-out), background-position 0.3s ease;
+}
+
+.aura-btn--primary:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 4px 15px rgba(26, 54, 93, 0.3);
+}
+
+/* ========================================
+ * 输入框微交互
+ * ======================================== */
+
+.aura-input {
+  transition: all var(--duration-base) var(--ease-out);
+  position: relative;
+}
+
+.aura-input:focus {
+  transform: scale(1.01);
+  box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+}
+
+/* 输入框标签动效 */
+.input-group {
+  position: relative;
+}
+
+.input-label {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+  transition: all var(--duration-base) var(--ease-out);
+  background: var(--color-background);
+  padding: 0 4px;
+}
+
+.aura-input:focus + .input-label,
+.aura-input:not(:placeholder-shown) + .input-label {
+  top: 0;
+  transform: translateY(-50%) scale(0.85);
+  color: var(--color-primary);
+}
+
+/* ========================================
+ * 加载状态动效
+ * ======================================== */
+
+/* 改进的加载点动画 */
+.loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loading-dots > div {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: loadingPulse 1.4s infinite ease-in-out both;
+}
+
+.loading-dots > div:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots > div:nth-child(2) { animation-delay: -0.16s; }
+.loading-dots > div:nth-child(3) { animation-delay: 0s; }
+
+@keyframes loadingPulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 骨架屏动画 */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-200) 25%,
+    var(--color-neutral-100) 50%,
+    var(--color-neutral-200) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite ease-in-out;
+}
+
+@keyframes skeletonLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ========================================
+ * 页面过渡动效
+ * ======================================== */
+
+/* 页面进入动画 */
+.page-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.page-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 模态框动画 */
+.modal-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.modal-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* ========================================
+ * 数据可视化动效
+ * ======================================== */
+
+/* 图表容器动画 */
+.chart-container {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: chartFadeIn 0.6s ease-out forwards;
+}
+
+@keyframes chartFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 数值变化动画 */
+.metric-value {
+  transition: all 0.3s ease-out;
+}
+
+.metric-value.updating {
+  animation: metricPulse 0.6s ease-in-out;
+}
+
+@keyframes metricPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+    color: var(--color-primary);
+  }
+}
+
+/* ========================================
+ * 状态指示器动效
+ * ======================================== */
+
+/* 健康状态指示器 */
+.status-indicator {
+  transition: all var(--duration-base) var(--ease-out);
+  position: relative;
+}
+
+.status-indicator--online {
+  animation: statusPulse 2s infinite ease-in-out;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(45, 125, 50, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(45, 125, 50, 0);
+  }
+}
+
+/* ========================================
+ * 悬浮提示动效
+ * ======================================== */
+
+.tooltip-enter-active {
+  transition: all 0.2s ease-out;
+}
+
+.tooltip-leave-active {
+  transition: all 0.15s ease-in;
+}
+
+.tooltip-enter-from,
+.tooltip-leave-to {
+  opacity: 0;
+  transform: translateY(5px) scale(0.95);
+}
+
+/* ========================================
+ * 滚动动效
+ * ======================================== */
+
+/* 滚动时的视差效果 */
+.parallax-element {
+  transition: transform 0.1s ease-out;
+}
+
+/* 滚动指示器 */
+.scroll-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-health)
+  );
+  transform-origin: left;
+  transition: transform 0.1s ease-out;
+  z-index: var(--z-index-fixed);
+}
+
+/* ========================================
+ * 专业健康科技特效
+ * ======================================== */
+
+/* 数据流动效果 */
+.data-flow {
+  position: relative;
+  overflow: hidden;
+}
+
+.data-flow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-primary),
+    transparent
+  );
+  animation: dataFlow 2s infinite ease-in-out;
+}
+
+@keyframes dataFlow {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* 心跳效果（用于健康指标） */
+.heartbeat {
+  animation: heartbeat 1.5s infinite ease-in-out;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.1);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(1);
+  }
+}

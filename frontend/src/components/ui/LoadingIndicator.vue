@@ -170,13 +170,13 @@ const getToolDisplayName = (tool) => {
 .spinner-ring:nth-child(2) {
   animation-delay: -0.4s;
   transform: scale(0.8);
-  border-top-color: theme('colors.gemini.blue');
+  border-top-color: theme('colors.primary.500');
 }
 
 .spinner-ring:nth-child(3) {
   animation-delay: -0.8s;
   transform: scale(0.6);
-  border-top-color: theme('colors.gemini.purple');
+  border-top-color: theme('colors.primary.600');
 }
 
 .loading-content {
@@ -233,7 +233,7 @@ const getToolDisplayName = (tool) => {
 
 .bar {
   width: 4px;
-  background: linear-gradient(135deg, theme('colors.gemini.blue') 0%, theme('colors.gemini.purple') 100%);
+  background: theme('colors.primary.500');
   border-radius: 2px;
   animation: dataBar 1.5s infinite ease-in-out;
 }
@@ -374,7 +374,7 @@ const getToolDisplayName = (tool) => {
 }
 
 .dark .active-tool {
-  background: theme('colors.gemini.purple');
+  background: theme('colors.primary.600');
 }
 
 /* 响应式优化 */

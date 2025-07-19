@@ -149,10 +149,11 @@ const router = createRouter({
   routes
 });
 
+import { useAuthStore } from '../stores/auth';
+
 // 🔧 统一路由守卫 - 使用认证状态管理
 router.beforeEach(async (to, _from, next) => {
-  // 导入认证状态管理
-  const { useAuthStore } = await import('../stores/auth');
+  // 使用认证状态管理
   const authStore = useAuthStore();
 
   // 如果路由需要认证

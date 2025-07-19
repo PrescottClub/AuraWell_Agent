@@ -1,7 +1,7 @@
 <template>
-  <div class="goal-card">
-    <div class="goal-header">
-      <h4>{{ goal.title }}</h4>
+  <div class="aura-card">
+    <div class="flex items-start justify-between mb-4">
+      <h4 class="text-heading-4">{{ goal.title }}</h4>
       <a-dropdown>
         <a-button type="text" size="small">
           <template #icon>
@@ -22,8 +22,8 @@
         </template>
       </a-dropdown>
     </div>
-    
-    <p class="goal-description">{{ goal.description }}</p>
+
+    <p class="text-body mb-4">{{ goal.description }}</p>
     
     <div class="goal-progress">
       <a-progress 
@@ -48,22 +48,21 @@
       </div>
     </div>
 
-    <div class="goal-actions">
-      <a-button 
-        v-if="goal.status !== 'completed'" 
-        type="primary" 
-        size="small"
+    <div class="flex gap-2 mt-4">
+      <button
+        v-if="goal.status !== 'completed'"
+        class="aura-btn aura-btn--primary text-sm"
         @click="$emit('update-progress', goal)"
       >
         更新进度
-      </a-button>
-      <a-button 
-        v-if="goal.status === 'active'" 
-        size="small"
+      </button>
+      <button
+        v-if="goal.status === 'active'"
+        class="aura-btn aura-btn--secondary text-sm"
         @click="$emit('complete', goal.id)"
       >
         标记完成
-      </a-button>
+      </button>
     </div>
   </div>
 </template>
@@ -98,52 +97,7 @@ const formatDate = (date) => {
 </script>
 
 <style scoped>
-.goal-card {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-}
-
-.goal-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-.goal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.goal-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.goal-description {
-  color: #6b7280;
-  font-size: 14px;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-
-.goal-progress {
-  margin-bottom: 12px;
-}
-
-.goal-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #9ca3af;
-  margin-bottom: 12px;
-}
+/* 使用新的设计系统，无需自定义样式 */
 
 .goal-type {
   background: #dbeafe;

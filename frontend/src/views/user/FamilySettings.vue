@@ -265,10 +265,10 @@ import {
 } from '@ant-design/icons-vue'
 import { useFamilyStore } from '@/stores/family'
 import { familyAPI } from '@/api/family'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 const familyStore = useFamilyStore()
-const route = useRoute()
+
 const router = useRouter()
 
 // 响应式数据

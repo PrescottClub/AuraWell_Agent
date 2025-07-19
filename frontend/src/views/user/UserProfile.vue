@@ -280,12 +280,12 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { MoreOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '../../stores/user.js'
-import { useFamilyStore } from '../../stores/family.js'
+// import { useFamilyStore } from '../../stores/family.js' // 暂时未使用
 import MemberSwitcher from '../../components/family/MemberSwitcher.vue'
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()
-const familyStore = useFamilyStore()
+// const familyStore = useFamilyStore() // 暂时未使用
 
 // 响应式数据
 const showGoalModal = ref(false)
@@ -466,23 +466,29 @@ const disabledDate = (current) => {
   padding: 32px;
   max-width: 1200px;
   margin: 0 auto;
-  background: linear-gradient(135deg, #FDF2F8 0%, #F7D9E6 50%, #E8C5E8 100%);
+  background: var(--color-background);
   min-height: 100vh;
 }
 
 .profile-header {
   margin-bottom: 24px;
+  text-align: center;
+  padding: 24px 0;
 }
 
 .profile-header h1 {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .profile-header p {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 16px;
 }
 
@@ -490,14 +496,28 @@ const disabledDate = (current) => {
   margin-bottom: 32px;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-background-elevated);
+  overflow: hidden;
+}
+
+.profile-card :deep(.ant-card-head) {
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  border-bottom: none;
+}
+
+.profile-card :deep(.ant-card-head-title) {
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
 }
 
 .health-stats {
   margin-bottom: 24px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--color-health-50) 0%, var(--color-primary-50) 100%);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-light);
 }
 
 .stat-item {
@@ -506,25 +526,28 @@ const disabledDate = (current) => {
 
 .stat-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 .stat-category {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-health);
   margin-left: 8px;
+  font-weight: 500;
 }
 
 .empty-goals {
   text-align: center;
   padding: 40px 0;
+  color: var(--color-text-secondary);
 }
 
 .goals-list {
@@ -532,11 +555,30 @@ const disabledDate = (current) => {
 }
 
 .goal-card {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 16px;
+  background: var(--color-background-surface);
+  border-radius: 12px;
+  padding: 20px;
   margin-bottom: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-light);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.goal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+}
+
+.goal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-health);
 }
 
 .goal-header {
@@ -550,11 +592,11 @@ const disabledDate = (current) => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 .goal-description {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 14px;
   margin-bottom: 12px;
 }
@@ -563,17 +605,95 @@ const disabledDate = (current) => {
   margin-bottom: 12px;
 }
 
+.goal-progress :deep(.ant-progress-bg) {
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+}
+
 .goal-meta {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .goal-type {
-  background: #dbeafe;
-  color: #1e40af;
-  padding: 2px 8px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--color-health-50) 0%, var(--color-primary-50) 100%);
+  color: var(--color-health);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-weight: 500;
+  font-size: 12px;
+  border: 1px solid var(--color-health);
+}
+
+/* Ant Design 组件主题覆盖 */
+:deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-health) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 125, 50, 0.2);
+}
+
+:deep(.ant-input) {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-background);
+  transition: all 0.2s ease;
+}
+
+:deep(.ant-input:hover) {
+  border-color: var(--color-health);
+}
+
+:deep(.ant-input:focus) {
+  border-color: var(--color-health);
+  box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.1);
+}
+
+:deep(.ant-select .ant-select-selector) {
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  background: var(--color-background);
+  transition: all 0.2s ease;
+}
+
+:deep(.ant-select:hover .ant-select-selector) {
+  border-color: var(--color-health);
+}
+
+:deep(.ant-select.ant-select-focused .ant-select-selector) {
+  border-color: var(--color-health);
+  box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.1);
+}
+
+:deep(.ant-date-picker) {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-background);
+  transition: all 0.2s ease;
+}
+
+:deep(.ant-date-picker:hover) {
+  border-color: var(--color-health);
+}
+
+:deep(.ant-date-picker.ant-picker-focused) {
+  border-color: var(--color-health);
+  box-shadow: 0 0 0 2px rgba(45, 125, 50, 0.1);
+}
+
+.member-switcher-section {
+  background: var(--color-background-elevated);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 </style>

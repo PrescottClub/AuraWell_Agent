@@ -397,13 +397,14 @@ const processData = async () => {
           processed = DataSampling.intelligentSampling(processed, props.maxDataPoints, 'value')
           break
         case 'auto':
-        default:
+        default: {
           // 根据数据特征自动选择抽样方式
           const hasHighVariance = checkDataVariance(processed)
-          processed = hasHighVariance 
+          processed = hasHighVariance
             ? DataSampling.intelligentSampling(processed, props.maxDataPoints, 'value')
             : DataSampling.uniformSampling(processed, props.maxDataPoints)
           break
+        }
       }
     }
     

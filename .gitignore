@@ -1,3 +1,7 @@
+# ===========================================
+# AuraWell Project - Git Ignore Configuration
+# ===========================================
+
 # IDE and editor files
 .vscode/
 .idea/
@@ -8,6 +12,7 @@
 # Cursor IDE specific files (selectively ignore)
 .cursor/settings/
 .cursor/logs/
+.cursor/workspace/
 # Keep .cursorrules as it's part of project setup
 
 # Environment and secrets
@@ -144,13 +149,19 @@ celerybeat.pid
 .dmypy.json
 dmypy.json
 
-# Frontend build artifacts
+# Frontend build artifacts and package managers
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
 .npm
+.yarn/
 .yarn-integrity
+.pnpm-store/
+.pnpm-debug.log*
+package-lock.json.backup
 
 # Frontend environment
 .env.local
@@ -173,3 +184,63 @@ out/
 # SQLite temporary files
 *.db-shm
 *.db-wal
+
+# ===========================================
+# AuraWell Specific Files
+# ===========================================
+
+# MCP Tools and AI Cache
+.mcp/
+mcp_cache/
+ai_cache/
+*.mcp
+deepseek_cache/
+llm_cache/
+
+# Health Data Processing
+health_analytics/
+user_health_profiles/
+biometric_data/
+nutrition_analysis/
+fitness_tracking/
+health_reports/generated/
+
+# Storybook
+storybook-static/
+.storybook/public/
+
+# Tailwind CSS
+.tailwindcss-cache/
+
+# Vue.js specific
+.nuxt/
+.output/
+.nitro/
+.cache/
+
+# Frontend testing and coverage
+frontend/coverage/
+frontend/.nyc_output/
+frontend/test-results/
+frontend/playwright-report/
+frontend/test-report/
+
+# Performance monitoring
+performance_logs/
+monitoring_data/
+
+# Deployment
+deploy_scripts/*.log
+nginx/ssl/
+nginx/certs/
+
+# Migration data
+migrations/data_backup/
+migrations/rollback/
+
+# Vector embeddings and RAG data
+vector_store/
+embeddings_cache/
+rag_index/
+arxiv_cache/
+oss_data/

@@ -1,133 +1,340 @@
 /* src/assets/css/main.css */
+
+/* 导入设计令牌系统 - 必须在其他导入之前 */
+@import './design-tokens.css';
+
+/* 导入微交互动效系统 */
+@import './micro-interactions.css';
+
+/* 导入桌面端优化系统 */
+@import './desktop-optimizations.css';
+
+/* 导入可访问性增强系统 */
+@import './accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* CSS 变量定义，方便在JS或覆盖第三方库样式时使用 */
-    --color-primary: theme('colors.primary.500');
-    --color-text-base: theme('colors.gray.700');
-    --color-text-muted: theme('colors.gray.600');
-    --color-bg-base: theme('colors.white');
-    --color-bg-elevated: theme('colors.gray.50');
-    --color-border: theme('colors.gray.200');
+  /* 设计令牌已在 design-tokens.css 中定义 */
 
-    /* 标准化卡片圆角和阴影 */
-    --border-radius-card: theme('borderRadius.2xl');
-    --shadow-card: theme('boxShadow.soft');
-    --shadow-card-hover: theme('boxShadow.medium');
-  }
-
-  /* 定义深色模式下的变量 */
-  .dark {
-    --color-primary: theme('colors.primary.500');
-    --color-text-base: theme('colors.white');
-    --color-text-muted: theme('colors.gray.300');
-    --color-bg-base: theme('colors.gray.900');
-    --color-bg-elevated: theme('colors.gray.800');
-    --color-border: theme('colors.gray.700');
-  }
-
-  /* 全局基础样式 */
+  /* 全局基础样式 - 浅色主题优先 */
   html, body {
-    @apply bg-white text-gray-700;
-    font-feature-settings: 'rlig' 1, 'calt' 1; /* 启用连字特性 */
+    @apply bg-background text-text-primary;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  /* 专业的字体层级系统 */
+  h1 {
+    @apply text-text-primary text-4xl font-bold;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-text-primary text-3xl font-semibold;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+  }
+
+  h3 {
+    @apply text-text-primary text-2xl font-semibold;
+    line-height: 1.3;
+  }
+
+  h4 {
+    @apply text-text-primary text-xl font-medium;
+    line-height: 1.4;
+  }
+
+  h5 {
+    @apply text-text-primary text-lg font-medium;
+    line-height: 1.5;
+  }
+
+  h6 {
+    @apply text-text-primary text-base font-medium;
+    line-height: 1.5;
+  }
+
+  /* 段落和正文样式 */
+  p {
+    @apply text-text-secondary text-base;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  /* 链接样式 */
+  a {
+    @apply text-primary hover:text-primary-hover;
+    transition: color 0.2s ease;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* 小文字样式 */
+  small, .text-small {
+    @apply text-text-muted text-sm;
+    line-height: 1.4;
+  }
+
+  /* 强调文字 */
+  strong, b {
+    @apply text-text-primary font-semibold;
+  }
+
+  /* 代码样式 */
+  code {
+    @apply bg-neutral-100 text-text-primary px-1 py-0.5 rounded text-sm;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
   }
 }
 
 @layer components {
-  /* Aurora渐变背景 - 现代Gemini风格 */
-  .aura-aurora-bg {
-    background-image: linear-gradient(135deg,
-      theme('colors.gemini.blue') 0%,
-      theme('colors.gemini.purple') 25%,
-      theme('colors.gemini.magenta') 75%,
-      theme('colors.gemini.orange') 100%
-    );
+  /* 专业健康科技卡片组件 */
+  .aura-card {
+    @apply bg-background-surface border border-border rounded-xl p-6;
+    transition: all 0.2s ease;
   }
 
-  /* 渐变文字颜色 - 适配浅色主题 */
-  .text-on-gradient {
-    color: theme('colors.label.primary');
+  .aura-card:hover {
+    @apply border-border-strong;
+    transform: translateY(-1px);
   }
 
-  .text-on-gradient-muted {
-    color: theme('colors.label.secondary');
+  .aura-card--elevated {
+    @apply bg-background-elevated shadow-md;
   }
 
-  /* AntD按钮样式覆盖 - 使用Gemini风格 */
-  .ant-btn-primary {
-    background: linear-gradient(135deg, theme('colors.gemini.blue') 0%, theme('colors.gemini.purple') 100%) !important;
-    border: none !important;
-    border-radius: 8px !important;
-    color: white !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
+  /* 统一的按钮组件 */
+  .aura-btn {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20;
   }
 
-  .ant-btn-primary:hover {
-    opacity: 0.9 !important;
-    transform: translateY(-1px) !important;
+  .aura-btn--primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
   }
 
-  /* 预定义一个全局可用的微晶玻璃质感卡片样式 */
-  .glass-card {
-    @apply bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-2xl;
+  .aura-btn--secondary {
+    @apply bg-background-alt text-text-primary border border-border;
+    @apply hover:bg-background-surface hover:border-border-strong;
   }
 
-  /* Shimmer 动画效果 */
-  .animate-shimmer {
+  .aura-btn--success {
+    @apply bg-success text-white hover:opacity-90;
+  }
+
+  .aura-btn--warning {
+    @apply bg-warning text-white hover:opacity-90;
+  }
+
+  .aura-btn--error {
+    @apply bg-error text-white hover:opacity-90;
+  }
+
+  /* 健康指标卡片 */
+  .health-metric-card {
+    @apply aura-card;
+  }
+
+  .health-metric-card--excellent {
+    @apply border-l-4 border-l-health;
+  }
+
+  .health-metric-card--good {
+    @apply border-l-4 border-l-success;
+  }
+
+  .health-metric-card--warning {
+    @apply border-l-4 border-l-warning;
+  }
+
+  .health-metric-card--danger {
+    @apply border-l-4 border-l-error;
+  }
+
+  /* 输入框组件 */
+  .aura-input {
+    @apply w-full px-4 py-3 rounded-lg border border-border;
+    @apply bg-background text-text-primary placeholder-text-muted;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;
+    transition: all 0.2s ease;
+  }
+
+  /* 专业的文字样式类 */
+  .text-display {
+    @apply text-text-primary text-5xl font-bold;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+
+  .text-heading-1 {
+    @apply text-text-primary text-4xl font-bold;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .text-heading-2 {
+    @apply text-text-primary text-3xl font-semibold;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+  }
+
+  .text-heading-3 {
+    @apply text-text-primary text-2xl font-semibold;
+    line-height: 1.3;
+  }
+
+  .text-heading-4 {
+    @apply text-text-primary text-xl font-medium;
+    line-height: 1.4;
+  }
+
+  .text-body-large {
+    @apply text-text-secondary text-lg;
+    line-height: 1.6;
+  }
+
+  .text-body {
+    @apply text-text-secondary text-base;
+    line-height: 1.6;
+  }
+
+  .text-body-small {
+    @apply text-text-secondary text-sm;
+    line-height: 1.5;
+  }
+
+  .text-caption {
+    @apply text-text-muted text-sm;
+    line-height: 1.4;
+  }
+
+  .text-caption-small {
+    @apply text-text-muted text-xs;
+    line-height: 1.3;
+  }
+
+  /* 数字和指标样式 */
+  .text-metric {
+    @apply text-text-primary font-bold tabular-nums;
+    line-height: 1;
+  }
+
+  .text-metric-large {
+    @apply text-metric text-4xl;
+  }
+
+  .text-metric-medium {
+    @apply text-metric text-2xl;
+  }
+
+  .text-metric-small {
+    @apply text-metric text-xl;
+  }
+
+  /* 状态文字颜色 */
+  .text-success {
+    color: var(--color-success);
+  }
+
+  .text-warning {
+    color: var(--color-warning);
+  }
+
+  .text-error {
+    color: var(--color-error);
+  }
+
+  .text-info {
+    color: var(--color-info);
+  }
+
+  /* 专业的加载动画 */
+  .aura-shimmer {
     background: linear-gradient(
       90deg,
       transparent 25%,
-      rgba(255, 255, 255, 0.4) 50%,
+      rgba(33, 37, 41, 0.1) 50%,
       transparent 75%
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite ease-in-out;
   }
 
-  /* 暗色模式下的shimmer效果 */
-  .dark .animate-shimmer {
-    background: linear-gradient(
-      90deg,
-      transparent 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 75%
-    );
-    background-size: 200% 100%;
+  /* 骨架屏组件 */
+  .skeleton {
+    @apply bg-neutral-200 rounded animate-pulse;
   }
 
-  /* 脆弹性动画效果 */
-  .animate-bounce-in {
-    animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .skeleton--text {
+    @apply h-4 w-full mb-2;
   }
 
-  /* 加载点动画 */
+  .skeleton--title {
+    @apply h-6 w-3/4 mb-4;
+  }
+
+  .skeleton--avatar {
+    @apply h-12 w-12 rounded-full;
+  }
+
+  .skeleton--button {
+    @apply h-10 w-24 rounded-lg;
+  }
+
+  /* 简洁的加载点动画 */
   .loading-dots {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
   }
 
   .loading-dots > div {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background-color: currentColor;
+    background-color: var(--color-primary);
     animation: loadingDots 1.4s infinite ease-in-out both;
   }
 
   .loading-dots > div:nth-child(1) { animation-delay: -0.32s; }
   .loading-dots > div:nth-child(2) { animation-delay: -0.16s; }
   .loading-dots > div:nth-child(3) { animation-delay: 0s; }
+
+  /* 状态指示器 */
+  .status-indicator {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .status-indicator--online {
+    @apply bg-success;
+  }
+
+  .status-indicator--offline {
+    @apply bg-neutral-400;
+  }
+
+  .status-indicator--warning {
+    @apply bg-warning;
+  }
+
+  .status-indicator--error {
+    @apply bg-error;
+  }
 }
 
 @layer utilities {
-  /* 关键帧定义 */
+  /* 专业动画关键帧定义 */
   @keyframes shimmer {
     0% {
       background-position: -200% 0;
@@ -137,38 +344,84 @@
     }
   }
 
-  @keyframes bounceIn {
-    0% {
-      opacity: 0;
-      transform: scale3d(0.3, 0.3, 0.3);
-    }
-    20% {
-      transform: scale3d(1.1, 1.1, 1.1);
-    }
-    40% {
-      transform: scale3d(0.9, 0.9, 0.9);
-    }
-    60% {
-      opacity: 1;
-      transform: scale3d(1.03, 1.03, 1.03);
-    }
-    80% {
-      transform: scale3d(0.97, 0.97, 0.97);
-    }
-    100% {
-      opacity: 1;
-      transform: scale3d(1, 1, 1);
-    }
-  }
-
   @keyframes loadingDots {
     0%, 80%, 100% {
       transform: scale(0);
-      opacity: 0.5;
+      opacity: 0.3;
     }
     40% {
       transform: scale(1);
       opacity: 1;
     }
   }
-} 
+
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    0% {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* 工具类 */
+  .fade-in-up {
+    animation: fadeInUp 0.3s ease-out;
+  }
+
+  .slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  /* 文字截断工具 */
+  .text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .text-truncate-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .text-truncate-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* 可访问性工具 */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* 焦点样式 */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2;
+  }
+}

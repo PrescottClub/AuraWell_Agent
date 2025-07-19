@@ -29,6 +29,7 @@ class ErrorCode(str, Enum):
     # User errors (1200-1299)
     USER_NOT_FOUND = "USER_1201"
     USER_ALREADY_EXISTS = "USER_1202"
+    DUPLICATE_RESOURCE = "USER_1202"  # Alias for USER_ALREADY_EXISTS
     PROFILE_UPDATE_FAILED = "USER_1203"
 
     # Health data errors (1300-1399)
@@ -78,6 +79,7 @@ ERROR_MESSAGES: Dict[ErrorCode, str] = {
     # User
     ErrorCode.USER_NOT_FOUND: "User not found",
     ErrorCode.USER_ALREADY_EXISTS: "User already exists",
+    ErrorCode.DUPLICATE_RESOURCE: "User already exists",  # Same message as USER_ALREADY_EXISTS
     ErrorCode.PROFILE_UPDATE_FAILED: "Failed to update user profile",
     # Health data
     ErrorCode.HEALTH_DATA_NOT_FOUND: "Health data not found",

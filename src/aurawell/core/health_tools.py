@@ -105,11 +105,12 @@ def _get_bohe_client() -> BoheHealthClient:
     return _bohe_client
 
 
-def _get_deepseek_client() -> DeepSeekClient:
+def _get_deepseek_client():
     """获取DeepSeek AI客户端实例"""
     global _deepseek_client
     if _deepseek_client is None:
-        _deepseek_client = DeepSeekClient()
+        from .service_factory import ServiceClientFactory
+        _deepseek_client = ServiceClientFactory.get_deepseek_client()
     return _deepseek_client
 
 

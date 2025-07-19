@@ -86,13 +86,13 @@
         >
           <!-- 报告项目 -->
           <div
-            v-for="(report, index) in visibleReports"
+            v-for="report in visibleReports"
             :key="report.report_id"
             class="report-item"
             :class="{ 'item-selected': selectedReports.has(report.report_id) }"
             @click="handleItemClick(report)"
-            @mouseenter="handleItemHover(report, true)"
-            @mouseleave="handleItemHover(report, false)"
+            @mouseenter="handleItemHover()"
+            @mouseleave="handleItemHover()"
             :style="{ height: itemHeight + 'px' }"
           >
             <!-- 选择框 -->
@@ -482,7 +482,7 @@ const handleItemSelect = (report, event) => {
   })
 }
 
-const handleItemHover = (report, isEnter) => {
+const handleItemHover = () => {
   // 可以在这里添加悬停效果
 }
 

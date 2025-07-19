@@ -69,11 +69,12 @@ export const useAuthStore = defineStore('auth', () => {
     return `${tokenType.value} ${token.value}`
   }
 
-  // 🔧 核心功能：Token验证
+  // 🔧 核心功能：Token验证 - 优化防重复验证
   async function validateToken() {
-    // 防止重复验证（5秒内只验证一次）
+    // 防止重复验证（10秒内只验证一次，增加时间窗口）
     const now = Date.now()
-    if (isValidating.value || (now - lastValidation.value) < 5000) {
+    if (isValidating.value || (now - lastValidation.value) < 10000) {
+      console.log('🔄 Token验证中或刚验证过，跳过本次验证')
       return isAuthenticated.value
     }
 
@@ -93,7 +94,14 @@ export const useAuthStore = defineStore('auth', () => {
       lastValidation.value = now
 
       console.log('🔍 验证Token有效性...')
-      const isValid = await UserAPI.validateCurrentToken()
+      
+      // 🔧 优化：增加验证超时控制
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Token验证超时')), 5000)
+      )
+      
+      const validationPromise = UserAPI.validateCurrentToken()
+      const isValid = await Promise.race([validationPromise, timeoutPromise])
 
       if (!isValid) {
         console.warn('⚠️ Token验证失败，清除认证信息')
@@ -105,8 +113,11 @@ export const useAuthStore = defineStore('auth', () => {
       return true
 
     } catch (error) {
-      console.error('❌ Token验证异常:', error)
-      clearToken()
+      console.error('❌ Token验证异常:', error.message)
+      // 🔧 优化：网络错误时不清除Token，超时或认证错误才清除
+      if (error.message.includes('Token验证超时') || error.message.includes('401')) {
+        clearToken()
+      }
       return false
     } finally {
       isValidating.value = false
@@ -141,11 +152,31 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 🔧 确保认证状态（核心方法）
+  // 🔧 确保认证状态（核心方法）- 优化初始化逻辑
   async function ensureAuthenticated() {
-    // 如果已经认证且Token未过期，直接返回
-    if (isAuthenticated.value) {
+    // 如果已经认证且Token未过期，直接返回（避免重复检查）
+    if (isAuthenticated.value && (Date.now() - lastValidation.value) < 30000) {
+      console.log('✅ 认证状态有效，跳过验证')
       return true
+    }
+
+    // 防止并发调用导致循环 - 增强版本
+    if (isValidating.value) {
+      console.log('🔄 认证验证中，等待结果...')
+      // 等待当前验证完成，最多等待10秒
+      let waitCount = 0
+      while (isValidating.value && waitCount < 100) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        waitCount++
+      }
+
+      // 如果等待超时，强制重置验证状态
+      if (waitCount >= 100) {
+        console.warn('⚠️ 认证验证超时，强制重置状态')
+        isValidating.value = false
+      }
+
+      return isAuthenticated.value
     }
 
     // 尝试验证现有Token
@@ -153,13 +184,19 @@ export const useAuthStore = defineStore('auth', () => {
       return true
     }
 
-    // 开发环境自动登录
-    if (import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development') {
-      return await performAutoLogin()
+    // 🔧 只在开发环境且明确需要时才自动登录
+    if ((import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development') &&
+        !window.location.pathname.includes('/login') &&
+        !window.location.pathname.includes('/register')) {
+      console.log('🔄 开发环境尝试自动登录...')
+      const autoLoginSuccess = await performAutoLogin()
+      if (autoLoginSuccess) {
+        return true
+      }
     }
 
-    // 生产环境需要手动登录
-    console.log('🔐 需要登录')
+    // 生产环境或自动登录失败需要手动登录
+    console.log('🔐 需要手动登录')
     return false
   }
 

@@ -11,8 +11,25 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from contextlib import AsyncExitStack
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+# 兼容性导入处理 - 如果MCP依赖未安装，使用占位符
+try:
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+    MCP_AVAILABLE = True
+except ImportError:
+    # 创建占位符类以避免导入错误
+    class ClientSession:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class StdioServerParameters:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def stdio_client(*args, **kwargs):
+        raise ImportError("MCP依赖未安装，请运行: pip install mcp")
+
+    MCP_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -39,62 +56,118 @@ class RealMCPInterface:
         self.exit_stack = AsyncExitStack()
         self.available_tools: Dict[str, Any] = {}
         self._initialized = False
-        
-        # 配置内置MCP服务器
-        self._setup_default_servers()
+        self.connection_health: Dict[str, Dict[str, Any]] = {}
+
+        # 配置MCP服务器（从设置中获取配置）
+        self._setup_servers_from_config()
     
-    def _setup_default_servers(self):
-        """配置默认的MCP服务器"""
-        
-        # 计算器服务器（使用官方示例）
+    def _setup_servers_from_config(self):
+        """从配置中设置MCP服务器"""
+        try:
+            from ...config.settings import settings
+            mcp_config = settings.get_mcp_config()
+
+            # 计算器服务器（始终可用）
+            self.servers["calculator"] = MCPServerConfig(
+                name="calculator",
+                command="npx",
+                args=["-y", "@modelcontextprotocol/server-math"],
+                env=None,
+                timeout=mcp_config["server_timeout"]
+            )
+
+            # 时间服务器（始终可用）
+            self.servers["time"] = MCPServerConfig(
+                name="time",
+                command="npx",
+                args=["-y", "@modelcontextprotocol/server-time"],
+                env=None,
+                timeout=mcp_config["server_timeout"]
+            )
+
+            # SQLite数据库服务器
+            self.servers["sqlite"] = MCPServerConfig(
+                name="sqlite",
+                command="npx",
+                args=["-y", "@modelcontextprotocol/server-sqlite", "--db-path", mcp_config["server_paths"]["sqlite_db"]],
+                env=None,
+                timeout=mcp_config["server_timeout"]
+            )
+
+            # 文件系统服务器
+            self.servers["filesystem"] = MCPServerConfig(
+                name="filesystem",
+                command="npx",
+                args=["-y", "@modelcontextprotocol/server-filesystem", mcp_config["server_paths"]["filesystem_root"]],
+                env=None,
+                timeout=mcp_config["server_timeout"]
+            )
+
+            # 条件性服务器（需要API密钥）
+            if mcp_config["api_keys"]["brave"]:
+                self.servers["brave_search"] = MCPServerConfig(
+                    name="brave_search",
+                    command="npx",
+                    args=["-y", "@modelcontextprotocol/server-brave-search"],
+                    env={"BRAVE_API_KEY": mcp_config["api_keys"]["brave"]},
+                    timeout=mcp_config["server_timeout"]
+                )
+
+            if mcp_config["api_keys"]["github"]:
+                self.servers["github"] = MCPServerConfig(
+                    name="github",
+                    command="npx",
+                    args=["-y", "@modelcontextprotocol/server-github"],
+                    env={"GITHUB_TOKEN": mcp_config["api_keys"]["github"]},
+                    timeout=mcp_config["server_timeout"]
+                )
+
+            logger.info(f"📋 配置了 {len(self.servers)} 个MCP服务器")
+
+        except Exception as e:
+            logger.warning(f"⚠️ 从配置加载MCP服务器失败，使用默认配置: {e}")
+            self._setup_fallback_servers()
+
+    def _setup_fallback_servers(self):
+        """设置fallback服务器配置"""
+        # 基础服务器（不需要API密钥）
         self.servers["calculator"] = MCPServerConfig(
             name="calculator",
             command="npx",
             args=["-y", "@modelcontextprotocol/server-math"],
             env=None
         )
-        
-        # 搜索服务器（需要API密钥）
-        self.servers["brave_search"] = MCPServerConfig(
-            name="brave_search", 
-            command="npx",
-            args=["-y", "@modelcontextprotocol/server-brave-search"],
-            env={"BRAVE_API_KEY": "your_brave_api_key_here"}
-        )
-        
-        # 文件系统服务器
-        self.servers["filesystem"] = MCPServerConfig(
-            name="filesystem",
-            command="npx", 
-            args=["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
-            env=None
-        )
-        
-        # 时间服务器
+
         self.servers["time"] = MCPServerConfig(
             name="time",
             command="npx",
             args=["-y", "@modelcontextprotocol/server-time"],
             env=None
         )
-        
-        # SQLite数据库服务器
+
         self.servers["sqlite"] = MCPServerConfig(
             name="sqlite",
             command="npx",
             args=["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "./aurawell.db"],
             env=None
         )
-    
+
+        logger.info("📋 使用fallback配置，设置了基础MCP服务器")
+
     async def initialize(self):
         """初始化所有MCP服务器连接"""
         if self._initialized:
             return
-            
+
+        # 检查MCP依赖是否可用
+        if not MCP_AVAILABLE:
+            logger.warning("⚠️ MCP依赖未安装，无法初始化真实MCP服务器")
+            raise ImportError("MCP依赖未安装，请运行: pip install mcp")
+
         logger.info("🚀 初始化真实MCP服务器连接...")
-        
+
         successful_connections = 0
-        
+
         for server_name, config in self.servers.items():
             try:
                 await self._connect_to_server(server_name, config)
@@ -103,7 +176,7 @@ class RealMCPInterface:
             except Exception as e:
                 logger.warning(f"⚠️ 连接MCP服务器失败 {server_name}: {e}")
                 # 继续尝试其他服务器
-        
+
         logger.info(f"🎉 MCP服务器初始化完成: {successful_connections}/{len(self.servers)} 服务器可用")
         self._initialized = True
     
@@ -141,6 +214,14 @@ class RealMCPInterface:
                 "tool": tool,
                 "session": session
             }
+
+        # 更新连接健康状态
+        self.connection_health[server_name] = {
+            "status": "connected",
+            "connected_at": asyncio.get_event_loop().time(),
+            "tools_count": len(tools_response.tools),
+            "last_error": None
+        }
     
     async def list_available_tools(self) -> Dict[str, Any]:
         """列出所有可用的MCP工具"""
@@ -223,12 +304,24 @@ class RealMCPInterface:
         """使用真实的时间MCP服务器获取当前时间"""
         return await self.call_tool("get_time", {})
     
+    async def get_health_status(self) -> Dict[str, Any]:
+        """获取MCP连接健康状态"""
+        return {
+            "initialized": self._initialized,
+            "total_servers": len(self.servers),
+            "connected_servers": len(self.sessions),
+            "total_tools": len(self.available_tools),
+            "connection_health": self.connection_health,
+            "server_configs": {name: {"timeout": config.timeout} for name, config in self.servers.items()}
+        }
+
     async def cleanup(self):
         """清理所有MCP连接"""
         logger.info("🧹 清理MCP服务器连接...")
         await self.exit_stack.aclose()
         self.sessions.clear()
         self.available_tools.clear()
+        self.connection_health.clear()
         self._initialized = False
 
 
@@ -240,6 +333,8 @@ async def get_real_mcp_interface() -> RealMCPInterface:
     """获取全局真实MCP接口实例"""
     global _real_mcp_interface
     if _real_mcp_interface is None:
+        if not MCP_AVAILABLE:
+            raise ImportError("MCP依赖未安装，无法创建真实MCP接口")
         _real_mcp_interface = RealMCPInterface()
         await _real_mcp_interface.initialize()
     return _real_mcp_interface

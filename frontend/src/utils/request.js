@@ -40,7 +40,12 @@ request.interceptors.response.use(
         const res = response.data;
 
         // 兼容不同的响应格式
+        // 对于聊天API，即使status为error，也要返回数据（包含错误回复）
         if (res.status === 'success' || res.success === true || response.status === 200) {
+            return res;
+        } else if (res.status === 'error' && res.reply) {
+            // 聊天API的错误响应，包含回复内容，直接返回
+            console.warn('聊天服务返回错误响应，但包含回复内容:', res);
             return res;
         } else {
             const errorMessage = res.message || res.error || '请求失败';

@@ -34,7 +34,7 @@ class AuraWellSettings:
         "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
     DEEPSEEK_DEFAULT_MODEL: str = os.getenv(
-        "DASHSCOPE_DEFAULT_MODEL", os.getenv("DEEPSEEK_SERIES_V3", "deepseek-v3")
+        "DEEPSEEK_MODEL", os.getenv("DASHSCOPE_DEFAULT_MODEL", "deepseek-chat")
     )
     DEEPSEEK_MAX_TOKENS: int = int(os.getenv("DEEPSEEK_MAX_TOKENS", "2048"))
     DEEPSEEK_TEMPERATURE: float = float(os.getenv("DEEPSEEK_TEMPERATURE", "0.7"))
@@ -106,6 +106,20 @@ class AuraWellSettings:
     # External Services
     WEATHER_API_KEY: Optional[str] = os.getenv("WEATHER_API_KEY")
     TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
+
+    # --- MCP (Model Context Protocol) Configuration ---
+    MCP_ENABLE_REAL_TOOLS: bool = os.getenv("MCP_ENABLE_REAL_TOOLS", "true").lower() == "true"
+    MCP_TOOL_MODE: str = os.getenv("MCP_TOOL_MODE", "hybrid")  # real_mcp, placeholder, hybrid
+    MCP_SERVER_TIMEOUT: float = float(os.getenv("MCP_SERVER_TIMEOUT", "30.0"))
+
+    # MCP Tool API Keys
+    BRAVE_API_KEY: Optional[str] = os.getenv("BRAVE_API_KEY")
+    GITHUB_TOKEN: Optional[str] = os.getenv("GITHUB_TOKEN")
+    FIGMA_TOKEN: Optional[str] = os.getenv("FIGMA_TOKEN")
+
+    # MCP Server Paths
+    MCP_SQLITE_DB_PATH: str = os.getenv("MCP_SQLITE_DB_PATH", "./aurawell.db")
+    MCP_FILESYSTEM_ROOT: str = os.getenv("MCP_FILESYSTEM_ROOT", "/tmp/aurawell")
 
     # --- RAG Service Configuration ---
     ALIBABA_CLOUD_FC_ENDPOINT: Optional[str] = os.getenv("ALIBABA_CLOUD_FC_ENDPOINT")
@@ -185,6 +199,30 @@ class AuraWellSettings:
             "function_name": cls.RAG_FC_FUNCTION_NAME,
             "timeout": cls.RAG_REQUEST_TIMEOUT,
             "max_retries": cls.RAG_MAX_RETRIES,
+        }
+
+    @classmethod
+    def get_mcp_config(cls) -> Dict[str, Any]:
+        """
+        Get MCP (Model Context Protocol) configuration
+
+        Returns:
+            Dictionary with MCP configuration
+        """
+        return {
+            "enable_real_tools": cls.MCP_ENABLE_REAL_TOOLS,
+            "tool_mode": cls.MCP_TOOL_MODE,
+            "server_timeout": cls.MCP_SERVER_TIMEOUT,
+            "api_keys": {
+                "brave": cls.BRAVE_API_KEY,
+                "github": cls.GITHUB_TOKEN,
+                "weather": cls.WEATHER_API_KEY,
+                "figma": cls.FIGMA_TOKEN,
+            },
+            "server_paths": {
+                "sqlite_db": cls.MCP_SQLITE_DB_PATH,
+                "filesystem_root": cls.MCP_FILESYSTEM_ROOT,
+            },
         }
 
     @classmethod

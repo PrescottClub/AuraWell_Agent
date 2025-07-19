@@ -270,6 +270,153 @@ async def health_check():
         "version": "1.0.0"
     }
 
+
+@app.get("/api/v1/mcp/health", response_model=BaseResponse, tags=["MCP Tools"])
+async def mcp_health_check():
+    """
+    MCP工具健康检查端点
+
+    检查MCP工具系统的运行状态，包括：
+    - 真实MCP服务器连接状态
+    - 工具可用性
+    - 性能指标
+    - 告警状态
+    """
+    try:
+        from ..langchain_agent.mcp_tools_manager_v2 import get_mcp_tools_manager_v2, ToolMode
+        from ..langchain_agent.mcp_performance_monitor import get_performance_monitor
+
+        # 获取MCP工具管理器
+        mcp_manager = await get_mcp_tools_manager_v2(ToolMode.HYBRID)
+
+        # 获取性能监控器
+        performance_monitor = get_performance_monitor()
+
+        # 收集健康状态信息
+        health_data = {
+            "mcp_tools_status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "tool_manager": {
+                "mode": mcp_manager.tool_mode.value,
+                "performance_report": mcp_manager.get_performance_report()
+            },
+            "performance_monitoring": {
+                "is_active": performance_monitor.is_monitoring,
+                "summary": await performance_monitor.get_performance_summary(hours=1),
+                "alerts": await performance_monitor.check_alerts()
+            }
+        }
+
+        # 检查是否有严重告警
+        alerts = health_data["performance_monitoring"]["alerts"]
+        critical_alerts = [alert for alert in alerts if alert.get("level") == "critical"]
+
+        if critical_alerts:
+            health_data["mcp_tools_status"] = "degraded"
+            health_data["critical_issues"] = len(critical_alerts)
+
+        return BaseResponse(
+            success=True,
+            message="MCP工具健康检查完成",
+            data=health_data,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"MCP健康检查失败: {e}")
+        return BaseResponse(
+            success=False,
+            message="MCP工具健康检查失败",
+            data={
+                "mcp_tools_status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            },
+            timestamp=datetime.now()
+        )
+
+
+@app.get("/api/v1/mcp/tools", response_model=BaseResponse, tags=["MCP Tools"])
+async def list_mcp_tools():
+    """
+    列出所有可用的MCP工具
+
+    返回当前系统中可用的MCP工具列表，包括工具状态和基本信息
+    """
+    try:
+        from ..langchain_agent.mcp_tools_manager_v2 import get_mcp_tools_manager_v2, ToolMode
+
+        # 获取MCP工具管理器
+        mcp_manager = await get_mcp_tools_manager_v2(ToolMode.HYBRID)
+
+        # 获取工具列表
+        tools_info = {
+            "available_tools": [
+                "calculator", "database-sqlite", "time", "filesystem", "brave-search",
+                "quickchart", "fetch", "sequential-thinking", "memory", "weather",
+                "run-python", "github", "figma"
+            ],
+            "tool_mode": mcp_manager.tool_mode.value,
+            "performance_stats": mcp_manager.enhanced_tools.performance_stats
+        }
+
+        return BaseResponse(
+            success=True,
+            message="MCP工具列表获取成功",
+            data=tools_info,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"获取MCP工具列表失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP工具列表失败: {str(e)}"
+        )
+
+
+@app.get("/api/v1/mcp/performance", response_model=BaseResponse, tags=["MCP Tools"])
+async def get_mcp_performance_report():
+    """
+    获取MCP工具性能报告
+
+    返回详细的性能指标，包括：
+    - 工具调用统计
+    - 响应时间分析
+    - 成功率统计
+    - 告警信息
+    """
+    try:
+        from ..langchain_agent.mcp_performance_monitor import get_performance_monitor
+
+        # 获取性能监控器
+        performance_monitor = get_performance_monitor()
+
+        # 获取性能报告
+        performance_data = {
+            "summary_24h": await performance_monitor.get_performance_summary(hours=24),
+            "summary_1h": await performance_monitor.get_performance_summary(hours=1),
+            "current_alerts": await performance_monitor.check_alerts(),
+            "monitoring_status": {
+                "is_active": performance_monitor.is_monitoring,
+                "buffer_size": len(performance_monitor.metrics_buffer)
+            }
+        }
+
+        return BaseResponse(
+            success=True,
+            message="MCP性能报告获取成功",
+            data=performance_data,
+            timestamp=datetime.now()
+        )
+
+    except Exception as e:
+        logger.error(f"获取MCP性能报告失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP性能报告失败: {str(e)}"
+        )
+
 # Global variables for dependency injection
 _db_manager = None
 _user_repo = None
@@ -1803,7 +1950,7 @@ async def login(login_request: LoginRequest):
         AuthenticationException: If authentication fails
     """
     try:
-        user_id = authenticate_user(login_request.username, login_request.password)
+        user_id = await authenticate_user(login_request.username, login_request.password)
 
         if not user_id:
             raise AuthenticationException(
@@ -1856,7 +2003,8 @@ async def register(
         if existing_user:
             raise ValidationException(
                 message="Username already exists",
-                error_code=ErrorCode.DUPLICATE_RESOURCE,
+                field="username",
+                value=register_request.username
             )
 
         # Check if email already exists
@@ -1864,7 +2012,8 @@ async def register(
         if existing_email:
             raise ValidationException(
                 message="Email already registered",
-                error_code=ErrorCode.DUPLICATE_RESOURCE,
+                field="email",
+                value=register_request.email
             )
 
         # Create user profile
@@ -1873,8 +2022,9 @@ async def register(
         import hashlib
         import uuid
 
-        # Hash password
-        password_hash = hashlib.sha256(register_request.password.encode()).hexdigest()
+        # Hash password using bcrypt for security
+        from ..auth.jwt_auth import authenticator
+        password_hash = authenticator.get_password_hash(register_request.password)
 
         # Process health data
         health_data = register_request.health_data or {}
@@ -4265,15 +4415,57 @@ async def get_health_plan(
                 module_type="diet",
                 title="营养饮食计划",
                 description="个性化的营养饮食建议",
-                content={"daily_calories": 2000, "meal_plan": "详细的每日餐食安排"},
+                content={
+                    "daily_calories": 2000,
+                    "meal_plan": "详细的每日餐食安排",
+                    "recommendations": [
+                        {
+                            "category": "nutrition",
+                            "title": "蛋白质摄入",
+                            "content": "每餐包含优质蛋白质，如鸡胸肉、鱼类、豆类等",
+                            "priority": "high"
+                        },
+                        {
+                            "category": "nutrition",
+                            "title": "蔬菜搭配",
+                            "content": "每餐至少包含2种不同颜色的蔬菜，确保营养均衡",
+                            "priority": "medium"
+                        }
+                    ]
+                },
+                duration_days=30,
+            ),
+            HealthPlanModule(
+                module_type="exercise",
+                title="运动健身计划",
+                description="科学的运动训练方案",
+                content={
+                    "weekly_frequency": 4,
+                    "session_duration": 45,
+                    "intensity": "moderate",
+                    "recommendations": [
+                        {
+                            "category": "cardio",
+                            "title": "有氧运动",
+                            "content": "每周3次有氧运动，如快走、慢跑或游泳",
+                            "priority": "high"
+                        },
+                        {
+                            "category": "strength",
+                            "title": "力量训练",
+                            "content": "每周2次力量训练，重点锻炼核心肌群",
+                            "priority": "medium"
+                        }
+                    ]
+                },
                 duration_days=30,
             )
         ]
 
         plan = HealthPlan(
             plan_id=plan_id,
-            title="个性化健康计划",
-            description="根据您的需求定制的健康管理方案",
+            title="个性化减重计划",
+            description="基于您的身体状况和目标，为您制定的专属减重方案",
             modules=sample_modules,
             duration_days=30,
             status="active",
@@ -4282,8 +4474,35 @@ async def get_health_plan(
             updated_at=datetime.now(),
         )
 
+        # 添加专家建议
+        recommendations = [
+            {
+                "category": "diet",
+                "title": "饮食建议",
+                "content": "每日控制热量摄入在1500-1800卡路里，增加蛋白质摄入，减少精制碳水化合物。",
+                "priority": "high"
+            },
+            {
+                "category": "exercise",
+                "title": "运动计划",
+                "content": "每周进行3-4次有氧运动，每次30-45分钟，结合力量训练。",
+                "priority": "high"
+            },
+            {
+                "category": "lifestyle",
+                "title": "生活方式",
+                "content": "保证每晚7-8小时睡眠，减少压力，定期监测体重变化。",
+                "priority": "medium"
+            }
+        ]
+
+        # 将recommendations添加到plan对象中
+        plan_dict = plan.model_dump()
+        plan_dict['recommendations'] = recommendations
+
         return HealthPlanResponse(
-            message="Health plan retrieved successfully", plan=plan
+            message="Health plan retrieved successfully",
+            plan=HealthPlan(**plan_dict)
         )
 
     except Exception as e:
@@ -4905,7 +5124,12 @@ async def get_activity_data(
 
         # Get activity data using tools
         activity_tool = tools_registry.get_tool("get_user_activity_summary")
-        activity_data = await activity_tool(current_user_id, days=days)
+        if activity_tool:
+            activity_data = await activity_tool(current_user_id, days=days)
+        else:
+            # Fallback to direct function call if tool not registered
+            from ..core.health_tools import get_user_activity_summary
+            activity_data = await get_user_activity_summary(current_user_id, days=days)
 
         # Convert to API format
         activity_summaries = []
@@ -5263,6 +5487,8 @@ async def chat_message_frontend_compatible(
     这是前端期望的主要聊天API端点，映射到健康咨询功能
     """
     try:
+        logger.info(f"收到聊天消息请求: user_id={current_user_id}, message={request.message[:50]}...")
+
         # 使用agent_router处理消息，保持API兼容性
         response = await agent_router.process_message(
             user_id=current_user_id,
@@ -5277,20 +5503,41 @@ async def chat_message_frontend_compatible(
         # 生成对话ID（如果没有提供）
         conversation_id = request.conversation_id or f"conv_{current_user_id}_{int(datetime.now().timestamp())}"
 
+        # 提取回复内容，处理不同的响应格式
+        reply_content = ""
+        if response.get("success", True):
+            reply_content = response.get("message", "")
+            # 如果是错误响应但有消息内容，也使用该内容
+            if not reply_content and response.get("data", {}).get("error"):
+                reply_content = "抱歉，我现在遇到了一些技术问题。请稍后再试。"
+        else:
+            reply_content = response.get("message", "抱歉，我现在遇到了一些技术问题。请稍后再试。")
+
+        # 确保回复内容不为空
+        if not reply_content:
+            reply_content = "抱歉，我现在无法处理您的请求。请稍后再试。"
+
         # 适配为前端期望格式
-        return {
-            "reply": response.get("message", ""),
+        result = {
+            "reply": reply_content,
             "conversation_id": conversation_id,
             "timestamp": datetime.now().isoformat(),
-            "suggestions": [],
-            "quick_replies": [],
-            "status": "success"
+            "suggestions": response.get("suggestions", []),
+            "quick_replies": response.get("quick_replies", []),
+            "status": "success" if response.get("success", True) else "error"
         }
+
+        logger.info(f"聊天消息处理完成: status={result['status']}, reply_length={len(reply_content)}")
+        return result
+
     except Exception as e:
         logger.error(f"Chat message failed: {e}")
+        import traceback
+        logger.error(f"Chat message error traceback: {traceback.format_exc()}")
+
         return {
             "reply": "抱歉，我现在遇到了一些技术问题。请稍后再试。",
-            "conversation_id": request.conversation_id,
+            "conversation_id": request.conversation_id or f"conv_{current_user_id}_{int(datetime.now().timestamp())}",
             "timestamp": datetime.now().isoformat(),
             "suggestions": [],
             "quick_replies": [],

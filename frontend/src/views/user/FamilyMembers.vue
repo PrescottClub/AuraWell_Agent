@@ -339,12 +339,12 @@ const viewMemberHealth = (member) => {
   router.push(`/family/member/${member.user_id}/health`)
 }
 
-const editMember = (member) => {
+const editMember = () => {
   // 打开编辑成员弹窗
   showMemberManagement.value = true
 }
 
-const managePermissions = (member) => {
+const managePermissions = () => {
   // 打开权限管理弹窗
   showMemberManagement.value = true
 }

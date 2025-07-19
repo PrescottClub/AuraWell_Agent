@@ -1,18 +1,18 @@
 <template>
-  <div 
-    class="insight-card" 
+  <div
+    class="aura-card"
     :class="severityClass"
     v-motion
-    :initial="{ y: 0, boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' }"
-    :hovered="{ y: -5, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }"
+    :initial="{ y: 0 }"
+    :hovered="{ y: -2 }"
   >
     <div class="insight-header">
       <div class="insight-icon">
         <component :is="iconComponent" :style="{ color: iconColor }" />
       </div>
       <div class="insight-meta">
-        <h4 class="insight-title">{{ insight.title }}</h4>
-        <div class="insight-category">{{ categoryLabel }}</div>
+        <h4 class="text-heading-4 mb-1">{{ insight.title }}</h4>
+        <div class="text-caption bg-background-alt px-2 py-1 rounded inline-block">{{ categoryLabel }}</div>
       </div>
       <div class="insight-confidence">
         <a-tooltip :title="`AI分析置信度: ${(insight.confidence * 100).toFixed(0)}%`">
@@ -278,31 +278,17 @@ const handleFeedback = () => {
 </script>
 
 <style scoped>
-.insight-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #1890ff;
-  transition: all 0.3s ease;
-}
-
-.insight-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
+/* 使用新的aura设计系统 */
 .insight-positive {
-  border-left-color: #52c41a;
+  border-left: 4px solid var(--color-success);
 }
 
 .insight-warning {
-  border-left-color: #faad14;
+  border-left: 4px solid var(--color-warning);
 }
 
 .insight-critical {
-  border-left-color: #ff4d4f;
+  border-left: 4px solid var(--color-error);
 }
 
 .insight-header {
@@ -319,23 +305,6 @@ const handleFeedback = () => {
 
 .insight-meta {
   flex: 1;
-}
-
-.insight-title {
-  margin: 0 0 4px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #262626;
-  line-height: 1.4;
-}
-
-.insight-category {
-  font-size: 12px;
-  color: #8c8c8c;
-  background: #f5f5f5;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-block;
 }
 
 .insight-confidence {

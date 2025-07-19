@@ -308,7 +308,7 @@ const getPriorityClass = (priority) => {
 
 .panel-header {
   padding: 20px;
-  background: linear-gradient(135deg, theme('colors.gemini.blue') 0%, theme('colors.gemini.purple') 100%);
+  background: theme('colors.primary.500');
   color: white;
 }
 

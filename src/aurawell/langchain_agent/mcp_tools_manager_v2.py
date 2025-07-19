@@ -13,6 +13,7 @@ from enum import Enum
 
 from .mcp_tools_manager import MCPToolsManager, IntentAnalyzer, WorkflowResult
 from .mcp_interface import MCPToolInterface
+from .mcp_tools_enhanced import EnhancedMCPTools, ToolExecutionMode
 
 logger = logging.getLogger(__name__)
 
@@ -49,113 +50,60 @@ class MCPToolsManagerV2(MCPToolsManager):
     def __init__(self, tool_mode: ToolMode = ToolMode.HYBRID):
         super().__init__()
         self.tool_mode = tool_mode
-        self.real_mcp_interface = None
-        self.placeholder_interface = MCPToolInterface()
+
+        # 映射工具模式
+        enhanced_mode = ToolExecutionMode.HYBRID
+        if tool_mode == ToolMode.REAL_MCP:
+            enhanced_mode = ToolExecutionMode.REAL
+        elif tool_mode == ToolMode.PLACEHOLDER:
+            enhanced_mode = ToolExecutionMode.PLACEHOLDER
+
+        # 使用增强工具实现
+        self.enhanced_tools = EnhancedMCPTools(enhanced_mode)
         self.tool_performance_stats = {}
-        
+
         logger.info(f"🚀 初始化MCP工具管理器v2.0，模式: {tool_mode.value}")
     
     async def initialize(self):
         """初始化工具管理器"""
-        if self.tool_mode in [ToolMode.REAL_MCP, ToolMode.HYBRID]:
-            try:
-                # 尝试初始化真实MCP接口
-                from .mcp_real_interface import get_real_mcp_interface
-                self.real_mcp_interface = await get_real_mcp_interface()
-                logger.info("✅ 真实MCP接口初始化成功")
-            except ImportError:
-                logger.warning("⚠️ 真实MCP依赖未安装，请运行: pip install 'mcp[cli]'")
-                if self.tool_mode == ToolMode.REAL_MCP:
-                    raise RuntimeError("真实MCP模式需要安装MCP依赖")
-                self.tool_mode = ToolMode.PLACEHOLDER
-            except Exception as e:
-                logger.warning(f"⚠️ 真实MCP接口初始化失败: {e}")
-                if self.tool_mode == ToolMode.REAL_MCP:
-                    raise
-                self.tool_mode = ToolMode.PLACEHOLDER
-        
+        try:
+            # 初始化增强工具
+            await self.enhanced_tools.initialize_real_interface()
+            logger.info("✅ 增强MCP工具初始化成功")
+        except ImportError:
+            logger.warning("⚠️ 真实MCP依赖未安装，请运行: pip install mcp")
+            if self.tool_mode == ToolMode.REAL_MCP:
+                raise RuntimeError("真实MCP模式需要安装MCP依赖")
+        except Exception as e:
+            logger.warning(f"⚠️ 增强MCP工具初始化失败: {e}")
+            if self.tool_mode == ToolMode.REAL_MCP:
+                raise
+
         logger.info(f"🎯 最终工具模式: {self.tool_mode.value}")
     
     async def call_tool_smart(self, tool_name: str, action: str, parameters: Dict[str, Any]) -> ToolCallResult:
         """
         智能工具调用
-        根据模式选择真实MCP工具或占位符工具
+        使用增强工具实现智能降级
         """
-        start_time = asyncio.get_event_loop().time()
-        
-        # 混合模式：优先尝试真实工具
-        if self.tool_mode == ToolMode.HYBRID and self.real_mcp_interface:
-            try:
-                result = await self._call_real_mcp_tool(tool_name, action, parameters)
-                execution_time = asyncio.get_event_loop().time() - start_time
-                self._update_performance_stats(tool_name, True, execution_time)
-                return ToolCallResult(
-                    success=True,
-                    result=result,
-                    tool_name=tool_name,
-                    mode_used=ToolMode.REAL_MCP,
-                    execution_time=execution_time
-                )
-            except Exception as e:
-                logger.warning(f"⚠️ 真实MCP工具调用失败，降级到占位符: {e}")
-                # 降级到占位符
-                result = await self._call_placeholder_tool(tool_name, action, parameters)
-                execution_time = asyncio.get_event_loop().time() - start_time
-                return ToolCallResult(
-                    success=True,
-                    result=result,
-                    tool_name=tool_name,
-                    mode_used=ToolMode.PLACEHOLDER,
-                    execution_time=execution_time
-                )
-        
-        # 真实MCP模式
-        elif self.tool_mode == ToolMode.REAL_MCP:
-            try:
-                result = await self._call_real_mcp_tool(tool_name, action, parameters)
-                execution_time = asyncio.get_event_loop().time() - start_time
-                self._update_performance_stats(tool_name, True, execution_time)
-                return ToolCallResult(
-                    success=True,
-                    result=result,
-                    tool_name=tool_name,
-                    mode_used=ToolMode.REAL_MCP,
-                    execution_time=execution_time
-                )
-            except Exception as e:
-                execution_time = asyncio.get_event_loop().time() - start_time
-                self._update_performance_stats(tool_name, False, execution_time)
-                return ToolCallResult(
-                    success=False,
-                    result=None,
-                    tool_name=tool_name,
-                    mode_used=ToolMode.REAL_MCP,
-                    error=str(e),
-                    execution_time=execution_time
-                )
-        
-        # 占位符模式
-        else:
-            try:
-                result = await self._call_placeholder_tool(tool_name, action, parameters)
-                execution_time = asyncio.get_event_loop().time() - start_time
-                return ToolCallResult(
-                    success=True,
-                    result=result,
-                    tool_name=tool_name,
-                    mode_used=ToolMode.PLACEHOLDER,
-                    execution_time=execution_time
-                )
-            except Exception as e:
-                execution_time = asyncio.get_event_loop().time() - start_time
-                return ToolCallResult(
-                    success=False,
-                    result=None,
-                    tool_name=tool_name,
-                    mode_used=ToolMode.PLACEHOLDER,
-                    error=str(e),
-                    execution_time=execution_time
-                )
+        # 使用增强工具进行调用
+        enhanced_result = await self.enhanced_tools.call_tool(tool_name, action, parameters)
+
+        # 转换结果格式
+        mode_mapping = {
+            ToolExecutionMode.REAL: ToolMode.REAL_MCP,
+            ToolExecutionMode.PLACEHOLDER: ToolMode.PLACEHOLDER,
+            ToolExecutionMode.HYBRID: ToolMode.HYBRID
+        }
+
+        return ToolCallResult(
+            success=enhanced_result.success,
+            result=enhanced_result.data,
+            tool_name=enhanced_result.tool_name,
+            mode_used=mode_mapping.get(enhanced_result.mode_used, ToolMode.PLACEHOLDER),
+            error=enhanced_result.error,
+            execution_time=enhanced_result.execution_time
+        )
     
     async def _call_real_mcp_tool(self, tool_name: str, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """调用真实MCP工具"""
@@ -309,18 +257,32 @@ class MCPToolsManagerV2(MCPToolsManager):
     
     def get_performance_report(self) -> Dict[str, Any]:
         """获取工具性能报告"""
+        enhanced_report = self.enhanced_tools.get_performance_report()
+
         return {
             "tool_mode": self.tool_mode.value,
-            "performance_stats": self.tool_performance_stats,
-            "summary": {
-                "total_tools_used": len(self.tool_performance_stats),
-                "total_calls": sum(stats["total_calls"] for stats in self.tool_performance_stats.values()),
-                "overall_success_rate": (
-                    sum(stats["successful_calls"] for stats in self.tool_performance_stats.values()) /
-                    max(sum(stats["total_calls"] for stats in self.tool_performance_stats.values()), 1)
-                ) * 100
-            }
+            "enhanced_tools_report": enhanced_report,
+            "legacy_stats": self.tool_performance_stats,
+            "summary": enhanced_report.get("summary", {}),
+            "recommendations": self._generate_performance_recommendations(enhanced_report)
         }
+
+    def _generate_performance_recommendations(self, report: Dict[str, Any]) -> List[str]:
+        """生成性能优化建议"""
+        recommendations = []
+
+        success_rate = report.get("summary", {}).get("success_rate", 100)
+        if success_rate < 90:
+            recommendations.append("工具成功率较低，建议检查网络连接和API配置")
+
+        total_calls = report.get("summary", {}).get("total_calls", 0)
+        if total_calls == 0:
+            recommendations.append("尚未有工具调用记录，建议进行功能测试")
+
+        if self.tool_mode == ToolMode.HYBRID:
+            recommendations.append("当前使用混合模式，可获得最佳的可靠性和性能平衡")
+
+        return recommendations
     
     async def health_check(self) -> Dict[str, Any]:
         """健康检查"""

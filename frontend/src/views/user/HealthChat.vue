@@ -5,14 +5,48 @@
       <!-- 消息列表 -->
       <div ref="messagesContainer" class="flex-1 overflow-y-auto p-6 space-y-6">
         <!-- 欢迎信息 -->
-        <div v-if="messages.length === 0" class="welcome-message text-center">
-          <div class="inline-block p-4 bg-secondary rounded-2xl mb-4">
-              <svg class="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <div v-if="messages.length === 0" class="text-center max-w-2xl mx-auto">
+          <div class="inline-block p-6 bg-background-surface rounded-2xl mb-6 border border-border-light">
+              <svg class="w-12 h-12 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
               </svg>
           </div>
-          <h2 class="text-2xl font-bold text-text-primary">AuraWell 健康助手</h2>
-          <p class="text-text-secondary mt-2">我可以帮助您分析健康数据、制定计划、获取建议等。</p>
+          <h2 class="text-heading-2 mb-3">AuraWell 健康助手</h2>
+          <p class="text-body-large mb-6">我可以帮助您分析健康数据、制定计划、获取建议等。</p>
+
+          <!-- 功能介绍卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <div class="aura-card text-center p-4">
+              <div class="w-8 h-8 bg-health/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <svg class="w-5 h-5 text-health" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <h3 class="text-heading-4 mb-2">健康分析</h3>
+              <p class="text-body-small">智能分析您的健康数据</p>
+            </div>
+
+            <div class="aura-card text-center p-4">
+              <div class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                  <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 102 0V3h4v1a1 1 0 102 0V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-heading-4 mb-2">计划制定</h3>
+              <p class="text-body-small">个性化健康计划推荐</p>
+            </div>
+
+            <div class="aura-card text-center p-4">
+              <div class="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <svg class="w-5 h-5 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-heading-4 mb-2">专业建议</h3>
+              <p class="text-body-small">基于科学的健康指导</p>
+            </div>
+          </div>
         </div>
         
         <ChatMessage 
@@ -24,14 +58,14 @@
       </div>
 
       <!-- 底部输入区域 -->
-      <div class="p-4 bg-white border-t border-border">
+      <div class="aura-card m-4 mt-0">
         <!-- 快速建议 -->
-        <div class="flex items-center space-x-2 mb-3 overflow-x-auto pb-2">
-            <button 
-                v-for="suggestion in quickStartSuggestions" 
+        <div class="flex items-center space-x-2 mb-4 overflow-x-auto pb-2">
+            <button
+                v-for="suggestion in quickStartSuggestions"
                 :key="suggestion"
                 @click="sendQuickSuggestion(suggestion)"
-                class="px-4 py-2 text-sm font-medium text-primary bg-secondary rounded-full whitespace-nowrap hover:bg-primary/20 transition-colors"
+                class="aura-btn aura-btn--secondary text-sm whitespace-nowrap"
             >
                 {{ suggestion }}
             </button>
@@ -50,53 +84,70 @@
             v-model="inputMessage"
             @input="handleInput"
             @keydown="handleKeyDown"
-            placeholder="输入 / 获取命令提示..."
-            class="w-full py-3 pl-4 pr-28 text-base bg-background-alt border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+            placeholder="输入 / 获取命令提示，或直接描述您的健康问题..."
+            class="aura-input pr-16 resize-none min-h-[48px]"
             rows="1"
             ref="inputArea"
           ></textarea>
-          <button 
+          <button
             @click="sendMessage"
             :disabled="!inputMessage.trim() || isTyping"
-            class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center focus-ring"
           >
-            <PaperAirplaneIcon class="w-6 h-6" />
+            <PaperAirplaneIcon v-if="!isTyping" class="w-5 h-5" />
+            <div v-else class="loading-dots">
+              <div></div><div></div><div></div>
+            </div>
           </button>
         </div>
       </div>
     </div>
 
     <!-- 历史记录侧边栏 (可选) -->
-    <aside v-if="showConversationHistory" class="w-80 bg-background-alt border-l border-border p-4">
-      <h3 class="text-lg font-semibold text-text-primary mb-4">对话历史</h3>
-      <!-- 历史记录列表 -->
+    <aside v-if="showConversationHistory" class="w-80 bg-background-surface border-l border-border">
+      <div class="aura-card m-4">
+        <h3 class="text-heading-4 mb-4">对话历史</h3>
+
+        <!-- 历史记录列表 -->
+        <div class="space-y-2">
+          <div
+            v-for="conversation in conversationHistory"
+            :key="conversation.id"
+            class="p-3 rounded-lg border border-border-light hover:border-border cursor-pointer transition-colors duration-200"
+            @click="loadConversation(conversation.id)"
+          >
+            <h4 class="text-body-small font-medium text-truncate">{{ conversation.title }}</h4>
+            <p class="text-caption mt-1">{{ formatDate(conversation.updated_at) }}</p>
+          </div>
+        </div>
+
+        <!-- 新建对话按钮 -->
+        <button
+          @click="startNewConversation"
+          class="aura-btn aura-btn--primary w-full mt-4"
+        >
+          新建对话
+        </button>
+      </div>
     </aside>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { message as antMessage } from 'ant-design-vue'
-import {
-  RobotOutlined,
-  SendOutlined,
-  HistoryOutlined,
-  ClearOutlined
-} from '@ant-design/icons-vue'
+// 移除未使用的图标导入
 import { PaperAirplaneIcon } from '@heroicons/vue/24/solid'
+import { useRouter } from 'vue-router'
 
 import ChatMessage from '../../components/chat/ChatMessage.vue'
 import TypingIndicator from '../../components/chat/TypingIndicator.vue'
 import CommandPalette from '../../components/chat/CommandPalette.vue'
 import HealthChatAPI from '../../api/chat.js'
-import { UserAPI } from '../../api/user.js'
 import { useAuthStore } from '../../stores/auth.js'
-import { useChatStore } from '../../stores/chat.js'
-import request from '../../utils/request.js'
 
-// 使用stores
-const { user } = useAuthStore()
-const { performRAGSearch, isRAGLoading, ragError, ragStatus } = useChatStore()
+const router = useRouter()
+const authStore = useAuthStore()
 
 // 响应式数据
 const inputMessage = ref('')
@@ -132,12 +183,29 @@ onMounted(async () => {
   console.log('🎯 HealthChat 组件开始初始化...')
   
   try {
-    // 🔑 第一步：严格的认证检查（必须成功后才能继续）
-    console.log('🔍 第一步：执行认证检查...')
-    await ensureAuthenticated()
-    console.log('✅ 认证检查完成')
+    // 🔧 优化：延迟认证检查，避免与其他组件认证逻辑冲突
+    await new Promise(resolve => setTimeout(resolve, 300))
     
-    // 🚀 第二步：初始化聊天功能（仅在认证成功后执行）
+    // 🔑 第一步：轻量级认证检查（不触发自动登录）
+    console.log('🔍 第一步：执行轻量级认证检查...')
+    
+    // 检查现有Token状态，不触发验证
+    if (!authStore.token || authStore.isTokenExpired) {
+      console.log('⚠️ 无有效Token，提示用户登录')
+      antMessage.warning('请先登录以使用健康咨询功能')
+      
+      // 🔧 优化：显示登录提示而不是强制重定向
+      setTimeout(() => {
+        if (!authStore.isAuthenticated) {
+          router.push('/login')
+        }
+      }, 2000)
+      return
+    }
+    
+    console.log('✅ Token状态检查通过')
+    
+    // 🚀 第二步：初始化聊天功能（仅在Token存在时执行）
     console.log('🔍 第二步：初始化聊天功能...')
     await initializeChat()
     console.log('✅ 聊天功能初始化完成')
@@ -155,12 +223,9 @@ onMounted(async () => {
     // 初始化失败时的容错处理
     antMessage.error('页面初始化失败，请稍后重试')
     
-    // 如果是认证相关错误，不再重复处理（ensureAuthenticated已处理）
-    // 如果是其他错误，显示友好提示
+    // 🔧 优化：不再自动刷新页面，让用户选择
     if (!error.message?.includes('认证') && !error.message?.includes('Token')) {
-      setTimeout(() => {
-        window.location.reload()
-      }, 3000)
+      console.log('💡 建议：请尝试刷新页面或重新登录')
     }
   }
 })
@@ -182,28 +247,7 @@ watch(inputMessage, () => {
     });
 });
 
-// 🔧 简化认证逻辑 - 使用统一的认证状态管理
-const ensureAuthenticated = async () => {
-  try {
-    const authStore = useAuthStore()
-
-    // 使用统一的认证检查方法
-    const isAuthenticated = await authStore.ensureAuthenticated()
-
-    if (isAuthenticated) {
-      console.log('✅ 用户认证成功')
-      return true
-    } else {
-      console.warn('⚠️ 用户认证失败')
-      antMessage.error('认证失败，请刷新页面重试')
-      return false
-    }
-  } catch (error) {
-    console.error('❌ 认证检查异常:', error)
-    antMessage.error('认证异常，请刷新页面重试')
-    return false
-  }
-}
+// 移除未使用的ensureAuthenticated函数
 
 // 🔧 自动登录逻辑已移至统一认证状态管理中
 
@@ -262,15 +306,15 @@ const sendMessage = async () => {
     return
   }
 
-  // 🔐 发送消息前确保认证状态
+  // 🔐 发送消息前轻量级认证检查
   const authStore = useAuthStore()
-  if (!authStore.isAuthenticated) {
-    console.warn('⚠️ 用户未认证，尝试重新认证...')
-    const isAuthenticated = await authStore.ensureAuthenticated()
-    if (!isAuthenticated) {
-      antMessage.error('认证失败，请刷新页面重试')
-      return
-    }
+  if (!authStore.isAuthenticated || authStore.isTokenExpired) {
+    console.warn('⚠️ 发送消息时检测到认证失效')
+    antMessage.error('认证已失效，请重新登录')
+    setTimeout(() => {
+      router.push('/login')
+    }, 1000)
+    return
   }
 
   const userMessage = {
@@ -313,11 +357,14 @@ const sendMessage = async () => {
   } catch (error) {
     console.error('发送消息失败:', error)
 
-    // 检查是否是认证错误
+    // 🔧 优化：检查错误类型，避免认证循环
     if (error.response?.status === 401) {
-      console.warn('🔐 认证失败，清除token并提示重新登录')
+      console.warn('🔐 API返回401，认证失效')
       authStore.clearToken()
-      antMessage.error('认证已过期，请刷新页面重新登录')
+      antMessage.error('认证已过期，请重新登录')
+      setTimeout(() => {
+        router.push('/login')
+      }, 1000)
     } else {
       // 添加错误消息
       const errorMessage = {
@@ -476,10 +523,7 @@ const scrollToBottom = () => {
   }
 }
 
-const clearCurrentChat = () => {
-  messages.value = []
-  antMessage.success('对话已清空')
-}
+
 
 const loadConversationHistory = async () => {
   loadingHistory.value = true
@@ -506,20 +550,11 @@ const loadConversation = async (conversationId) => {
   }
 }
 
-const deleteConversation = async (conversationId) => {
-  try {
-    await HealthChatAPI.deleteConversation(conversationId)
-    await loadConversationHistory()
-    antMessage.success('对话已删除')
-  } catch (error) {
-    console.error('删除对话失败:', error)
-    antMessage.error('删除对话失败')
-  }
-}
+
 </script>
 
 <style scoped>
-/* 聊天页面样式已移至全局glass-card和glow-btn类 */
+/* 聊天页面样式使用新的aura设计系统 */
 
 /* 聊天输入区域的阴影，使其悬浮 */
 .chat-input-area {
@@ -608,56 +643,7 @@ const deleteConversation = async (conversationId) => {
   justify-content: center;
 }
 
-.suggestion-btn {
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s;
-  background: white;
-  color: #64748b;
-}
-
-.suggestion-btn:hover {
-  background: linear-gradient(120deg, #a0e9ff, #a1c4fd, #c2e9fb);
-  border-color: transparent;
-  color: #1f2937;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(160, 233, 255, 0.25);
-}
-
-.chat-input-area {
-  background: white;
-  border-top: 1px solid #e2e8f0;
-  padding: 24px 32px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-  border-radius: 16px 16px 0 0;
-}
-
-.input-container {
-  display: flex;
-  gap: 16px;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: flex-end;
-}
-
-.message-input {
-  flex: 1;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.message-input:focus {
-  border-color: #a0e9ff;
-  box-shadow: 0 0 0 3px rgba(160, 233, 255, 0.1);
-}
-
-.send-button {
-  border-radius: 12px;
-  height: 44px;
-  padding: 0 24px;
-  font-weight: 600;
-}
+/* 使用新的aura设计系统，移除旧的自定义样式 */
 
 .input-hints {
   margin-top: 8px;

@@ -64,8 +64,14 @@ class DeepSeekClient:
                 "DeepSeek API key not provided. Set QWEN_API, DASHSCOPE_API_KEY, DEEP_SEEK_API, or DEEPSEEK_API_KEY environment variable."
             )
 
-        # 使用阿里云DashScope的兼容模式访问DeepSeek模型
-        self.base_url = base_url or os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        # 支持多种API端点：直接DeepSeek API或阿里云DashScope
+        self.base_url = (
+            base_url or
+            os.getenv("DEEPSEEK_BASE_URL") or
+            os.getenv("DASHSCOPE_BASE_URL") or
+            # 根据API Key来源判断使用哪个端点
+            self._determine_api_endpoint()
+        )
 
         self.client = OpenAI(
             api_key=self.api_key,
@@ -74,6 +80,34 @@ class DeepSeekClient:
         )
 
         logger.info(f"DeepSeek client initialized successfully with base_url: {self.base_url}")
+
+    def _determine_api_endpoint(self) -> str:
+        """
+        根据API密钥来源判断使用哪个API端点
+
+        Returns:
+            str: API端点URL
+        """
+        # 检查API密钥来源
+        dashscope_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("QWEN_API")
+        deepseek_key = os.getenv("DEEP_SEEK_API") or os.getenv("DEEPSEEK_API_KEY")
+
+        if self.api_key == dashscope_key:
+            # 使用阿里云DashScope端点
+            logger.info("使用阿里云DashScope API端点")
+            return "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        elif self.api_key == deepseek_key:
+            # 使用DeepSeek直接API端点
+            logger.info("使用DeepSeek直接API端点")
+            return "https://api.deepseek.com/v1"
+        else:
+            # 默认根据密钥格式判断
+            if self.api_key.startswith("sk-") and len(self.api_key) < 50:
+                logger.info("根据密钥格式判断：使用DeepSeek直接API端点")
+                return "https://api.deepseek.com/v1"
+            else:
+                logger.info("根据密钥格式判断：使用阿里云DashScope API端点")
+                return "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     def get_deepseek_response(
         self,

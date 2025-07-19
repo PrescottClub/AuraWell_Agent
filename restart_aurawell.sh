@@ -302,7 +302,7 @@ main() {
     echo "🔄 AuraWell 云服务器重启脚本"
     echo "=================================="
     echo
-    
+
     # 解析参数
     MODE="development"
     if [[ "$1" == "production" || "$1" == "prod" ]]; then
@@ -311,24 +311,24 @@ main() {
     else
         log_info "开发模式启动"
     fi
-    
+
     stop_services
     check_environment
-    
+
     # 可选：更新依赖
     if [[ "$2" == "update" ]]; then
         update_dependencies
     fi
-    
+
     start_backend
     start_frontend $MODE
-    
+
     # 等待服务稳定
     sleep 5
-    
+
     health_check
     show_status
-    
+
     log_info "🎉 AuraWell服务重启完成！"
     log_info "🌐 请访问 http://166.108.224.73:5173 开始使用 AuraWell"
 }

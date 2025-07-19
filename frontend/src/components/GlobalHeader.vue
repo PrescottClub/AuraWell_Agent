@@ -183,24 +183,22 @@ router.afterEach(() => {
 // 初始化
 updateCurrentMenu();
 
-// 🔧 开发环境自动认证和获取用户信息
+// 🔧 开发环境自动认证和获取用户信息 - 优化版本
 const initializeAuth = async () => {
   try {
-    // 确保认证状态
-    const isAuthenticated = await authStore.ensureAuthenticated();
-
-    if (isAuthenticated && !userStore.userProfile.username) {
+    // 只在已认证但缺少用户信息时获取用户信息
+    if (authStore.isAuthenticated && !userStore.userProfile.username) {
       // 获取用户信息
       await userStore.fetchUserProfile();
-      console.log('✅ 用户信息获取成功');
+      console.log('✅ GlobalHeader用户信息获取成功');
     }
   } catch (error) {
-    console.warn('⚠️ 认证初始化失败:', error);
+    console.warn('⚠️ GlobalHeader认证初始化失败:', error);
   }
 };
 
-// 初始化认证
-initializeAuth();
+// 延迟初始化，避免与其他组件冲突
+setTimeout(initializeAuth, 200);
 </script>
 
 <style scoped>

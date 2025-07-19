@@ -166,20 +166,23 @@ const handleLogout = async () => {
   }
 };
 
-// 初始化认证状态
+// 初始化认证状态 - 优化版本，避免重复调用
 const initializeAuth = async () => {
   try {
-    const isAuthenticated = await authStore.ensureAuthenticated();
-    if (isAuthenticated && !userStore.userProfile.username) {
-      await userStore.fetchUserProfile();
+    // 只在需要时进行认证检查
+    if (!authStore.isAuthenticated) {
+      const isAuthenticated = await authStore.ensureAuthenticated();
+      if (isAuthenticated && !userStore.userProfile.username) {
+        await userStore.fetchUserProfile();
+      }
     }
   } catch (error) {
-    console.warn('⚠️ 认证初始化失败:', error);
+    console.warn('⚠️ BasicLayout认证初始化失败:', error);
   }
 };
 
-// 页面加载时初始化
-initializeAuth();
+// 延迟初始化，避免与其他组件冲突
+setTimeout(initializeAuth, 100);
 </script>
 
 <style scoped>

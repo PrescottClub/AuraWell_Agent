@@ -4,6 +4,7 @@ JWT Authentication System
 Provides JWT token generation, validation, and user authentication for the FastAPI application.
 """
 
+import asyncio
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
@@ -201,7 +202,7 @@ async def get_optional_user_id(
         return None
 
 
-def authenticate_user(username: str, password: str) -> Optional[str]:
+async def authenticate_user(username: str, password: str) -> Optional[str]:
     """
     Authenticate user with username and password
 
@@ -211,30 +212,75 @@ def authenticate_user(username: str, password: str) -> Optional[str]:
 
     Returns:
         User ID if authentication successful, None otherwise
-
-    Note:
-        This is a simplified implementation. In production, you would
-        validate against a user database with proper password hashing.
     """
-    # Demo users for testing (replace with database lookup)
-    demo_users = {
-        "demo_user": {
-            "user_id": "user_001",
-            "password_hash": authenticator.get_password_hash("demo_password"),
-        },
-        "test_user": {
-            "user_id": "user_002",
-            "password_hash": authenticator.get_password_hash("test_password"),
-        },
-    }
+    try:
+        # Import here to avoid circular imports
+        from ..repositories.user_repository import UserRepository
+        from ..database.connection import get_database_manager
+        import hashlib
 
-    user_data = demo_users.get(username)
-    if user_data and authenticator.verify_password(
-        password, user_data["password_hash"]
-    ):
-        return user_data["user_id"]
+        # Get database manager and create session
+        db_manager = get_database_manager()
+        async with db_manager.get_session() as session:
+            user_repo = UserRepository(session)
 
-    return None
+            # Look up user by username (display_name)
+            user_db = await user_repo.get_user_by_username(username)
+            if not user_db:
+                logger.warning(f"User not found: {username}")
+                # Fall back to demo users
+                demo_users = {
+                    "demo_user": {
+                        "user_id": "user_001",
+                        "password_hash": authenticator.get_password_hash("demo_password"),
+                    },
+                    "test_user": {
+                        "user_id": "user_002",
+                        "password_hash": authenticator.get_password_hash("test_password"),
+                    },
+                }
+
+                demo_user = demo_users.get(username)
+                if demo_user and authenticator.verify_password(password, demo_user["password_hash"]):
+                    logger.info(f"Demo user authenticated: {username}")
+                    return demo_user["user_id"]
+
+                logger.warning(f"No valid authentication method found for user: {username}")
+                return None
+
+            # Check if user has a stored password hash
+            if user_db.password_hash:
+                # Verify password using bcrypt
+                if authenticator.verify_password(password, user_db.password_hash):
+                    logger.info(f"User authenticated successfully: {username}")
+                    return user_db.user_id
+                else:
+                    logger.warning(f"Password verification failed for user: {username}")
+                    return None
+
+            # If no password hash, fall back to demo users for backward compatibility
+            demo_users = {
+                "demo_user": {
+                    "user_id": "user_001",
+                    "password_hash": authenticator.get_password_hash("demo_password"),
+                },
+                "test_user": {
+                    "user_id": "user_002",
+                    "password_hash": authenticator.get_password_hash("test_password"),
+                },
+            }
+
+            demo_user = demo_users.get(username)
+            if demo_user and authenticator.verify_password(password, demo_user["password_hash"]):
+                logger.info(f"Demo user authenticated: {username}")
+                return demo_user["user_id"]
+
+            logger.warning(f"No valid authentication method found for user: {username}")
+            return None
+
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        return None
 
 
 def create_user_token(user_id: str) -> Dict[str, Any]:

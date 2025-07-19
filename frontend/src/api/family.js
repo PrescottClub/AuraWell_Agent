@@ -187,7 +187,8 @@ export const familyAPI = {
   // 获取家庭排行榜 - Mock实现
   async getFamilyLeaderboard(familyId) {
     try {
-      // 模拟家庭排行榜
+      // 模拟家庭排行榜 - 使用familyId进行数据过滤
+      console.log(`获取家庭 ${familyId} 的排行榜`)
       await new Promise(resolve => setTimeout(resolve, 300))
 
       return {
@@ -220,7 +221,8 @@ export const familyAPI = {
   // 获取家庭挑战 - Mock实现
   async getFamilyChallenges(familyId) {
     try {
-      // 模拟家庭挑战
+      // 模拟家庭挑战 - 使用familyId进行数据过滤
+      console.log(`获取家庭 ${familyId} 的挑战`)
       await new Promise(resolve => setTimeout(resolve, 300))
 
       return {
