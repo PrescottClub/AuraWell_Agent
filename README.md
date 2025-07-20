@@ -186,9 +186,9 @@ graph TB
 ```
 AuraWell_Agent/
 ├── 📖 README.md              # 项目主要说明文档
+├── 🌐 README_EN.md           # 英文版说明文档
 ├── 📚 docs/                  # 📋 项目文档统一管理
 │   ├── DEPLOYMENT_README.md  # 🚀 部署指南
-│   ├── README_EN.md          # 🌐 英文版说明
 │   ├── MCP_TOOLS_REPAIR_REPORT.md # 🔧 MCP工具修复报告
 │   ├── AI_MODELS_TEST_SUMMARY.md  # 🤖 AI模型测试总结
 │   ├── CHAT_SERVICE_FIX_SUMMARY.md # 💬 聊天服务修复总结
