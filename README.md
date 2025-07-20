@@ -177,7 +177,54 @@ graph TB
 └───────────┘  └───────────┘  └───────────────────────────────┘
 ```
 
-</details>e
+</details>
+
+---
+
+## 📁 项目结构
+
+```
+AuraWell_Agent/
+├── 📖 README.md              # 项目主要说明文档
+├── 📚 docs/                  # 📋 项目文档统一管理
+│   ├── DEPLOYMENT_README.md  # 🚀 部署指南
+│   ├── README_EN.md          # 🌐 英文版说明
+│   ├── MCP_TOOLS_REPAIR_REPORT.md # 🔧 MCP工具修复报告
+│   ├── AI_MODELS_TEST_SUMMARY.md  # 🤖 AI模型测试总结
+│   ├── CHAT_SERVICE_FIX_SUMMARY.md # 💬 聊天服务修复总结
+│   ├── LANGCHAIN_AGENT_FIXES_SUMMARY.md # 🔗 LangChain代理修复总结
+│   ├── README_AI_TESTS.md    # 🧪 AI测试说明
+│   └── login_test_report.md  # 🔐 登录测试报告
+├── ⚙️ config/               # 📋 配置文件统一管理
+│   └── .cursorrules          # 🎯 Cursor IDE项目规则配置
+├── 🎨 frontend/              # 前端应用
+│   ├── src/                  # 源代码
+│   ├── public/               # 静态资源
+│   ├── package.json          # 依赖配置
+│   └── vite.config.js        # 构建配置
+├── 🔧 src/                   # 后端源码
+│   └── aurawell/             # 主应用模块
+│       ├── auth/             # 认证模块
+│       ├── core/             # 核心功能
+│       ├── database/         # 数据库模型
+│       ├── interfaces/       # API接口
+│       ├── langchain_agent/  # AI代理
+│       └── services/         # 业务服务
+├── 🧪 tests/                 # 测试代码
+│   ├── test_*.py             # 单元测试
+│   ├── quick_test.py         # 快速测试
+│   └── run_ai_tests.sh       # AI测试脚本
+├── 📜 scripts/               # 部署和管理脚本
+│   ├── start_aurawell_macos.sh # macOS启动脚本
+│   └── restart_aurawell_macos.sh # macOS重启脚本
+├── 🌐 nginx/                 # Nginx配置
+├── 📊 logs/                  # 日志文件
+├── 🗄️ migrations/            # 数据库迁移
+├── 📋 requirements.txt       # Python依赖
+├── 🔧 env.example           # 环境变量模板
+└── 🚀 start_aurawell.sh     # 启动脚本
+```
+
 ---
 
 ## 健康助手模块特色
