@@ -108,9 +108,9 @@ class AuraWellSettings:
     TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
 
     # --- MCP (Model Context Protocol) Configuration ---
-    MCP_ENABLE_REAL_TOOLS: bool = os.getenv("MCP_ENABLE_REAL_TOOLS", "true").lower() == "true"
-    MCP_TOOL_MODE: str = os.getenv("MCP_TOOL_MODE", "hybrid")  # real_mcp, placeholder, hybrid
-    MCP_SERVER_TIMEOUT: float = float(os.getenv("MCP_SERVER_TIMEOUT", "30.0"))
+    MCP_ENABLE_REAL_TOOLS: bool = "" #os.getenv("MCP_ENABLE_REAL_TOOLS", "true").lower() == "true"
+    MCP_TOOL_MODE: str = "" #os.getenv("MCP_TOOL_MODE", "hybrid")  # real_mcp, placeholder, hybrid
+    MCP_SERVER_TIMEOUT: float = 0.0 # float(os.getenv("MCP_SERVER_TIMEOUT", "30.0"))
 
     # MCP Tool API Keys
     BRAVE_API_KEY: Optional[str] = os.getenv("BRAVE_API_KEY")
