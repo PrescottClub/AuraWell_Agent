@@ -50,36 +50,40 @@ check_system() {
     fi
 }
 
-# 检查Python版本
+# 检查Python版本和uv环境
 check_python() {
-    log_step "检查Python版本..."
+    log_step "检查Python版本和uv环境..."
     
+    # 检查uv是否安装
+    if ! command -v uv &> /dev/null; then
+        log_error "uv 未安装，请安装uv包管理器"
+        log_info "安装命令: curl -LsSf https://astral.sh/uv/install.sh | sh"
+        exit 1
+    fi
+    
+    log_info "uv版本: $(uv --version)"
+    
+    # 检查Python版本
     if ! command -v python3 &> /dev/null; then
-        log_error "Python3 未安装，请安装Python 3.10+"
-        log_info "推荐使用 Homebrew: brew install python@3.10"
+        log_error "Python3 未安装"
         exit 1
     fi
     
     PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
     PYTHON_MAJOR_MINOR=$(echo $PYTHON_VERSION | cut -d'.' -f1,2)
     
-    if [[ "$PYTHON_MAJOR_MINOR" == "3.10" ]]; then
-        log_info "Python版本检查通过: $PYTHON_VERSION (3.10.x)"
+    if [[ "$PYTHON_MAJOR_MINOR" == "3.12" ]]; then
+        log_info "Python版本检查通过: $PYTHON_VERSION (3.12.x)"
     else
-        log_warn "推荐使用Python 3.10.x，当前: $PYTHON_VERSION"
+        log_warn "推荐使用Python 3.12.x，当前: $PYTHON_VERSION"
         log_info "尝试继续运行..."
     fi
     
-    # 检查conda环境
-    if command -v conda &> /dev/null; then
-        log_info "检测到conda，尝试激活AuraWellPython310环境..."
-        if conda env list | grep -q "AuraWellPython310"; then
-            source $(conda info --base)/etc/profile.d/conda.sh
-            conda activate AuraWellPython310
-            log_info "已激活conda环境: AuraWellPython310"
-        else
-            log_warn "未找到AuraWellPython310环境，使用系统Python"
-        fi
+    # 检查uv虚拟环境
+    if [[ -f "uv.lock" ]]; then
+        log_info "检测到uv项目，使用uv环境"
+    else
+        log_warn "未找到uv.lock文件，将使用系统Python"
     fi
 }
 
@@ -164,11 +168,15 @@ check_env_file() {
 install_dependencies() {
     log_step "安装Python依赖..."
     
-    if [[ -f "requirements.txt" ]]; then
-        pip3 install -r requirements.txt
+    # 使用uv安装Python依赖
+    if [[ -f "pyproject.toml" && -f "uv.lock" ]]; then
+        uv sync
+        log_info "uv Python依赖安装完成"
+    elif [[ -f "requirements.in" ]]; then
+        uv pip install -r requirements.in
         log_info "Python依赖安装完成"
     else
-        log_error "requirements.txt 文件不存在"
+        log_error "未找到pyproject.toml或requirements.in文件"
         exit 1
     fi
     
@@ -189,11 +197,11 @@ install_dependencies() {
 start_backend() {
     log_step "启动后端服务..."
     
-    # 检查主要的启动文件
+    # 使用uv运行Python应用
     if [[ -f "src/aurawell/main.py" ]]; then
-        BACKEND_CMD="python3 -m src.aurawell.main"
+        BACKEND_CMD="uv run python -m src.aurawell.main"
     elif [[ -f "src/aurawell/interfaces/api_interface.py" ]]; then
-        BACKEND_CMD="uvicorn src.aurawell.interfaces.api_interface:app --host 127.0.0.1 --port 8001"
+        BACKEND_CMD="uv run uvicorn src.aurawell.interfaces.api_interface:app --host 127.0.0.1 --port 8001"
     else
         log_error "找不到后端启动文件"
         exit 1
@@ -289,7 +297,7 @@ show_status() {
     echo
     echo "🔄 管理命令:"
     echo "  • 重启服务: ./scripts/restart_aurawell_macos.sh"
-    echo "  • 运行测试: python3 run_tests.py"
+    echo "  • 运行测试: uv run python -m pytest tests/"
     echo "  • 手动停止: kill \$(cat backend.pid frontend.pid)"
     echo
 }

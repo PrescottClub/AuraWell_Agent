@@ -83,6 +83,15 @@ check_environment() {
         log_warn "非macOS系统: $OSTYPE"
     fi
     
+    # 检查uv是否安装
+    if ! command -v uv &> /dev/null; then
+        log_error "uv 未安装，请安装uv包管理器"
+        log_info "安装命令: curl -LsSf https://astral.sh/uv/install.sh | sh"
+        exit 1
+    fi
+    
+    log_info "uv版本: $(uv --version)"
+    
     # 检查Python版本
     if ! command -v python3 &> /dev/null; then
         log_error "Python3 未安装"
@@ -92,10 +101,10 @@ check_environment() {
     PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
     PYTHON_MAJOR_MINOR=$(echo $PYTHON_VERSION | cut -d'.' -f1,2)
     
-    if [[ "$PYTHON_MAJOR_MINOR" == "3.10" ]]; then
+    if [[ "$PYTHON_MAJOR_MINOR" == "3.12" ]]; then
         log_info "Python版本: $PYTHON_VERSION ✅"
     else
-        log_warn "Python版本: $PYTHON_VERSION (推荐3.10.x)"
+        log_warn "Python版本: $PYTHON_VERSION (推荐3.12.x)"
     fi
     
     # 检查Node.js版本
@@ -113,13 +122,11 @@ check_environment() {
         log_warn "Node.js版本: v$NODE_VERSION (推荐18+)"
     fi
     
-    # 检查conda环境
-    if command -v conda &> /dev/null; then
-        if conda env list | grep -q "AuraWellPython310"; then
-            source $(conda info --base)/etc/profile.d/conda.sh
-            conda activate AuraWellPython310
-            log_info "已激活conda环境: AuraWellPython310"
-        fi
+    # 检查uv虚拟环境
+    if [[ -f "uv.lock" ]]; then
+        log_info "检测到uv项目，使用uv环境"
+    else
+        log_warn "未找到uv.lock文件，将使用系统Python"
     fi
     
     # 检查环境文件
@@ -140,11 +147,11 @@ check_environment() {
 start_backend() {
     log_step "启动后端服务..."
     
-    # 检查启动文件
+    # 检查启动文件，使用uv运行
     if [[ -f "src/aurawell/main.py" ]]; then
-        BACKEND_CMD="python3 -m src.aurawell.main"
+        BACKEND_CMD="uv run python -m src.aurawell.main"
     elif [[ -f "src/aurawell/interfaces/api_interface.py" ]]; then
-        BACKEND_CMD="uvicorn src.aurawell.interfaces.api_interface:app --host 127.0.0.1 --port 8001"
+        BACKEND_CMD="uv run uvicorn src.aurawell.interfaces.api_interface:app --host 127.0.0.1 --port 8001"
     else
         log_error "找不到后端启动文件"
         exit 1
@@ -240,7 +247,7 @@ show_status() {
     echo
     echo "🔄 管理命令:"
     echo "  • 重启服务: ./scripts/restart_aurawell_macos.sh"
-    echo "  • 运行测试: python3 run_tests.py"
+    echo "  • 运行测试: uv run python -m pytest tests/"
     echo "  • 停止服务: pkill -f 'uvicorn\\|npm run dev'"
     echo
 }
