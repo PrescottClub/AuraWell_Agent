@@ -1,0 +1,75 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.13]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv library
+      run: |
+        pip install pipx
+        pipx install uv
+        # 将 uv 路径添加到 GITHUB_PATH，这样后续步骤都能使用
+        echo "/root/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        # 现在 uv 应该在 PATH 中了
+        uv --version
+        uv sync --all-extras
+
+    - name: Set up environment variables
+      run: |
+        echo "PYTHONPATH=${{ github.workspace }}/src" >> $GITHUB_ENV
+        echo "DATABASE_URL=sqlite:///test.db" >> $GITHUB_ENV
+
+    - name: Create test environment file
+      run: |
+        cat > .env.test << EOF
+        # Test environment configuration
+        DATABASE_URL=sqlite:///test.db
+        SECRET_KEY=test_secret_key_for_ci
+        ALGORITHM=HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+        # AI Model API Keys (使用测试密钥或留空)
+        OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+        GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+
+        # 测试模式
+        TESTING=true
+        LOG_LEVEL=INFO
+        EOF
+
+    - name: Generate test report
+      if: always()
+      run: |
+        echo "## Backend Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "测试完成时间: $(date)" >> $GITHUB_STEP_SUMMARY
+        if [ -f coverage.xml ]; then
+          echo "Backend coverage report generated successfully" >> $GITHUB_STEP_SUMMARY
+        fi

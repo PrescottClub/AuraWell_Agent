@@ -3,20 +3,20 @@
  * 只导入项目中实际使用的图表类型和组件，减少Bundle大小
  */
 
-import { use } from 'echarts/core'
+import { use } from 'echarts/core';
 
 // 渲染器
-import { CanvasRenderer } from 'echarts/renderers'
+import { CanvasRenderer } from 'echarts/renderers';
 
 // 图表类型
-import { 
-  LineChart, 
-  BarChart, 
+import {
+  LineChart,
+  BarChart,
   PieChart,
   RadarChart,
   HeatmapChart,
-  ScatterChart
-} from 'echarts/charts'
+  ScatterChart,
+} from 'echarts/charts';
 
 // 组件
 import {
@@ -30,14 +30,14 @@ import {
   MarkLineComponent,
   MarkPointComponent,
   MarkAreaComponent,
-  CalendarComponent
-} from 'echarts/components'
+  CalendarComponent,
+} from 'echarts/components';
 
 // 注册必要的组件
 use([
   // 渲染器
   CanvasRenderer,
-  
+
   // 图表类型
   LineChart,
   BarChart,
@@ -45,7 +45,7 @@ use([
   RadarChart,
   HeatmapChart,
   ScatterChart,
-  
+
   // 组件
   TitleComponent,
   TooltipComponent,
@@ -57,7 +57,7 @@ use([
   MarkLineComponent,
   MarkPointComponent,
   MarkAreaComponent,
-  CalendarComponent
-])
+  CalendarComponent,
+]);
 
-export default use
+export default use;

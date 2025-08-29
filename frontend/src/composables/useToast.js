@@ -20,11 +20,11 @@ export function useToast() {
       id,
       message,
       type: options.type || 'info',
-      duration: options.duration === 0 ? 0 : (options.duration || 5000),
+      duration: options.duration === 0 ? 0 : options.duration || 5000,
     });
   };
 
-  const removeToast = (id) => {
+  const removeToast = id => {
     const index = toasts.value.findIndex(t => t.id === id);
     if (index !== -1) {
       toasts.value.splice(index, 1);
@@ -36,4 +36,4 @@ export function useToast() {
     showToast,
     removeToast,
   };
-} 
+}

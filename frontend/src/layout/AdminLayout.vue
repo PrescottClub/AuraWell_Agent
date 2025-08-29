@@ -13,7 +13,7 @@
           <span class="icon">🧪</span>
           <span>Prompt Playground</span>
         </router-link>
-         <router-link to="/admin/users" class="menu-item">
+        <router-link to="/admin/users" class="menu-item">
           <span class="icon">👥</span>
           <span>Users</span>
         </router-link>
@@ -25,8 +25,7 @@
   </div>
 </template>
 
-<script setup>
-</script>
+<script setup></script>
 
 <style scoped>
 .admin-layout {
@@ -58,7 +57,8 @@
   text-decoration: none;
   transition: all 0.3s;
 }
-.menu-item:hover, .router-link-exact-active {
+.menu-item:hover,
+.router-link-exact-active {
   color: #fff;
   background-color: #1890ff;
 }

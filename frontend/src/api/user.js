@@ -1,5 +1,5 @@
 // 使用真实API调用
-import request from '../utils/request'
+import request from '../utils/request';
 
 /**
  * 用户管理API服务 - 真实版本
@@ -12,11 +12,11 @@ export class UserAPI {
    */
   static async login(credentials) {
     try {
-      const response = await request.post('/auth/login', credentials)
-      return response
+      const response = await request.post('/auth/login', credentials);
+      return response;
     } catch (error) {
-      console.error('登录失败:', error)
-      throw error
+      console.error('登录失败:', error);
+      throw error;
     }
   }
 
@@ -27,11 +27,11 @@ export class UserAPI {
    */
   static async register(userData) {
     try {
-      const response = await request.post('/auth/register', userData)
-      return response
+      const response = await request.post('/auth/register', userData);
+      return response;
     } catch (error) {
-      console.error('注册失败:', error)
-      throw error
+      console.error('注册失败:', error);
+      throw error;
     }
   }
   /**
@@ -41,12 +41,12 @@ export class UserAPI {
    */
   static async validateCurrentToken() {
     try {
-      const response = await request.get('/auth/me')
-      return response && response.success
+      const response = await request.get('/auth/me');
+      return response && response.success;
     } catch (error) {
       // 任何错误（401、网络错误等）都表示Token无效
-      console.warn('Token验证失败:', error.response?.status || error.message)
-      return false
+      console.warn('Token验证失败:', error.response?.status || error.message);
+      return false;
     }
   }
 
@@ -56,11 +56,11 @@ export class UserAPI {
    */
   static async getMe() {
     try {
-      const response = await request.get('/auth/me')
-      return response
+      const response = await request.get('/auth/me');
+      return response;
     } catch (error) {
-      console.error('获取用户信息失败:', error)
-      throw error
+      console.error('获取用户信息失败:', error);
+      throw error;
     }
   }
 
@@ -70,11 +70,11 @@ export class UserAPI {
    */
   static async getProfile() {
     try {
-      const response = await request.get('/auth/profile')
-      return response
+      const response = await request.get('/auth/profile');
+      return response;
     } catch (error) {
-      console.error('获取用户档案失败:', error)
-      throw error
+      console.error('获取用户档案失败:', error);
+      throw error;
     }
   }
 
@@ -85,11 +85,11 @@ export class UserAPI {
    */
   static async updateProfile(profileData) {
     try {
-      const response = await request.put('/auth/profile', profileData)
-      return response
+      const response = await request.put('/auth/profile', profileData);
+      return response;
     } catch (error) {
-      console.error('更新用户档案失败:', error)
-      throw error
+      console.error('更新用户档案失败:', error);
+      throw error;
     }
   }
 
@@ -100,7 +100,7 @@ export class UserAPI {
   static async getHealthData() {
     try {
       // 模拟健康数据
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const mockHealthData = {
         weight: 70,
@@ -111,18 +111,18 @@ export class UserAPI {
         steps_today: 8500,
         sleep_hours: 7.5,
         water_intake: 2.1,
-        last_updated: new Date().toISOString()
-      }
+        last_updated: new Date().toISOString(),
+      };
 
       return {
         success: true,
         data: mockHealthData,
         message: '获取健康数据成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('获取健康数据失败:', error)
-      throw error
+      console.error('获取健康数据失败:', error);
+      throw error;
     }
   }
 
@@ -133,20 +133,20 @@ export class UserAPI {
    */
   static async updateHealthData(healthData) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       return {
         success: true,
         data: {
           ...healthData,
-          last_updated: new Date().toISOString()
+          last_updated: new Date().toISOString(),
         },
         message: '健康数据更新成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('更新健康数据失败:', error)
-      throw error
+      console.error('更新健康数据失败:', error);
+      throw error;
     }
   }
 
@@ -156,7 +156,7 @@ export class UserAPI {
    */
   static async getHealthGoals() {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const mockGoals = [
         {
@@ -168,7 +168,7 @@ export class UserAPI {
           unit: 'kg',
           deadline: '2024-09-17',
           status: 'active',
-          progress: 0
+          progress: 0,
         },
         {
           goal_id: 'goal_002',
@@ -179,19 +179,19 @@ export class UserAPI {
           unit: '步',
           deadline: '2024-12-31',
           status: 'active',
-          progress: 85
-        }
-      ]
+          progress: 85,
+        },
+      ];
 
       return {
         success: true,
         data: mockGoals,
         message: '获取健康目标成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('获取健康目标失败:', error)
-      throw error
+      console.error('获取健康目标失败:', error);
+      throw error;
     }
   }
 
@@ -202,7 +202,7 @@ export class UserAPI {
    */
   static async createHealthGoal(goalData) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const newGoal = {
         goal_id: 'goal_' + Date.now(),
@@ -210,18 +210,18 @@ export class UserAPI {
         current_value: 0,
         progress: 0,
         status: 'active',
-        created_at: new Date().toISOString()
-      }
+        created_at: new Date().toISOString(),
+      };
 
       return {
         success: true,
         data: newGoal,
         message: '健康目标创建成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('创建健康目标失败:', error)
-      throw error
+      console.error('创建健康目标失败:', error);
+      throw error;
     }
   }
 
@@ -233,23 +233,23 @@ export class UserAPI {
    */
   static async updateHealthGoal(goalId, goalData) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const updatedGoal = {
         goal_id: goalId,
         ...goalData,
-        updated_at: new Date().toISOString()
-      }
+        updated_at: new Date().toISOString(),
+      };
 
       return {
         success: true,
         data: updatedGoal,
         message: '健康目标更新成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('更新健康目标失败:', error)
-      throw error
+      console.error('更新健康目标失败:', error);
+      throw error;
     }
   }
 
@@ -260,17 +260,17 @@ export class UserAPI {
    */
   static async deleteHealthGoal() {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       return {
         success: true,
         data: null,
         message: '健康目标删除成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('删除健康目标失败:', error)
-      throw error
+      console.error('删除健康目标失败:', error);
+      throw error;
     }
   }
 
@@ -280,13 +280,13 @@ export class UserAPI {
    */
   static async logout() {
     try {
-      const response = await request.post('/auth/logout')
-      return response
+      const response = await request.post('/auth/logout');
+      return response;
     } catch (error) {
-      console.error('用户登出失败:', error)
-      throw error
+      console.error('用户登出失败:', error);
+      throw error;
     }
   }
 }
 
-export default UserAPI
+export default UserAPI;

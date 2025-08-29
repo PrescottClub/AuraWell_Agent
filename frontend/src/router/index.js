@@ -11,12 +11,12 @@ const routes = [
       {
         path: '',
         name: 'Home',
-        component: () => import('../views/user/UserHome.vue')
+        component: () => import('../views/user/UserHome.vue'),
       },
       {
         path: 'health-chat',
         name: 'HealthChat',
-        component: () => import('../views/user/HealthChat.vue')
+        component: () => import('../views/user/HealthChat.vue'),
       },
       /*
       {
@@ -50,69 +50,68 @@ const routes = [
         path: 'profile',
         name: 'Profile',
         component: () => import('../views/user/UserProfile.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'health-plan',
         name: 'HealthPlan',
         component: () => import('../views/user/HealthPlan.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'health-report',
         name: 'HealthReport',
         component: () => import('../views/user/HealthReport.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       // 家庭管理路由
       {
         path: 'family',
         name: 'FamilyDashboard',
         component: () => import('../views/user/FamilyDashboard.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'family/members',
         name: 'FamilyMembers',
         component: () => import('../views/user/FamilyMembers.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'family/member/:memberId/health',
         name: 'MemberHealth',
         component: () => import('../views/user/MemberHealth.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'family/challenges',
         name: 'FamilyChallenges',
         component: () => import('../views/user/FamilyChallenges.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'family/alerts',
         name: 'FamilyAlerts',
         component: () => import('../views/user/FamilyAlerts.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'family/settings',
         name: 'FamilySettings',
         component: () => import('../views/user/FamilySettings.vue'),
-        meta: { requiresAuth: true }
-      }
-
-    ]
+        meta: { requiresAuth: true },
+      },
+    ],
   },
   {
     path: '/login',
     name: 'Login',
-    component: UserLogin
+    component: UserLogin,
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../views/UserRegister.vue')
+    component: () => import('../views/UserRegister.vue'),
   },
   {
     path: '/admin',
@@ -120,33 +119,33 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/admin/dashboard'
+        redirect: '/admin/dashboard',
       },
       {
         path: 'dashboard',
         name: 'AdminDashboard',
         component: () => import('../views/admin/AdminDashboard.vue'),
-        meta: { requiresAuth: true, isAdmin: true }
+        meta: { requiresAuth: true, isAdmin: true },
       },
       {
         path: 'prompt-playground',
         name: 'PromptPlayground',
         component: () => import('../views/admin/PromptPlayground.vue'),
-        meta: { requiresAuth: true, isAdmin: true }
+        meta: { requiresAuth: true, isAdmin: true },
       },
-       {
+      {
         path: 'users',
         name: 'AdminUsers',
         component: () => import('../views/admin/AdminUsers.vue'),
-        meta: { requiresAuth: true, isAdmin: true }
-      }
-    ]
-  }
+        meta: { requiresAuth: true, isAdmin: true },
+      },
+    ],
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 });
 
 import { useAuthStore } from '../stores/auth';
@@ -169,14 +168,14 @@ router.beforeEach(async (to, _from, next) => {
         console.log('🔐 路由守卫：用户未认证，重定向到登录页');
         next({
           path: '/login',
-          query: { redirect: to.fullPath }
+          query: { redirect: to.fullPath },
         });
       }
     } catch (error) {
       console.error('❌ 路由守卫：认证检查失败', error);
       next({
         path: '/login',
-        query: { redirect: to.fullPath }
+        query: { redirect: to.fullPath },
       });
     }
   } else {
@@ -185,4 +184,4 @@ router.beforeEach(async (to, _from, next) => {
   }
 });
 
-export default router; 
+export default router;

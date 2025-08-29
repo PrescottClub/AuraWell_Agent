@@ -19,7 +19,7 @@
         <!-- 基本信息 -->
         <div class="form-section">
           <h3>基本信息</h3>
-          
+
           <a-form-item label="用户名" name="username">
             <a-input
               v-model="formData.username"
@@ -56,7 +56,7 @@
         <!-- 健康信息 -->
         <div class="form-section">
           <h3>健康信息</h3>
-          
+
           <a-row :gutter="16">
             <a-col :span="12">
               <a-form-item label="年龄" name="age">
@@ -129,10 +129,10 @@
 
         <!-- 提交按钮 -->
         <a-form-item>
-          <a-button 
-            type="primary" 
-            html-type="submit" 
-            size="large" 
+          <a-button
+            type="primary"
+            html-type="submit"
+            size="large"
             :loading="loading"
             block
           >
@@ -141,7 +141,8 @@
         </a-form-item>
 
         <div class="login-link">
-          已有账户？<router-link to="/login">立即登录</router-link>
+          已有账户？
+          <router-link to="/login">立即登录</router-link>
         </div>
       </a-form>
     </div>
@@ -149,13 +150,13 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
-import { UserAPI } from '../api/user.js'
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import { message } from 'ant-design-vue';
+import { UserAPI } from '../api/user.js';
 
-const router = useRouter()
-const loading = ref(false)
+const router = useRouter();
+const loading = ref(false);
 
 const formData = reactive({
   username: '',
@@ -166,52 +167,42 @@ const formData = reactive({
   gender: '',
   height: null,
   weight: null,
-  activity_level: ''
-})
+  activity_level: '',
+});
 
 const rules = {
   username: [
     { required: true, message: '请输入用户名' },
-    { min: 3, max: 20, message: '用户名长度应在3-20个字符之间' }
+    { min: 3, max: 20, message: '用户名长度应在3-20个字符之间' },
   ],
   email: [
     { required: true, message: '请输入邮箱地址' },
-    { type: 'email', message: '请输入有效的邮箱地址' }
+    { type: 'email', message: '请输入有效的邮箱地址' },
   ],
   password: [
     { required: true, message: '请输入密码' },
-    { min: 6, message: '密码长度至少6个字符' }
+    { min: 6, message: '密码长度至少6个字符' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码' },
-    { 
+    {
       validator: (rule, value) => {
         if (value !== formData.password) {
-          return Promise.reject('两次输入的密码不一致')
+          return Promise.reject('两次输入的密码不一致');
         }
-        return Promise.resolve()
-      }
-    }
+        return Promise.resolve();
+      },
+    },
   ],
-  age: [
-    { required: true, message: '请输入年龄' }
-  ],
-  gender: [
-    { required: true, message: '请选择性别' }
-  ],
-  height: [
-    { required: true, message: '请输入身高' }
-  ],
-  weight: [
-    { required: true, message: '请输入体重' }
-  ],
-  activity_level: [
-    { required: true, message: '请选择活动水平' }
-  ]
-}
+  age: [{ required: true, message: '请输入年龄' }],
+  gender: [{ required: true, message: '请选择性别' }],
+  height: [{ required: true, message: '请输入身高' }],
+  weight: [{ required: true, message: '请输入体重' }],
+  activity_level: [{ required: true, message: '请选择活动水平' }],
+};
 
 const handleRegister = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const registerData = {
       username: formData.username,
@@ -222,19 +213,19 @@ const handleRegister = async () => {
         gender: formData.gender,
         height: formData.height,
         weight: formData.weight,
-        activity_level: formData.activity_level
-      }
-    }
+        activity_level: formData.activity_level,
+      },
+    };
 
-    await UserAPI.register(registerData)
-    message.success('注册成功！请登录您的账户')
-    router.push('/login')
+    await UserAPI.register(registerData);
+    message.success('注册成功！请登录您的账户');
+    router.push('/login');
   } catch (error) {
-    message.error(error.response?.data?.detail || '注册失败，请重试')
+    message.error(error.response?.data?.detail || '注册失败，请重试');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>
@@ -272,7 +263,11 @@ const handleRegister = async () => {
   font-size: 3rem;
   margin-bottom: 16px;
   background: var(--color-health);
-  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-health) 0%,
+    var(--color-primary) 100%
+  );
   border-radius: 50%;
   width: 80px;
   height: 80px;
@@ -284,7 +279,8 @@ const handleRegister = async () => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -297,7 +293,11 @@ const handleRegister = async () => {
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: 8px;
-  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-health) 0%,
+    var(--color-primary) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -329,7 +329,11 @@ const handleRegister = async () => {
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-health) 0%,
+    var(--color-primary) 100%
+  );
 }
 
 .login-link {
@@ -351,7 +355,11 @@ const handleRegister = async () => {
 
 /* Ant Design 组件主题覆盖 */
 :deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, var(--color-health) 0%, var(--color-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-health) 0%,
+    var(--color-primary) 100%
+  );
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -360,7 +368,11 @@ const handleRegister = async () => {
 }
 
 :deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-health) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-health) 100%
+  );
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(45, 125, 50, 0.2);
 }

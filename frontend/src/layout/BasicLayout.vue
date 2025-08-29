@@ -5,7 +5,7 @@
       <!-- Logo 区域 -->
       <div class="p-4 border-b border-border">
         <div class="flex items-center space-x-3">
-          <img src="/vite.svg" class="w-8 h-8">
+          <img src="/vite.svg" class="w-8 h-8" />
           <h1 class="text-xl font-bold text-text-primary">AuraWell</h1>
         </div>
       </div>
@@ -19,12 +19,15 @@
           custom
           v-slot="{ isActive, navigate }"
         >
-          <a @click="navigate" :class="[
-            'flex items-center w-full text-left p-3 rounded-lg transition-colors duration-200 cursor-pointer',
-            isActive
-              ? 'bg-secondary text-primary font-semibold'
-              : 'text-text-secondary hover:bg-secondary/60'
-          ]">
+          <a
+            @click="navigate"
+            :class="[
+              'flex items-center w-full text-left p-3 rounded-lg transition-colors duration-200 cursor-pointer',
+              isActive
+                ? 'bg-secondary text-primary font-semibold'
+                : 'text-text-secondary hover:bg-secondary/60',
+            ]"
+          >
             <component :is="item.icon" class="w-5 h-5 mr-3" />
             <span>{{ item.name }}</span>
           </a>
@@ -49,7 +52,9 @@
         </div>
 
         <div v-else class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
+          <div
+            class="w-10 h-10 bg-secondary rounded-full flex items-center justify-center"
+          >
             <UserOutlined class="w-5 h-5 text-primary" />
           </div>
           <div class="flex-1">
@@ -96,13 +101,13 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { 
+import {
   HomeOutlined,
   MessageOutlined,
   UserOutlined,
   FileTextOutlined,
   TeamOutlined,
-  BarChartOutlined
+  BarChartOutlined,
 } from '@ant-design/icons-vue';
 import { useAuthStore } from '../stores/auth';
 import { useUserStore } from '../stores/user';

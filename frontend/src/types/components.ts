@@ -2,7 +2,7 @@
  * 组件相关类型定义
  */
 
-import type { Component } from 'vue'
+import type { Component } from 'vue';
 
 // 基础组件Props类型
 export interface BaseComponentProps {
@@ -132,7 +132,7 @@ export interface HealthCardProps extends BaseComponentProps {
   category: string;
   value: number | string;
   unit?: string;
-  icon: Component | string | Function;
+  icon: Component | string | (() => Component);
   trend?: number;
   trendPeriod?: string;
   status?: string;

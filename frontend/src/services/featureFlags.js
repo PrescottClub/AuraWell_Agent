@@ -26,7 +26,7 @@ const initializeFlags = () => {
 initializeFlags();
 
 export function useFeatureFlags() {
-  const getFlag = (key) => {
+  const getFlag = key => {
     return readonly(flags).value[key] || false;
   };
 
@@ -34,4 +34,4 @@ export function useFeatureFlags() {
     getFlag,
     allFlags: readonly(flags),
   };
-} 
+}

@@ -1,5 +1,5 @@
 // 🔥 天启行动：连接真实AI引擎
-import request from '../utils/request.js'
+import request from '../utils/request.js';
 
 /**
  * 健康管理聊天API服务 - 真实版本
@@ -13,22 +13,32 @@ export class HealthChatAPI {
    */
   static async sendMessage(message, conversationId = null) {
     try {
-      console.log('📤 发送聊天消息:', { message: message.substring(0, 50), conversationId })
+      console.log('📤 发送聊天消息:', {
+        message: message.substring(0, 50),
+        conversationId,
+      });
 
       // 🚀 真实API调用：连接后端AI引擎
       // 为聊天请求设置更长的超时时间（60秒）
-      const response = await request.post('/chat/message', {
-        message: message,
-        conversation_id: conversationId,
-        context: {}
-      }, {
-        timeout: 60000  // 60秒超时，给LLM足够的响应时间
-      })
+      const response = await request.post(
+        '/chat/message',
+        {
+          message: message,
+          conversation_id: conversationId,
+          context: {},
+        },
+        {
+          timeout: 60000, // 60秒超时，给LLM足够的响应时间
+        }
+      );
 
-      console.log('📥 收到后端响应:', response)
+      console.log('📥 收到后端响应:', response);
 
       // 处理响应数据，兼容不同的响应格式
-      const replyContent = response.reply || response.data?.reply || '抱歉，我现在无法处理您的请求。'
+      const replyContent =
+        response.reply ||
+        response.data?.reply ||
+        '抱歉，我现在无法处理您的请求。';
 
       return {
         data: {
@@ -37,36 +47,38 @@ export class HealthChatAPI {
           conversation_id: response.conversation_id || conversationId,
           timestamp: response.timestamp || new Date().toISOString(),
           suggestions: response.suggestions || [],
-          quickReplies: response.quick_replies || []
-        }
-      }
+          quickReplies: response.quick_replies || [],
+        },
+      };
     } catch (error) {
-      console.error('发送消息失败:', error)
+      console.error('发送消息失败:', error);
       console.error('错误详情:', {
         message: error.message,
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
         url: error.config?.url,
-        method: error.config?.method
-      })
+        method: error.config?.method,
+      });
 
       // 检查是否是后端返回的错误响应（包含回复内容）
       if (error.response?.data?.reply) {
-        console.log('后端返回错误响应但包含回复内容，使用该内容')
+        console.log('后端返回错误响应但包含回复内容，使用该内容');
         return {
           data: {
             reply: error.response.data.reply,
             content: error.response.data.reply,
-            conversation_id: error.response.data.conversation_id || conversationId,
-            timestamp: error.response.data.timestamp || new Date().toISOString(),
+            conversation_id:
+              error.response.data.conversation_id || conversationId,
+            timestamp:
+              error.response.data.timestamp || new Date().toISOString(),
             suggestions: error.response.data.suggestions || [],
-            quickReplies: error.response.data.quick_replies || []
-          }
-        }
+            quickReplies: error.response.data.quick_replies || [],
+          },
+        };
       }
 
-      throw error
+      throw error;
     }
   }
 
@@ -78,19 +90,22 @@ export class HealthChatAPI {
    */
   static async getConversationHistory(conversationId, limit = 50) {
     try {
-      const response = await request.get(`/chat/conversations/${conversationId}/messages`, {
-        params: { limit }
-      })
+      const response = await request.get(
+        `/chat/conversations/${conversationId}/messages`,
+        {
+          params: { limit },
+        }
+      );
       return {
         data: {
           messages: response.messages || [],
           conversation_id: conversationId,
-          total_count: response.total_count || 0
-        }
-      }
+          total_count: response.total_count || 0,
+        },
+      };
     } catch (error) {
-      console.error('获取对话历史失败:', error)
-      throw error
+      console.error('获取对话历史失败:', error);
+      throw error;
     }
   }
 
@@ -102,19 +117,19 @@ export class HealthChatAPI {
     try {
       const response = await request.post('/chat/conversation', {
         type: 'health_consultation',
-        title: '健康咨询对话'
-      })
+        title: '健康咨询对话',
+      });
       return {
         data: {
           conversation_id: response.conversation_id,
           type: response.type,
           created_at: response.created_at,
-          title: response.title
-        }
-      }
+          title: response.title,
+        },
+      };
     } catch (error) {
-      console.error('创建对话失败:', error)
-      throw error
+      console.error('创建对话失败:', error);
+      throw error;
     }
   }
 
@@ -124,15 +139,15 @@ export class HealthChatAPI {
    */
   static async getConversations() {
     try {
-      const response = await request.get('/chat/conversations')
+      const response = await request.get('/chat/conversations');
       return {
         data: {
-          conversations: response.conversations || []
-        }
-      }
+          conversations: response.conversations || [],
+        },
+      };
     } catch (error) {
-      console.error('获取对话列表失败:', error)
-      throw error
+      console.error('获取对话列表失败:', error);
+      throw error;
     }
   }
 
@@ -143,16 +158,18 @@ export class HealthChatAPI {
    */
   static async deleteConversation(conversationId) {
     try {
-      const response = await request.delete(`/chat/conversations/${conversationId}`)
+      const response = await request.delete(
+        `/chat/conversations/${conversationId}`
+      );
       return {
         success: true,
         message: '对话删除成功',
         data: response.data,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('删除对话失败:', error)
-      throw error
+      console.error('删除对话失败:', error);
+      throw error;
     }
   }
 
@@ -162,28 +179,28 @@ export class HealthChatAPI {
    */
   static async getHealthSuggestions() {
     try {
-      const response = await request.get('/chat/suggestions')
+      const response = await request.get('/chat/suggestions');
       return {
         data: response.suggestions || [
-          "我想制定一个减重计划",
-          "如何改善我的睡眠质量？",
-          "请帮我分析我的运动数据",
-          "我需要营养饮食建议",
-          "如何建立健康的作息习惯？"
-        ]
-      }
+          '我想制定一个减重计划',
+          '如何改善我的睡眠质量？',
+          '请帮我分析我的运动数据',
+          '我需要营养饮食建议',
+          '如何建立健康的作息习惯？',
+        ],
+      };
     } catch (error) {
-      console.error('获取健康建议失败:', error)
+      console.error('获取健康建议失败:', error);
       // 返回默认建议
       return {
         data: [
-          "我想制定一个减重计划",
-          "如何改善我的睡眠质量？",
-          "请帮我分析我的运动数据",
-          "我需要营养饮食建议",
-          "如何建立健康的作息习惯？"
-        ]
-      }
+          '我想制定一个减重计划',
+          '如何改善我的睡眠质量？',
+          '请帮我分析我的运动数据',
+          '我需要营养饮食建议',
+          '如何建立健康的作息习惯？',
+        ],
+      };
     }
   }
 
@@ -195,12 +212,16 @@ export class HealthChatAPI {
    */
   static async retrieveRAGDocuments(query, k = 3) {
     try {
-      const response = await request.post('/rag/retrieve', {
-        user_query: query,
-        k: k
-      }, {
-        timeout: 30000  // 30秒超时，RAG检索通常较快
-      })
+      const response = await request.post(
+        '/rag/retrieve',
+        {
+          user_query: query,
+          k: k,
+        },
+        {
+          timeout: 30000, // 30秒超时，RAG检索通常较快
+        }
+      );
 
       return {
         success: true,
@@ -209,21 +230,21 @@ export class HealthChatAPI {
           query: query,
           total_count: response.total_count || 0,
           retrieval_time: response.retrieval_time || 0,
-          timestamp: new Date().toISOString()
-        }
-      }
+          timestamp: new Date().toISOString(),
+        },
+      };
     } catch (error) {
-      console.error('RAG检索失败:', error)
+      console.error('RAG检索失败:', error);
 
       // 处理不同类型的错误
       if (error.response?.status === 503) {
-        throw new Error('RAG服务暂时不可用，请检查配置或稍后再试')
+        throw new Error('RAG服务暂时不可用，请检查配置或稍后再试');
       } else if (error.response?.status === 401) {
-        throw new Error('认证失败，请重新登录')
+        throw new Error('认证失败，请重新登录');
       } else if (error.response?.status === 400) {
-        throw new Error('查询参数无效，请检查输入')
+        throw new Error('查询参数无效，请检查输入');
       } else {
-        throw new Error('RAG检索服务异常，请稍后再试')
+        throw new Error('RAG检索服务异常，请稍后再试');
       }
     }
   }
@@ -234,14 +255,14 @@ export class HealthChatAPI {
    */
   static async getRAGStatus() {
     try {
-      const response = await request.get('/rag/status')
+      const response = await request.get('/rag/status');
       return {
         success: true,
-        data: response
-      }
+        data: response,
+      };
     } catch (error) {
-      console.error('获取RAG状态失败:', error)
-      throw error
+      console.error('获取RAG状态失败:', error);
+      throw error;
     }
   }
 
@@ -251,19 +272,19 @@ export class HealthChatAPI {
    * @returns {string} 格式化后的日期
    */
   static formatDate(dateString) {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    const now = new Date()
-    const diff = now - date
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return '今天'
-    if (days === 1) return '昨天'
-    if (days < 7) return `${days}天前`
-    if (days < 30) return `${Math.floor(days / 7)}周前`
-    return date.toLocaleDateString('zh-CN')
+    if (days === 0) return '今天';
+    if (days === 1) return '昨天';
+    if (days < 7) return `${days}天前`;
+    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    return date.toLocaleDateString('zh-CN');
   }
 }
 
 // 🎯 默认导出
-export default HealthChatAPI
+export default HealthChatAPI;

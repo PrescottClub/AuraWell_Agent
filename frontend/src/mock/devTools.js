@@ -3,52 +3,52 @@
  * 提供开发过程中的数据管理和调试功能
  */
 
-import { mockData, mockUtils, resetMockData } from './index'
+import { mockData, mockUtils, resetMockData } from './index';
 
 // 开发工具状态
 const devToolsState = {
   isEnabled: import.meta.env.DEV, // 只在开发环境启用
   isVisible: false,
-  currentTab: 'data'
-}
+  currentTab: 'data',
+};
 
 // 开发工具类
 export class MockDevTools {
   constructor() {
-    this.state = devToolsState
-    this.init()
+    this.state = devToolsState;
+    this.init();
   }
 
   // 初始化开发工具
   init() {
-    if (!this.state.isEnabled) return
+    if (!this.state.isEnabled) return;
 
     // 添加全局快捷键
-    this.addKeyboardShortcuts()
-    
+    this.addKeyboardShortcuts();
+
     // 添加控制台命令
-    this.addConsoleCommands()
-    
-    console.log('🛠️ Mock开发工具已启用')
-    console.log('快捷键: Ctrl+Shift+M 打开/关闭开发工具')
-    console.log('控制台命令: window.mockDevTools')
+    this.addConsoleCommands();
+
+    console.log('🛠️ Mock开发工具已启用');
+    console.log('快捷键: Ctrl+Shift+M 打开/关闭开发工具');
+    console.log('控制台命令: window.mockDevTools');
   }
 
   // 添加键盘快捷键
   addKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       // Ctrl+Shift+M 打开/关闭开发工具
       if (e.ctrlKey && e.shiftKey && e.key === 'M') {
-        e.preventDefault()
-        this.toggle()
+        e.preventDefault();
+        this.toggle();
       }
-      
+
       // Ctrl+Shift+R 重置Mock数据
       if (e.ctrlKey && e.shiftKey && e.key === 'R') {
-        e.preventDefault()
-        this.resetData()
+        e.preventDefault();
+        this.resetData();
       }
-    })
+    });
   }
 
   // 添加控制台命令
@@ -56,76 +56,88 @@ export class MockDevTools {
     window.mockDevTools = {
       // 显示/隐藏开发工具
       toggle: () => this.toggle(),
-      
+
       // 重置数据
       reset: () => this.resetData(),
-      
+
       // 查看当前数据
       data: () => {
-        console.log('📊 当前Mock数据:', mockData)
-        return mockData
+        console.log('📊 当前Mock数据:', mockData);
+        return mockData;
       },
-      
+
       // 导出数据
       export: () => this.exportData(),
-      
+
       // 导入数据
-      import: (data) => this.importData(data),
-      
+      import: data => this.importData(data),
+
       // 添加测试用户
       addTestUser: () => this.addTestUser(),
-      
+
       // 添加测试健康计划
       addTestPlan: () => this.addTestHealthPlan(),
-      
+
       // 添加测试聊天记录
       addTestChat: () => this.addTestChatSession(),
-      
+
       // 清空特定数据
       clear: {
-        users: () => { mockData.users = []; console.log('✅ 用户数据已清空') },
-        plans: () => { mockData.healthPlans = []; console.log('✅ 健康计划已清空') },
-        chats: () => { mockData.chatSessions = []; console.log('✅ 聊天记录已清空') },
-        families: () => { mockData.families = []; console.log('✅ 家庭数据已清空') }
-      }
-    }
+        users: () => {
+          mockData.users = [];
+          console.log('✅ 用户数据已清空');
+        },
+        plans: () => {
+          mockData.healthPlans = [];
+          console.log('✅ 健康计划已清空');
+        },
+        chats: () => {
+          mockData.chatSessions = [];
+          console.log('✅ 聊天记录已清空');
+        },
+        families: () => {
+          mockData.families = [];
+          console.log('✅ 家庭数据已清空');
+        },
+      },
+    };
   }
 
   // 切换开发工具显示状态
   toggle() {
-    this.state.isVisible = !this.state.isVisible
-    
+    this.state.isVisible = !this.state.isVisible;
+
     if (this.state.isVisible) {
-      this.show()
+      this.show();
     } else {
-      this.hide()
+      this.hide();
     }
   }
 
   // 显示开发工具
   show() {
     // 移除已存在的开发工具面板
-    this.hide()
-    
+    this.hide();
+
     // 创建开发工具面板
-    const panel = this.createPanel()
-    document.body.appendChild(panel)
-    
-    console.log('🛠️ Mock开发工具已打开')
+    const panel = this.createPanel();
+    document.body.appendChild(panel);
+
+    console.log('🛠️ Mock开发工具已打开');
   }
 
   // 隐藏开发工具
   hide() {
-    const existingPanel = document.getElementById('mock-dev-tools')
+    const existingPanel = document.getElementById('mock-dev-tools');
     if (existingPanel) {
-      existingPanel.remove()
+      existingPanel.remove();
     }
   }
 
   // 创建开发工具面板
   createPanel() {
-    const panel = document.createElement('div')
-    panel.id = 'mock-dev-tools'
+    const panel = document.createElement('div');
+    panel.id = 'mock-dev-tools';
     panel.innerHTML = `
       <div style="
         position: fixed;
@@ -238,19 +250,19 @@ export class MockDevTools {
           </div>
         </div>
       </div>
-    `
-    
-    return panel
+    `;
+
+    return panel;
   }
 
   // 重置Mock数据
   resetData() {
-    resetMockData()
-    console.log('🔄 Mock数据已重置')
-    
+    resetMockData();
+    console.log('🔄 Mock数据已重置');
+
     // 刷新开发工具面板
     if (this.state.isVisible) {
-      this.show()
+      this.show();
     }
   }
 
@@ -262,43 +274,43 @@ export class MockDevTools {
       chatSessions: mockData.chatSessions,
       families: mockData.families,
       familyMembers: mockData.familyMembers,
-      exportTime: new Date().toISOString()
-    }
-    
-    const dataStr = JSON.stringify(dataToExport, null, 2)
-    const blob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `mock-data-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    
-    URL.revokeObjectURL(url)
-    console.log('📥 Mock数据已导出')
+      exportTime: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mock-data-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    console.log('📥 Mock数据已导出');
   }
 
   // 导入Mock数据
   importData(data) {
     try {
       if (typeof data === 'string') {
-        data = JSON.parse(data)
+        data = JSON.parse(data);
       }
-      
-      if (data.users) mockData.users = data.users
-      if (data.healthPlans) mockData.healthPlans = data.healthPlans
-      if (data.chatSessions) mockData.chatSessions = data.chatSessions
-      if (data.families) mockData.families = data.families
-      if (data.familyMembers) mockData.familyMembers = data.familyMembers
-      
-      console.log('📤 Mock数据已导入')
-      
+
+      if (data.users) mockData.users = data.users;
+      if (data.healthPlans) mockData.healthPlans = data.healthPlans;
+      if (data.chatSessions) mockData.chatSessions = data.chatSessions;
+      if (data.families) mockData.families = data.families;
+      if (data.familyMembers) mockData.familyMembers = data.familyMembers;
+
+      console.log('📤 Mock数据已导入');
+
       // 刷新开发工具面板
       if (this.state.isVisible) {
-        this.show()
+        this.show();
       }
     } catch (error) {
-      console.error('❌ 导入数据失败:', error)
+      console.error('❌ 导入数据失败:', error);
     }
   }
 
@@ -316,15 +328,15 @@ export class MockDevTools {
       weight: 70,
       avatar: null,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-    
-    mockData.users.push(testUser)
-    console.log('✅ 已添加测试用户:', testUser)
-    
+      updated_at: new Date().toISOString(),
+    };
+
+    mockData.users.push(testUser);
+    console.log('✅ 已添加测试用户:', testUser);
+
     // 刷新开发工具面板
     if (this.state.isVisible) {
-      this.show()
+      this.show();
     }
   }
 
@@ -344,17 +356,17 @@ export class MockDevTools {
           category: 'diet',
           title: '饮食建议',
           content: '测试饮食建议内容',
-          priority: 'high'
-        }
-      ]
-    }
-    
-    mockData.healthPlans.push(testPlan)
-    console.log('✅ 已添加测试健康计划:', testPlan)
-    
+          priority: 'high',
+        },
+      ],
+    };
+
+    mockData.healthPlans.push(testPlan);
+    console.log('✅ 已添加测试健康计划:', testPlan);
+
     // 刷新开发工具面板
     if (this.state.isVisible) {
-      this.show()
+      this.show();
     }
   }
 
@@ -371,28 +383,28 @@ export class MockDevTools {
           message_id: mockUtils.generateId('msg'),
           role: 'user',
           content: '这是一条测试消息',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           message_id: mockUtils.generateId('msg'),
           role: 'assistant',
           content: '这是AI的测试回复',
-          timestamp: new Date().toISOString()
-        }
-      ]
-    }
-    
-    mockData.chatSessions.push(testSession)
-    console.log('✅ 已添加测试聊天会话:', testSession)
-    
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    mockData.chatSessions.push(testSession);
+    console.log('✅ 已添加测试聊天会话:', testSession);
+
     // 刷新开发工具面板
     if (this.state.isVisible) {
-      this.show()
+      this.show();
     }
   }
 }
 
 // 创建开发工具实例
-export const mockDevTools = new MockDevTools()
+export const mockDevTools = new MockDevTools();
 
-export default mockDevTools
+export default mockDevTools;

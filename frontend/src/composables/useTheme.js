@@ -6,7 +6,7 @@ export function useTheme() {
   const isDark = ref(false); // 硬编码为 false，永远不启用深色模式
 
   const toggleTheme = () => {
-    console.log("Dark mode is temporarily disabled.");
+    console.log('Dark mode is temporarily disabled.');
   };
 
   // 确保 DOM 始终处于浅色模式
