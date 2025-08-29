@@ -4,8 +4,19 @@
       <!-- 登录头部 -->
       <div class="text-center mb-8">
         <div class="inline-block p-3 bg-secondary rounded-xl mb-4">
-          <svg class="w-8 h-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          <svg
+            class="w-8 h-8 text-primary"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+            />
           </svg>
         </div>
         <h1 class="text-2xl font-bold text-text-primary">欢迎回来</h1>
@@ -59,10 +70,19 @@
           </a-form-item>
 
           <div class="flex items-center justify-between">
-            <a-checkbox v-model:checked="formState.remember" class="text-text-secondary">
+            <a-checkbox
+              v-model:checked="formState.remember"
+              class="text-text-secondary"
+            >
               记住我
             </a-checkbox>
-            <a class="text-sm font-medium text-primary hover:text-primary-hover" href="#" @click.prevent>忘记密码?</a>
+            <a
+              class="text-sm font-medium text-primary hover:text-primary-hover"
+              href="#"
+              @click.prevent
+            >
+              忘记密码?
+            </a>
           </div>
 
           <a-form-item class="!mb-0">
@@ -80,12 +100,15 @@
 
       <!-- 注册链接 -->
       <div class="text-center mt-6">
-          <p class="text-sm text-text-secondary">
-            还没有账号？
-            <router-link to="/register" class="font-semibold text-primary hover:text-primary-hover">
-              立即注册
-            </router-link>
-          </p>
+        <p class="text-sm text-text-secondary">
+          还没有账号？
+          <router-link
+            to="/register"
+            class="font-semibold text-primary hover:text-primary-hover"
+          >
+            立即注册
+          </router-link>
+        </p>
       </div>
     </div>
   </div>
@@ -107,52 +130,50 @@ const authStore = useAuthStore();
 const userStore = useUserStore();
 const loading = ref(false);
 const formState = reactive({
-    username: 'test_user',
-    password: 'test_password',
-    remember: true,
+  username: 'test_user',
+  password: 'test_password',
+  remember: true,
 });
 
-const onFinish = async (values) => {
-    try {
-        loading.value = true;
+const onFinish = async values => {
+  try {
+    loading.value = true;
 
-        // 使用Mock API进行登录
-        const response = await UserAPI.login({
-            username: values.username,
-            password: values.password
-        });
+    // 使用Mock API进行登录
+    const response = await UserAPI.login({
+      username: values.username,
+      password: values.password,
+    });
 
-        // 检查响应格式并保存token和用户信息
-        if (response.success && response.data) {
-            authStore.setToken(
-                response.data.access_token,
-                response.data.token_type,
-                response.data.expires_in
-            );
-            localStorage.setItem('isLoggedIn', 'true');
+    // 检查响应格式并保存token和用户信息
+    if (response.success && response.data) {
+      authStore.setToken(
+        response.data.access_token,
+        response.data.token_type,
+        response.data.expires_in
+      );
+      localStorage.setItem('isLoggedIn', 'true');
 
-            // 设置用户信息
-            if (response.data.user) {
-                userStore.setUser(response.data.user);
-            }
+      // 设置用户信息
+      if (response.data.user) {
+        userStore.setUser(response.data.user);
+      }
 
-            message.success('登录成功！');
+      message.success('登录成功！');
 
-            // 重定向到原来要访问的页面，或者默认到首页
-            const redirectPath = route.query.redirect || '/';
-            router.push(redirectPath);
-        } else {
-            throw new Error(response.message || '登录失败');
-        }
-    } catch (error) {
-        console.error('登录失败：', error);
-        message.error(error.message || '登录失败，请检查用户名和密码');
-    } finally {
-        loading.value = false;
+      // 重定向到原来要访问的页面，或者默认到首页
+      const redirectPath = route.query.redirect || '/';
+      router.push(redirectPath);
+    } else {
+      throw new Error(response.message || '登录失败');
     }
+  } catch (error) {
+    console.error('登录失败：', error);
+    message.error(error.message || '登录失败，请检查用户名和密码');
+  } finally {
+    loading.value = false;
+  }
 };
-
-
 </script>
 
 <style>

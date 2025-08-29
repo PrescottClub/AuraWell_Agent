@@ -2,7 +2,14 @@
  * Store 相关类型定义
  */
 
-import type { UserProfile, Family, FamilyMember, HealthReport, HealthPlan, ChatMessage } from './api'
+import type {
+  UserProfile,
+  Family,
+  FamilyMember,
+  HealthReport,
+  HealthPlan,
+  ChatMessage,
+} from './api';
 
 // 认证Store类型
 export interface AuthState {
@@ -19,7 +26,7 @@ export interface AuthStore extends AuthState {
   isAuthenticated: boolean;
   isTokenExpired: boolean;
   timeUntilExpiry: number;
-  
+
   // 方法
   setToken: (token: string, tokenType?: string, expiresIn?: number) => void;
   clearToken: () => void;
@@ -42,7 +49,7 @@ export interface UserStore extends UserState {
   // 计算属性
   isProfileComplete: boolean;
   displayName: string;
-  
+
   // 方法
   fetchUserProfile: () => Promise<void>;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
@@ -65,16 +72,24 @@ export interface FamilyStore extends FamilyState {
   isAdmin: boolean;
   isOwner: boolean;
   memberCount: number;
-  
+
   // 方法
   fetchUserFamilies: () => Promise<void>;
   fetchFamilyMembers: (familyId: string) => Promise<void>;
   createFamily: (familyData: Partial<Family>) => Promise<Family>;
   joinFamily: (invitationCode: string) => Promise<void>;
   leaveFamily: (familyId: string) => Promise<void>;
-  inviteMember: (familyId: string, email: string, role: string) => Promise<void>;
+  inviteMember: (
+    familyId: string,
+    email: string,
+    role: string
+  ) => Promise<void>;
   removeMember: (familyId: string, memberId: string) => Promise<void>;
-  updateMemberRole: (familyId: string, memberId: string, role: string) => Promise<void>;
+  updateMemberRole: (
+    familyId: string,
+    memberId: string,
+    role: string
+  ) => Promise<void>;
   setCurrentFamily: (family: Family) => void;
   clearFamilyData: () => void;
 }
@@ -93,7 +108,7 @@ export interface HealthStore extends HealthState {
   latestReport: HealthReport | null;
   healthScore: number;
   healthTrend: 'up' | 'down' | 'stable';
-  
+
   // 方法
   fetchHealthReports: () => Promise<void>;
   fetchHealthReport: (reportId: string) => Promise<void>;
@@ -117,12 +132,15 @@ export interface HealthPlanStore extends HealthPlanState {
   activePlans: HealthPlan[];
   completedPlans: HealthPlan[];
   planProgress: number;
-  
+
   // 方法
   fetchHealthPlans: () => Promise<void>;
   fetchHealthPlan: (planId: string) => Promise<void>;
   createHealthPlan: (planData: Partial<HealthPlan>) => Promise<HealthPlan>;
-  updateHealthPlan: (planId: string, updates: Partial<HealthPlan>) => Promise<void>;
+  updateHealthPlan: (
+    planId: string,
+    updates: Partial<HealthPlan>
+  ) => Promise<void>;
   deleteHealthPlan: (planId: string) => Promise<void>;
   startPlan: (planId: string) => Promise<void>;
   pausePlan: (planId: string) => Promise<void>;
@@ -146,7 +164,7 @@ export interface ChatStore extends ChatState {
   // 计算属性
   hasConversations: boolean;
   messageCount: number;
-  
+
   // 方法
   fetchConversations: () => Promise<void>;
   fetchMessages: (conversationId: string) => Promise<void>;
@@ -172,7 +190,7 @@ export interface AppStore extends AppState {
   // 计算属性
   isDark: boolean;
   unreadNotifications: number;
-  
+
   // 方法
   setTheme: (theme: 'light' | 'dark' | 'auto') => void;
   setLanguage: (language: 'zh' | 'en') => void;

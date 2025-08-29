@@ -1,6 +1,6 @@
 /**
  * AuraWell Design Tokens TypeScript 定义
- * 
+ *
  * 这个文件提供了设计令牌的TypeScript类型定义，
  * 确保在JavaScript/TypeScript代码中使用设计令牌时的类型安全
  */
@@ -22,7 +22,7 @@ export interface ColorTokens {
     DEFAULT: string;
     hover: string;
   };
-  
+
   // 健康色
   health: {
     50: string;
@@ -42,7 +42,7 @@ export interface ColorTokens {
     warning: string;
     danger: string;
   };
-  
+
   // 强调色
   accent: {
     50: string;
@@ -58,7 +58,7 @@ export interface ColorTokens {
     DEFAULT: string;
     hover: string;
   };
-  
+
   // 中性色
   neutral: {
     50: string;
@@ -72,7 +72,7 @@ export interface ColorTokens {
     800: string;
     900: string;
   };
-  
+
   // 语义化颜色
   text: {
     primary: string;
@@ -80,7 +80,7 @@ export interface ColorTokens {
     muted: string;
     disabled: string;
   };
-  
+
   // 背景色
   background: {
     DEFAULT: string;
@@ -88,14 +88,14 @@ export interface ColorTokens {
     surface: string;
     elevated: string;
   };
-  
+
   // 边框色
   border: {
     light: string;
     DEFAULT: string;
     strong: string;
   };
-  
+
   // 功能色
   success: string;
   warning: string;
@@ -109,7 +109,7 @@ export interface TypographyTokens {
     sans: string;
     mono: string;
   };
-  
+
   fontSize: {
     xs: string;
     sm: string;
@@ -121,14 +121,14 @@ export interface TypographyTokens {
     '4xl': string;
     '5xl': string;
   };
-  
+
   fontWeight: {
     normal: number;
     medium: number;
     semibold: number;
     bold: number;
   };
-  
+
   lineHeight: {
     tight: number;
     normal: number;
@@ -183,7 +183,7 @@ export interface AnimationTokens {
     slow: string;
     slower: string;
   };
-  
+
   ease: {
     in: string;
     out: string;
@@ -220,14 +220,14 @@ export interface ComponentTokens {
     borderColor: string;
     background: string;
   };
-  
+
   button: {
     paddingX: string;
     paddingY: string;
     borderRadius: string;
     fontWeight: string;
   };
-  
+
   input: {
     paddingX: string;
     paddingY: string;
@@ -251,19 +251,60 @@ export interface DesignTokens {
 }
 
 // 健康状态类型
-export type HealthStatus = 'excellent' | 'good' | 'normal' | 'warning' | 'danger';
+export type HealthStatus =
+  | 'excellent'
+  | 'good'
+  | 'normal'
+  | 'warning'
+  | 'danger';
 
 // 按钮变体类型
-export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'error';
 
 // 文字大小类型
-export type TextSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+export type TextSize =
+  | 'xs'
+  | 'sm'
+  | 'base'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl';
 
 // 间距大小类型
-export type SpacingSize = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '8' | '10' | '12' | '16' | '20' | '24';
+export type SpacingSize =
+  | '0'
+  | '1'
+  | '2'
+  | '3'
+  | '4'
+  | '5'
+  | '6'
+  | '8'
+  | '10'
+  | '12'
+  | '16'
+  | '20'
+  | '24';
 
 // 圆角大小类型
-export type BorderRadiusSize = 'none' | 'sm' | 'base' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
+export type BorderRadiusSize =
+  | 'none'
+  | 'sm'
+  | 'base'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | 'full';
 
 // 工具函数类型
 export interface DesignTokenUtils {
@@ -275,6 +316,28 @@ export interface DesignTokenUtils {
 }
 
 // 导出常量
-export const HEALTH_STATUSES: HealthStatus[] = ['excellent', 'good', 'normal', 'warning', 'danger'];
-export const BUTTON_VARIANTS: ButtonVariant[] = ['primary', 'secondary', 'success', 'warning', 'error'];
-export const TEXT_SIZES: TextSize[] = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl'];
+export const HEALTH_STATUSES: HealthStatus[] = [
+  'excellent',
+  'good',
+  'normal',
+  'warning',
+  'danger',
+];
+export const BUTTON_VARIANTS: ButtonVariant[] = [
+  'primary',
+  'secondary',
+  'success',
+  'warning',
+  'error',
+];
+export const TEXT_SIZES: TextSize[] = [
+  'xs',
+  'sm',
+  'base',
+  'lg',
+  'xl',
+  '2xl',
+  '3xl',
+  '4xl',
+  '5xl',
+];

@@ -1,5 +1,5 @@
 // 使用Mock API替代真实API调用
-import { healthPlanAPI as mockHealthPlanAPI } from '../mock/api.js'
+import { healthPlanAPI as mockHealthPlanAPI } from '../mock/api.js';
 
 /**
  * 健康计划API服务 - Mock版本
@@ -14,14 +14,15 @@ export class HealthPlanAPI {
     try {
       const response = await mockHealthPlanAPI.createHealthPlan({
         title: planRequest.title || '个性化健康计划',
-        description: planRequest.description || '基于您的需求定制的健康管理方案',
+        description:
+          planRequest.description || '基于您的需求定制的健康管理方案',
         plan_type: planRequest.plan_type || 'general',
-        ...planRequest
-      })
-      return response
+        ...planRequest,
+      });
+      return response;
     } catch (error) {
-      console.error('生成健康计划失败:', error)
-      throw error
+      console.error('生成健康计划失败:', error);
+      throw error;
     }
   }
 
@@ -31,11 +32,11 @@ export class HealthPlanAPI {
    */
   static async getPlans() {
     try {
-      const response = await mockHealthPlanAPI.getUserHealthPlans()
-      return response
+      const response = await mockHealthPlanAPI.getUserHealthPlans();
+      return response;
     } catch (error) {
-      console.error('获取健康计划失败:', error)
-      throw error
+      console.error('获取健康计划失败:', error);
+      throw error;
     }
   }
 
@@ -46,11 +47,11 @@ export class HealthPlanAPI {
    */
   static async getPlanDetail(planId) {
     try {
-      const response = await mockHealthPlanAPI.getHealthPlan(planId)
-      return response
+      const response = await mockHealthPlanAPI.getHealthPlan(planId);
+      return response;
     } catch (error) {
-      console.error('获取计划详情失败:', error)
-      throw error
+      console.error('获取计划详情失败:', error);
+      throw error;
     }
   }
 
@@ -62,11 +63,14 @@ export class HealthPlanAPI {
    */
   static async updatePlan(planId, planData) {
     try {
-      const response = await mockHealthPlanAPI.updateHealthPlan(planId, planData)
-      return response
+      const response = await mockHealthPlanAPI.updateHealthPlan(
+        planId,
+        planData
+      );
+      return response;
     } catch (error) {
-      console.error('更新健康计划失败:', error)
-      throw error
+      console.error('更新健康计划失败:', error);
+      throw error;
     }
   }
 
@@ -77,11 +81,11 @@ export class HealthPlanAPI {
    */
   static async deletePlan(planId) {
     try {
-      const response = await mockHealthPlanAPI.deleteHealthPlan(planId)
-      return response
+      const response = await mockHealthPlanAPI.deleteHealthPlan(planId);
+      return response;
     } catch (error) {
-      console.error('删除健康计划失败:', error)
-      throw error
+      console.error('删除健康计划失败:', error);
+      throw error;
     }
   }
 
@@ -94,25 +98,25 @@ export class HealthPlanAPI {
   static async exportPlan(planId, format = 'pdf') {
     try {
       // 模拟导出过程
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const plan = await mockHealthPlanAPI.getHealthPlan(planId)
+      const plan = await mockHealthPlanAPI.getHealthPlan(planId);
       const exportData = {
         plan: plan.data,
         exportFormat: format,
         exportTime: new Date().toISOString(),
-        downloadUrl: `mock://export/${planId}.${format}`
-      }
+        downloadUrl: `mock://export/${planId}.${format}`,
+      };
 
       return {
         success: true,
         data: exportData,
         message: '计划导出成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('导出健康计划失败:', error)
-      throw error
+      console.error('导出健康计划失败:', error);
+      throw error;
     }
   }
 
@@ -125,7 +129,7 @@ export class HealthPlanAPI {
   static async saveFeedback(planId, feedback) {
     try {
       // 模拟保存反馈
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       return {
         success: true,
@@ -133,14 +137,14 @@ export class HealthPlanAPI {
           feedback_id: 'feedback_' + Date.now(),
           plan_id: planId,
           ...feedback,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         message: '反馈保存成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('保存计划反馈失败:', error)
-      throw error
+      console.error('保存计划反馈失败:', error);
+      throw error;
     }
   }
 
@@ -151,7 +155,7 @@ export class HealthPlanAPI {
    */
   static async getPlanProgress(planId) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const mockProgress = {
         plan_id: planId,
@@ -165,27 +169,27 @@ export class HealthPlanAPI {
             milestone_id: 'milestone_001',
             title: '第一周目标',
             status: 'completed',
-            completion_date: '2024-06-10T00:00:00Z'
+            completion_date: '2024-06-10T00:00:00Z',
           },
           {
             milestone_id: 'milestone_002',
             title: '第二周目标',
             status: 'in_progress',
-            completion_date: null
-          }
+            completion_date: null,
+          },
         ],
-        last_updated: new Date().toISOString()
-      }
+        last_updated: new Date().toISOString(),
+      };
 
       return {
         success: true,
         data: mockProgress,
         message: '获取计划进度成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('获取计划进度失败:', error)
-      throw error
+      console.error('获取计划进度失败:', error);
+      throw error;
     }
   }
 
@@ -197,21 +201,21 @@ export class HealthPlanAPI {
    */
   static async updatePlanProgress(planId, progressData) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       return {
         success: true,
         data: {
           plan_id: planId,
           ...progressData,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         },
         message: '计划进度更新成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('更新计划进度失败:', error)
-      throw error
+      console.error('更新计划进度失败:', error);
+      throw error;
     }
   }
 
@@ -221,7 +225,7 @@ export class HealthPlanAPI {
    */
   static async getPlanTemplates() {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const mockTemplates = [
         {
@@ -231,7 +235,7 @@ export class HealthPlanAPI {
           category: 'weight_loss',
           duration_weeks: 12,
           difficulty: 'medium',
-          preview_image: null
+          preview_image: null,
         },
         {
           template_id: 'template_002',
@@ -240,7 +244,7 @@ export class HealthPlanAPI {
           category: 'muscle_gain',
           duration_weeks: 16,
           difficulty: 'hard',
-          preview_image: null
+          preview_image: null,
         },
         {
           template_id: 'template_003',
@@ -249,19 +253,19 @@ export class HealthPlanAPI {
           category: 'cardiovascular',
           duration_weeks: 8,
           difficulty: 'easy',
-          preview_image: null
-        }
-      ]
+          preview_image: null,
+        },
+      ];
 
       return {
         success: true,
         data: mockTemplates,
         message: '获取计划模板成功',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
-      console.error('获取计划模板失败:', error)
-      throw error
+      console.error('获取计划模板失败:', error);
+      throw error;
     }
   }
 
@@ -277,14 +281,14 @@ export class HealthPlanAPI {
         title: customData.title || '基于模板的健康计划',
         description: customData.description || '基于模板定制的健康管理方案',
         template_id: templateId,
-        ...customData
-      })
-      return response
+        ...customData,
+      });
+      return response;
     } catch (error) {
-      console.error('基于模板创建计划失败:', error)
-      throw error
+      console.error('基于模板创建计划失败:', error);
+      throw error;
     }
   }
 }
 
-export default HealthPlanAPI
+export default HealthPlanAPI;

@@ -67,7 +67,13 @@ export interface RegisterRequest {
 export interface HealthMetric {
   metric_id: string;
   user_id: string;
-  metric_type: 'steps' | 'weight' | 'blood_pressure' | 'heart_rate' | 'sleep' | 'calories';
+  metric_type:
+    | 'steps'
+    | 'weight'
+    | 'blood_pressure'
+    | 'heart_rate'
+    | 'sleep'
+    | 'calories';
   value: number;
   unit: string;
   recorded_at: string;

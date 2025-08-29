@@ -5,16 +5,20 @@
 **新一代AI驱动的个人健康生活方式编排系统**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11+-green.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/python-3.13+-green.svg)](https://python.org)
 [![Vue](https://img.shields.io/badge/vue-3.0+-4FC08D.svg)](https://vuejs.org)
-[![FastAPI](https://img.shields.io/badge/fastapi-0.104+-009688.svg)](https://fastapi.tiangolo.com)
+[![FastAPI](https://img.shields.io/badge/fastapi-0.116+-009688.svg)](https://fastapi.tiangolo.com)
 [![DeepSeek](https://img.shields.io/badge/AI-DeepSeek-FF6B6B.svg)](https://deepseek.com)
+
+[![Tests](https://github.com/PrescottClub/AuraWell_Agent/actions/workflows/tests.yml/badge.svg)](https://github.com/PrescottClub/AuraWell_Agent/actions/workflows/tests.yml)
+[![CI/CD](https://github.com/PrescottClub/AuraWell_Agent/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/PrescottClub/AuraWell_Agent/actions/workflows/ci-cd.yml)
+[![codecov](https://codecov.io/gh/PrescottClub/AuraWell_Agent/branch/main/graph/badge.svg)](https://codecov.io/gh/PrescottClub/AuraWell_Agent)
 
 *让AI成为您的专属健康管家，开启智能生活新篇章*
 
 **🌐 语言:** **中文** | [English](README_EN.md)
 
-[🚀 快速开始](#-快速开始) • [✨ 核心特性](#-核心特性) • [🏗️ 技术架构](#️-技术架构) • [🤖 健康助手模块](#-健康助手模块特色) • [� 使用指南](#-使用指南) • [📊 性能数据](#-系统性能数据) • [🧪 测试验证](#-测试验证说明) • [🤝 参与贡献](#-参与贡献)
+[🚀 快速开始](#-快速开始) • [✨ 核心特性](#-核心特性) • [🏗️ 技术架构](#️-技术架构) • [🤖 健康助手模块](#-健康助手模块特色) • [📋 使用指南](#-使用指南) • [📊 性能数据](#-系统性能数据) • [🧪 测试验证](#-测试验证说明) • [🔄 CI/CD](#-cicd-自动化) • [🤝 参与贡献](#-参与贡献)
 
 </div>
 
@@ -777,6 +781,52 @@ docker logs aurawell-test
 
 - 🐛 [Bug报告](https://github.com/PrescottClub/AuraWell_Agent/issues/new?template=bug_report.md)
 - 💡 [功能建议](https://github.com/PrescottClub/AuraWell_Agent/issues/new?template=feature_request.md)
+
+---
+
+## 🔄 CI/CD 自动化
+
+本项目采用 GitHub Actions 实现自动化 CI/CD 流水线，确保代码质量和部署稳定性。
+
+### 📋 工作流概览
+
+| 工作流 | 触发条件 | 主要功能 |
+|--------|----------|----------|
+| 🔧 **Backend Tests** | 后端代码变更 | 代码格式检查、类型检查、单元测试、覆盖率报告 |
+| 🎨 **Frontend CI** | 前端代码变更 | ESLint检查、Prettier格式化、TypeScript检查、构建 |
+| 🚀 **CI/CD Pipeline** | 所有分支推送 | 变更检测、安全扫描、构建、部署 |
+
+### 🛠️ 本地开发工具
+
+```bash
+# 使用 Makefile (推荐)
+make install       # 安装所有依赖
+make test          # 运行所有测试
+make lint          # 代码检查
+make format        # 自动格式化
+make ci            # 模拟 CI 环境
+
+# 使用测试脚本
+./scripts/run_tests.sh              # 运行后端测试
+./scripts/run_tests.sh --frontend   # 运行前端测试
+./scripts/run_tests.sh --coverage   # 生成覆盖率报告
+```
+
+### 📊 质量保证
+
+- ✅ **代码覆盖率**: 目标 >80%，通过 Codecov 监控
+- 🔍 **代码质量**: Black + isort + mypy + ESLint + Prettier
+- 🛡️ **安全扫描**: Safety + Bandit 依赖和代码安全检查
+- 🚦 **自动化测试**: 单元测试 + 集成测试 + 类型检查
+
+### 🚀 部署策略
+
+| 环境 | 分支 | 触发条件 | 自动部署 |
+|------|------|----------|----------|
+| 🧪 **测试环境** | `develop` | Push 到 develop | ✅ |
+| 🌟 **生产环境** | `main` | 发布 Release | ✅ |
+
+详细配置请参考：[CI/CD 配置文档](docs/CI_CD_SETUP.md)
 
 ---
 

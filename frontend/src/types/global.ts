@@ -120,9 +120,21 @@ export type FormRules = Record<string, FormRule | FormRule[]>;
 export interface TableRowSelection {
   type?: 'checkbox' | 'radio';
   selectedRowKeys?: string[] | number[];
-  onChange?: (selectedRowKeys: string[] | number[], selectedRows: any[]) => void;
-  onSelect?: (record: any, selected: boolean, selectedRows: any[], nativeEvent: Event) => void;
-  onSelectAll?: (selected: boolean, selectedRows: any[], changeRows: any[]) => void;
+  onChange?: (
+    selectedRowKeys: string[] | number[],
+    selectedRows: any[]
+  ) => void;
+  onSelect?: (
+    record: any,
+    selected: boolean,
+    selectedRows: any[],
+    nativeEvent: Event
+  ) => void;
+  onSelectAll?: (
+    selected: boolean,
+    selectedRows: any[],
+    changeRows: any[]
+  ) => void;
 }
 
 // 分页类型

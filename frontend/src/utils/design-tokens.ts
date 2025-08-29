@@ -1,10 +1,15 @@
 /**
  * AuraWell Design Tokens 工具函数
- * 
+ *
  * 提供便捷的函数来访问和使用设计令牌
  */
 
-import type { HealthStatus, ButtonVariant, SpacingSize, BorderRadiusSize } from '@/types/design-tokens'
+import type {
+  HealthStatus,
+  ButtonVariant,
+  SpacingSize,
+  BorderRadiusSize,
+} from '@/types/design-tokens';
 
 /**
  * 获取CSS变量值
@@ -13,14 +18,14 @@ import type { HealthStatus, ButtonVariant, SpacingSize, BorderRadiusSize } from 
  */
 export function getCSSVariable(variableName: string): string {
   if (typeof window === 'undefined') {
-    return `var(--${variableName})`
+    return `var(--${variableName})`;
   }
-  
+
   const value = getComputedStyle(document.documentElement)
     .getPropertyValue(`--${variableName}`)
-    .trim()
-  
-  return value || `var(--${variableName})`
+    .trim();
+
+  return value || `var(--${variableName})`;
 }
 
 /**
@@ -29,8 +34,8 @@ export function getCSSVariable(variableName: string): string {
  * @returns 颜色值
  */
 export function getColor(colorPath: string): string {
-  const normalizedPath = colorPath.replace(/\./g, '-')
-  return getCSSVariable(`color-${normalizedPath}`)
+  const normalizedPath = colorPath.replace(/\./g, '-');
+  return getCSSVariable(`color-${normalizedPath}`);
 }
 
 /**
@@ -39,7 +44,7 @@ export function getColor(colorPath: string): string {
  * @returns 间距值
  */
 export function getSpacing(size: SpacingSize): string {
-  return getCSSVariable(`spacing-${size}`)
+  return getCSSVariable(`spacing-${size}`);
 }
 
 /**
@@ -48,7 +53,7 @@ export function getSpacing(size: SpacingSize): string {
  * @returns 圆角值
  */
 export function getBorderRadius(size: BorderRadiusSize): string {
-  return getCSSVariable(`border-radius-${size}`)
+  return getCSSVariable(`border-radius-${size}`);
 }
 
 /**
@@ -57,7 +62,7 @@ export function getBorderRadius(size: BorderRadiusSize): string {
  * @returns 颜色值
  */
 export function getHealthColor(status: HealthStatus): string {
-  return getCSSVariable(`color-health-${status}`)
+  return getCSSVariable(`color-health-${status}`);
 }
 
 /**
@@ -66,7 +71,7 @@ export function getHealthColor(status: HealthStatus): string {
  * @returns CSS类名
  */
 export function getButtonClasses(variant: ButtonVariant): string {
-  return `aura-btn aura-btn--${variant}`
+  return `aura-btn aura-btn--${variant}`;
 }
 
 /**
@@ -75,16 +80,19 @@ export function getButtonClasses(variant: ButtonVariant): string {
  * @param size 文字大小（可选）
  * @returns CSS类名
  */
-export function getTextClasses(type: 'heading' | 'body' | 'caption' | 'metric', size?: string): string {
+export function getTextClasses(
+  type: 'heading' | 'body' | 'caption' | 'metric',
+  size?: string
+): string {
   if (type === 'metric') {
-    return size ? `text-metric-${size}` : 'text-metric'
+    return size ? `text-metric-${size}` : 'text-metric';
   }
-  
+
   if (size) {
-    return `text-${type}-${size}`
+    return `text-${type}-${size}`;
   }
-  
-  return `text-${type}`
+
+  return `text-${type}`;
 }
 
 /**
@@ -93,17 +101,17 @@ export function getTextClasses(type: 'heading' | 'body' | 'caption' | 'metric', 
  * @returns CSS类名
  */
 export function getCardClasses(variant?: 'elevated' | 'health'): string {
-  const baseClass = 'aura-card'
-  
+  const baseClass = 'aura-card';
+
   if (!variant) {
-    return baseClass
+    return baseClass;
   }
-  
+
   if (variant === 'health') {
-    return `${baseClass} health-metric-card`
+    return `${baseClass} health-metric-card`;
   }
-  
-  return `${baseClass} ${baseClass}--${variant}`
+
+  return `${baseClass} ${baseClass}--${variant}`;
 }
 
 /**
@@ -112,7 +120,7 @@ export function getCardClasses(variant?: 'elevated' | 'health'): string {
  * @returns CSS类名
  */
 export function getHealthCardClasses(status: HealthStatus): string {
-  return `health-metric-card health-metric-card--${status}`
+  return `health-metric-card health-metric-card--${status}`;
 }
 
 /**
@@ -121,18 +129,18 @@ export function getHealthCardClasses(status: HealthStatus): string {
  * @returns CSS类名
  */
 export function getResponsiveSpacing(spacing: {
-  default: SpacingSize
-  sm?: SpacingSize
-  md?: SpacingSize
-  lg?: SpacingSize
+  default: SpacingSize;
+  sm?: SpacingSize;
+  md?: SpacingSize;
+  lg?: SpacingSize;
 }): string {
-  let classes = `p-${spacing.default}`
-  
-  if (spacing.sm) classes += ` sm:p-${spacing.sm}`
-  if (spacing.md) classes += ` md:p-${spacing.md}`
-  if (spacing.lg) classes += ` lg:p-${spacing.lg}`
-  
-  return classes
+  let classes = `p-${spacing.default}`;
+
+  if (spacing.sm) classes += ` sm:p-${spacing.sm}`;
+  if (spacing.md) classes += ` md:p-${spacing.md}`;
+  if (spacing.lg) classes += ` lg:p-${spacing.lg}`;
+
+  return classes;
 }
 
 /**
@@ -149,28 +157,28 @@ export const DESIGN_TOKENS = {
     WARNING: 'var(--color-warning)',
     ERROR: 'var(--color-error)',
     INFO: 'var(--color-info)',
-    
+
     TEXT: {
       PRIMARY: 'var(--color-text-primary)',
       SECONDARY: 'var(--color-text-secondary)',
       MUTED: 'var(--color-text-muted)',
       DISABLED: 'var(--color-text-disabled)',
     },
-    
+
     BACKGROUND: {
       DEFAULT: 'var(--color-background)',
       ALT: 'var(--color-background-alt)',
       SURFACE: 'var(--color-background-surface)',
       ELEVATED: 'var(--color-background-elevated)',
     },
-    
+
     BORDER: {
       LIGHT: 'var(--color-border-light)',
       DEFAULT: 'var(--color-border)',
       STRONG: 'var(--color-border-strong)',
     },
   },
-  
+
   // 间距
   SPACING: {
     XS: 'var(--spacing-2)',
@@ -180,7 +188,7 @@ export const DESIGN_TOKENS = {
     XL: 'var(--spacing-8)',
     XXL: 'var(--spacing-12)',
   },
-  
+
   // 圆角
   BORDER_RADIUS: {
     SM: 'var(--border-radius-sm)',
@@ -188,7 +196,7 @@ export const DESIGN_TOKENS = {
     LG: 'var(--border-radius-lg)',
     XL: 'var(--border-radius-xl)',
   },
-  
+
   // 字体
   FONT: {
     FAMILY: {
@@ -210,7 +218,7 @@ export const DESIGN_TOKENS = {
       BOLD: 'var(--font-weight-bold)',
     },
   },
-  
+
   // 动画
   ANIMATION: {
     DURATION: {
@@ -225,7 +233,7 @@ export const DESIGN_TOKENS = {
       IN_OUT: 'var(--ease-in-out)',
     },
   },
-  
+
   // 阴影
   SHADOW: {
     NONE: 'var(--shadow-none)',
@@ -234,7 +242,7 @@ export const DESIGN_TOKENS = {
     MD: 'var(--shadow-md)',
     LG: 'var(--shadow-lg)',
   },
-  
+
   // Z-index
   Z_INDEX: {
     DROPDOWN: 'var(--z-index-dropdown)',
@@ -245,7 +253,7 @@ export const DESIGN_TOKENS = {
     POPOVER: 'var(--z-index-popover)',
     TOOLTIP: 'var(--z-index-tooltip)',
   },
-} as const
+} as const;
 
 /**
  * 健康状态映射
@@ -276,7 +284,7 @@ export const HEALTH_STATUS_MAP = {
     label: '危险',
     icon: '🔴',
   },
-} as const
+} as const;
 
 /**
  * 验证健康状态
@@ -284,7 +292,7 @@ export const HEALTH_STATUS_MAP = {
  * @returns 是否为有效的健康状态
  */
 export function isValidHealthStatus(status: string): status is HealthStatus {
-  return status in HEALTH_STATUS_MAP
+  return status in HEALTH_STATUS_MAP;
 }
 
 /**
@@ -293,5 +301,5 @@ export function isValidHealthStatus(status: string): status is HealthStatus {
  * @returns 状态信息对象
  */
 export function getHealthStatusInfo(status: HealthStatus) {
-  return HEALTH_STATUS_MAP[status]
+  return HEALTH_STATUS_MAP[status];
 }

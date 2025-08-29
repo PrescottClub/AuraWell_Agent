@@ -361,6 +361,11 @@ dependencies = [
     { name = "zstandard" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pyyaml" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiofiles", specifier = "==24.1.0" },
@@ -484,6 +489,9 @@ requires-dist = [
     { name = "yarl", specifier = "==1.20.1" },
     { name = "zstandard", specifier = "==0.24.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pyyaml", specifier = ">=6.0.2" }]
 
 [[package]]
 name = "bcrypt"

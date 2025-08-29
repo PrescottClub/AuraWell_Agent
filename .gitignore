@@ -98,6 +98,25 @@ Thumbs.db
 coverage.xml
 *.cover
 .hypothesis/
+htmlcov/
+nosetests.xml
+.cache
+test*.db
+test_*.db
+.env.test
+
+# CI/CD artifacts
+safety-report.json
+bandit-report.json
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Frontend artifacts
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/.cache
 .cache
 htmlcov/
 

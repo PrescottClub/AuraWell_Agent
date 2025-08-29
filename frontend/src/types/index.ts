@@ -24,8 +24,8 @@ export type {
   RequestConfig,
   FileUpload,
   Notification,
-  UserSettings
-} from './api'
+  UserSettings,
+} from './api';
 
 // 组件相关类型
 export type {
@@ -50,8 +50,8 @@ export type {
   TabsProps,
   StepItem,
   StepsProps,
-  ComponentEvents
-} from './components'
+  ComponentEvents,
+} from './components';
 
 // Store相关类型
 export type {
@@ -78,8 +78,8 @@ export type {
   FilterState,
   CacheState,
   StorePlugin,
-  PersistConfig
-} from './store'
+  PersistConfig,
+} from './store';
 
 // 设计令牌相关类型
 export type {
@@ -98,8 +98,8 @@ export type {
   TextSize,
   SpacingSize,
   BorderRadiusSize,
-  DesignTokenUtils
-} from './design-tokens'
+  DesignTokenUtils,
+} from './design-tokens';
 
 // 全局类型
 export type {
@@ -149,15 +149,11 @@ export type {
   StorageConfig,
   RequestInterceptor,
   ResponseInterceptor,
-  PluginConfig
-} from './global'
+  PluginConfig,
+} from './global';
 
 // 常量导出
-export {
-  HEALTH_STATUSES,
-  BUTTON_VARIANTS,
-  TEXT_SIZES
-} from './design-tokens'
+export { HEALTH_STATUSES, BUTTON_VARIANTS, TEXT_SIZES } from './design-tokens';
 
 // 导入需要的类型用于类型守卫
 import type {
@@ -166,30 +162,42 @@ import type {
   Family,
   ChatMessage,
   ApiResponse,
-  PaginatedResponse
-} from './api'
-import type { PaginationState } from './store'
+  PaginatedResponse,
+} from './api';
+import type { PaginationState } from './store';
 
 // 类型守卫函数
 export const isUser = (obj: any): obj is User => {
-  return obj && typeof obj.user_id === 'string' && typeof obj.username === 'string'
-}
+  return (
+    obj && typeof obj.user_id === 'string' && typeof obj.username === 'string'
+  );
+};
 
 export const isHealthReport = (obj: any): obj is HealthReport => {
-  return obj && typeof obj.report_id === 'string' && typeof obj.report_type === 'string'
-}
+  return (
+    obj &&
+    typeof obj.report_id === 'string' &&
+    typeof obj.report_type === 'string'
+  );
+};
 
 export const isFamily = (obj: any): obj is Family => {
-  return obj && typeof obj.family_id === 'string' && typeof obj.family_name === 'string'
-}
+  return (
+    obj &&
+    typeof obj.family_id === 'string' &&
+    typeof obj.family_name === 'string'
+  );
+};
 
 export const isChatMessage = (obj: any): obj is ChatMessage => {
-  return obj && typeof obj.message_id === 'string' && typeof obj.content === 'string'
-}
+  return (
+    obj && typeof obj.message_id === 'string' && typeof obj.content === 'string'
+  );
+};
 
 export const isApiResponse = <T>(obj: any): obj is ApiResponse<T> => {
-  return obj && typeof obj.success === 'boolean'
-}
+  return obj && typeof obj.success === 'boolean';
+};
 
 // 工具类型函数
 export const createApiResponse = <T>(
@@ -200,21 +208,21 @@ export const createApiResponse = <T>(
 ): ApiResponse<T> => {
   const response: ApiResponse<T> = {
     success,
-    timestamp: new Date().toISOString()
-  }
+    timestamp: new Date().toISOString(),
+  };
 
   if (data !== undefined) {
-    response.data = data
+    response.data = data;
   }
   if (message !== undefined) {
-    response.message = message
+    response.message = message;
   }
   if (error !== undefined) {
-    response.error = error
+    response.error = error;
   }
 
-  return response
-}
+  return response;
+};
 
 export const createPaginatedResponse = <T>(
   data: T[],
@@ -226,16 +234,16 @@ export const createPaginatedResponse = <T>(
     page: pagination.page,
     pageSize: pagination.pageSize,
     total: pagination.total,
-    totalPages: Math.ceil(pagination.total / pagination.pageSize)
+    totalPages: Math.ceil(pagination.total / pagination.pageSize),
   },
-  timestamp: new Date().toISOString()
-})
+  timestamp: new Date().toISOString(),
+});
 
 // 枚举类型
 export enum UserRole {
   OWNER = 'Owner',
   ADMIN = 'Admin',
-  MEMBER = 'Member'
+  MEMBER = 'Member',
 }
 
 export enum HealthMetricType {
@@ -244,38 +252,38 @@ export enum HealthMetricType {
   BLOOD_PRESSURE = 'blood_pressure',
   HEART_RATE = 'heart_rate',
   SLEEP = 'sleep',
-  CALORIES = 'calories'
+  CALORIES = 'calories',
 }
 
 export enum ReportType {
   DAILY = 'daily',
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
-  QUARTERLY = 'quarterly'
+  QUARTERLY = 'quarterly',
 }
 
 export enum ReportStatus {
   GENERATING = 'generating',
   COMPLETED = 'completed',
-  FAILED = 'failed'
+  FAILED = 'failed',
 }
 
 export enum MessageType {
   USER = 'user',
   ASSISTANT = 'assistant',
-  SYSTEM = 'system'
+  SYSTEM = 'system',
 }
 
 export enum PlanStatus {
   DRAFT = 'draft',
   ACTIVE = 'active',
   COMPLETED = 'completed',
-  PAUSED = 'paused'
+  PAUSED = 'paused',
 }
 
 export enum NotificationType {
   INFO = 'info',
   SUCCESS = 'success',
   WARNING = 'warning',
-  ERROR = 'error'
+  ERROR = 'error',
 }
